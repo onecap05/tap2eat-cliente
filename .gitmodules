@@ -1,0 +1,3 @@
+[submodule "shared/protos"]
+	path = shared/protos
+	url = https://github.com/onecap05/tap2eat-contratos.git
