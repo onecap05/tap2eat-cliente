@@ -1,0 +1,17 @@
+# Node y dependencias
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Archivos de construcción de React/Electron
+dist/
+build/
+out/
+
+# Variables de entorno (Secretos, contraseñas)
+.env
+.env.local
+
+# Archivos del SO
+.DS_Store
+Thumbs.db
