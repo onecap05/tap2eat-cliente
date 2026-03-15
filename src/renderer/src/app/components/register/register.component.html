@@ -1,0 +1,21 @@
+<div style="padding: 20px;">
+    <h2>Register New Account</h2>
+    <form (ngSubmit)="onSubmit()">
+        <div style="margin-bottom: 10px;">
+            <label>Email:</label><br>
+            <input type="email" name="email" [(ngModel)]="request.email" required>
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label>Password:</label><br>
+            <input type="password" name="password" [(ngModel)]="request.password" required>
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label>Role:</label><br>
+            <select name="role" [(ngModel)]="request.role">
+                <option value="CUSTOMER">Customer</option>
+                <option value="RESTAURANT_OWNER">Restaurant Owner</option>
+            </select>
+        </div>
+        <button type="submit">Create Account</button>
+    </form>
+</div>
