@@ -8,8 +8,8 @@
   </header>
 
   <section *ngIf="loading && !restaurant" class="state-card">
-  Cargando información del catálogo...
-</section>
+    Cargando información del catálogo...
+  </section>
 
   <section *ngIf="errorMessage" class="error-card">
     {{ errorMessage }}
@@ -68,9 +68,7 @@
         <div>
           <div class="branch-title">
             <h3>{{ branch.name }}</h3>
-            <span *ngIf="branch.isMainBranch" class="badge">
-              Principal
-            </span>
+            <span *ngIf="branch.isMainBranch" class="badge">Principal</span>
           </div>
 
           <p>{{ branch.formattedAddress }}</p>
@@ -90,4 +88,83 @@
       </article>
     </div>
   </section>
+
+  <section *ngIf="restaurant" class="content-card">
+    <div class="section-title">
+      <div>
+        <h2>Categorías</h2>
+        <p>Categorías activas del menú del restaurante.</p>
+      </div>
+
+      <span class="counter">{{ categories.length }}</span>
+    </div>
+
+    <p *ngIf="categories.length === 0" class="empty-text">
+      Este restaurante todavía no tiene categorías activas.
+    </p>
+
+    <div class="branch-list" *ngIf="categories.length > 0">
+      <article *ngFor="let category of categories" class="branch-card">
+        <div>
+          <div class="branch-title">
+            <h3>{{ category.name }}</h3>
+            <span class="badge" *ngIf="category.active">Activa</span>
+          </div>
+
+          <p>{{ category.description || 'Sin descripción' }}</p>
+
+          <small>
+            Orden: {{ category.displayOrder ?? 0 }}
+          </small>
+
+          <small>
+            ID: {{ category.id }}
+          </small>
+        </div>
+      </article>
+    </div>
+  </section>
+  <section *ngIf="restaurant" class="content-card">
+  <div class="section-title">
+    <div>
+      <h2>Productos</h2>
+      <p>Productos activos del restaurante.</p>
+    </div>
+
+    <span class="counter">{{ products.length }}</span>
+  </div>
+
+  <p *ngIf="products.length === 0" class="empty-text">
+    Este restaurante todavía no tiene productos activos.
+  </p>
+
+  <div class="branch-list" *ngIf="products.length > 0">
+    <article *ngFor="let product of products" class="branch-card">
+      <div>
+        <div class="branch-title">
+          <h3>{{ product.name }}</h3>
+          <span class="badge" *ngIf="product.featured">Destacado</span>
+        </div>
+
+        <p>{{ product.description || 'Sin descripción' }}</p>
+
+        <small>
+          Tipo: {{ product.productType }}
+        </small>
+
+        <small>
+          Precio: ${{ product.price }}
+        </small>
+
+        <small>
+          Disponibilidad: {{ product.availability?.status || 'Sin configuración' }}
+        </small>
+
+        <small>
+          ID: {{ product.id }}
+        </small>
+      </div>
+    </article>
+  </div>
+</section>
 </section>
