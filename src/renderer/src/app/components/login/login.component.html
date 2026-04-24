@@ -1,15 +1,15 @@
-<div class="register-page">
+<div class="login-page">
   <div class="brand-section">
     <div class="brand-logo">T2E</div>
     <h1 class="brand-title">Tap2Eat</h1>
     <p class="brand-subtitle">Tu comida favorita sin esperas</p>
   </div>
 
-  <div class="register-card">
-    <h2 class="register-title">Crear Cuenta</h2>
-    <p class="register-subtitle">Únete a Tap2Eat hoy</p>
+  <div class="login-card">
+    <h2 class="login-title">Iniciar Sesión</h2>
+    <p class="login-subtitle">¡Bienvenido de nuevo!</p>
 
-    <form (ngSubmit)="onSubmit()" class="register-form">
+    <form (ngSubmit)="onSubmit()" class="login-form">
       <div class="form-group">
         <label for="email">Correo Electrónico</label>
         <div class="input-wrapper">
@@ -40,33 +40,18 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="role">Tipo de cuenta</label>
-        <div class="select-wrapper">
-          <select
-            id="role"
-            name="role"
-            [(ngModel)]="request.role"
-            required
-          >
-            <option
-              *ngFor="let role of availableRoles"
-              [value]="role.value"
-            >
-              {{ role.label }}
-            </option>
-          </select>
-        </div>
+      <div class="forgot-password-row">
+        <a routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
       </div>
 
-      <button type="submit" class="register-button" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Creando...' : 'Crear Cuenta' }}
+      <button type="submit" class="login-button" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Iniciando...' : 'Iniciar Sesión' }}
       </button>
     </form>
 
-    <div class="login-row">
-      <span>¿Ya tienes cuenta?</span>
-      <a routerLink="/login">Inicia Sesión</a>
+    <div class="register-row">
+      <span>¿No tienes cuenta?</span>
+      <a routerLink="/register">Regístrate</a>
     </div>
 
     <div class="message success" *ngIf="successMessage">

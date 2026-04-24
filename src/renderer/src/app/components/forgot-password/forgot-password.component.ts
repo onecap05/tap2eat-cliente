@@ -4,27 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
-import { IRegisterRequest } from '../../models/IRegisterRequest';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-forgot-password',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './register.component.html',
-  styleUrl: './register.css'
+  templateUrl: './forgot-password.component.html',
+  styleUrl: './forgot-password.component.css'
 })
-export class RegisterComponent {
-  public request: IRegisterRequest = {
-    email: '',
-    password: '',
-    role: 'CUSTOMER'
-  };
-
-  public availableRoles = [
-    { label: 'Cliente', value: 'CUSTOMER' },
-    { label: 'Dueño restaurante', value: 'RESTAURANT_OWNER' }
-  ];
-
+export class ForgotPasswordComponent {
+  public email: string = '';
   public errorMessage: string = '';
   public successMessage: string = '';
   public isSubmitting: boolean = false;
@@ -39,19 +28,19 @@ export class RegisterComponent {
     this.successMessage = '';
     this.isSubmitting = true;
 
-    this.authService.registerAccount(this.request).subscribe({
+    this.authService.forgotPassword({ email: this.email }).subscribe({
       next: (response) => {
         this.successMessage = response.message;
         this.isSubmitting = false;
 
-        this.router.navigate(['/verify-email'], {
-          queryParams: { email: this.request.email }
+        this.router.navigate(['/reset-password'], {
+          queryParams: { email: this.email }
         });
       },
       error: (error) => {
         this.isSubmitting = false;
         this.errorMessage =
-          error?.error?.message || 'No se pudo completar el registro.';
+          error?.error?.message || 'No se pudo solicitar la recuperación.';
         console.error(error);
       }
     });

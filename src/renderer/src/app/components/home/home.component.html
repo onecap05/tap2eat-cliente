@@ -1,0 +1,9 @@
+<div class="home-container">
+  <h2>Bienvenido a Tap2Eat</h2>
+  <p>Inicio de sesión exitoso.</p>
+
+  <p><strong>Access token:</strong> {{ localStorageRef.getItem('accessToken') ? 'Guardado' : 'No guardado' }}</p>
+  <p><strong>Refresh token:</strong> {{ localStorageRef.getItem('refreshToken') ? 'Guardado' : 'No guardado' }}</p>
+
+  <button type="button" (click)="logout()">Cerrar sesión</button>
+</div>

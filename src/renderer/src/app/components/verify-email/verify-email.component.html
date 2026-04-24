@@ -1,0 +1,64 @@
+<div class="verify-page">
+  <div class="brand-section">
+    <div class="brand-logo">T2E</div>
+    <h1 class="brand-title">Tap2Eat</h1>
+    <p class="brand-subtitle">Tu comida favorita sin esperas</p>
+  </div>
+
+  <div class="verify-card">
+    <h2 class="verify-title">Verificar Correo</h2>
+    <p class="verify-subtitle">Ingresa el código que enviamos a tu correo</p>
+
+    <div class="email-box" *ngIf="email">
+      <span class="email-label">Correo:</span>
+      <span class="email-value">{{ email }}</span>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="verify-form">
+      <div class="form-group">
+        <label for="code">Código de verificación</label>
+        <div class="input-wrapper">
+          <span class="input-icon">#</span>
+          <input
+            id="code"
+            name="code"
+            type="text"
+            [(ngModel)]="code"
+            required
+            placeholder="Ingresa tu código"
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="verify-button" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Verificando...' : 'Verificar correo' }}
+      </button>
+    </form>
+
+    <button
+      type="button"
+      class="resend-button"
+      (click)="onResendCode()"
+      [disabled]="isResending"
+    >
+      {{ isResending ? 'Reenviando...' : 'Reenviar código' }}
+    </button>
+
+    <div class="login-row">
+      <span>¿Ya verificaste tu correo?</span>
+      <a routerLink="/login">Inicia Sesión</a>
+    </div>
+
+    <div class="message success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <div class="message success" *ngIf="resendMessage">
+      {{ resendMessage }}
+    </div>
+
+    <div class="message error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+  </div>
+</div>
