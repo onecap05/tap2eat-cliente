@@ -1,0 +1,93 @@
+<section class="catalog-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Tap2Eat · Catalog Service</span>
+      <h1>Panel del restaurante</h1>
+      <p>Vista temporal para probar la integración del front con el API Gateway.</p>
+    </div>
+  </header>
+
+  <section *ngIf="loading && !restaurant" class="state-card">
+  Cargando información del catálogo...
+</section>
+
+  <section *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </section>
+
+  <section *ngIf="restaurant" class="restaurant-card">
+    <div class="restaurant-logo-wrapper">
+      <img
+        *ngIf="restaurant.logo?.url"
+        [src]="restaurant.logo?.url"
+        alt="Logo del restaurante"
+        class="restaurant-logo"
+      />
+
+      <div *ngIf="!restaurant.logo?.url" class="restaurant-logo placeholder">
+        {{ restaurant.name.charAt(0) }}
+      </div>
+    </div>
+
+    <div class="restaurant-info">
+      <h2>{{ restaurant.name }}</h2>
+      <p>{{ restaurant.description }}</p>
+
+      <div class="meta-grid">
+        <span>ID restaurante:</span>
+        <strong>{{ restaurant.id }}</strong>
+
+        <span>Owner:</span>
+        <strong>{{ restaurant.ownerAccountId }}</strong>
+
+        <span>Estado:</span>
+        <strong>{{ restaurant.active ? 'Activo' : 'Inactivo' }}</strong>
+
+        <span>Actualizado:</span>
+        <strong>{{ restaurant.updatedAt || 'Sin fecha' }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section *ngIf="restaurant" class="content-card">
+    <div class="section-title">
+      <div>
+        <h2>Sucursales</h2>
+        <p>Sucursales activas asociadas al restaurante.</p>
+      </div>
+
+      <span class="counter">{{ branches.length }}</span>
+    </div>
+
+    <p *ngIf="branches.length === 0" class="empty-text">
+      Este restaurante todavía no tiene sucursales activas.
+    </p>
+
+    <div class="branch-list" *ngIf="branches.length > 0">
+      <article *ngFor="let branch of branches" class="branch-card">
+        <div>
+          <div class="branch-title">
+            <h3>{{ branch.name }}</h3>
+            <span *ngIf="branch.isMainBranch" class="badge">
+              Principal
+            </span>
+          </div>
+
+          <p>{{ branch.formattedAddress }}</p>
+
+          <small *ngIf="branch.phoneNumber">
+            Tel. {{ branch.phoneNumber }}
+          </small>
+
+          <small>
+            Coordenadas: {{ branch.latitude }}, {{ branch.longitude }}
+          </small>
+
+          <small *ngIf="branch.googlePlaceId">
+            Google Place ID: {{ branch.googlePlaceId }}
+          </small>
+        </div>
+      </article>
+    </div>
+  </section>
+</section>
