@@ -3,7 +3,7 @@
   min-height: 100vh;
 }
 
-.register-page {
+.login-page {
   min-height: 100vh;
   padding: 32px 16px 48px;
   display: flex;
@@ -47,7 +47,7 @@
   font-weight: 400;
 }
 
-.register-card {
+.login-card {
   width: 100%;
   max-width: 560px;
   background: #f4f4f4;
@@ -57,7 +57,7 @@
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
 }
 
-.register-title {
+.login-title {
   margin: 0;
   text-align: center;
   font-size: 38px;
@@ -65,7 +65,7 @@
   color: #000;
 }
 
-.register-subtitle {
+.login-subtitle {
   margin-top: 10px;
   margin-bottom: 34px;
   text-align: center;
@@ -73,13 +73,13 @@
   color: #44506a;
 }
 
-.register-form {
+.login-form {
   display: flex;
   flex-direction: column;
 }
 
 .form-group {
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
@@ -90,8 +90,7 @@
   color: #26314d;
 }
 
-.input-wrapper,
-.select-wrapper {
+.input-wrapper {
   height: 58px;
   display: flex;
   align-items: center;
@@ -123,18 +122,26 @@
   color: #8a92a3;
 }
 
-.select-wrapper select {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 16px;
-  color: #2b3140;
-  cursor: pointer;
+.forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+  margin-bottom: 20px;
 }
 
-.register-button {
-  margin-top: 6px;
+.forgot-password-row a {
+  color: #1f7e59;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.forgot-password-row a:hover,
+.register-row a:hover {
+  text-decoration: underline;
+}
+
+.login-button {
   height: 58px;
   border: none;
   border-radius: 18px;
@@ -146,31 +153,27 @@
   transition: opacity 0.2s ease;
 }
 
-.register-button:hover {
+.login-button:hover {
   opacity: 0.94;
 }
 
-.register-button:disabled {
+.login-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.login-row {
+.register-row {
   margin-top: 32px;
   text-align: center;
   font-size: 16px;
   color: #44506a;
 }
 
-.login-row a {
+.register-row a {
   margin-left: 6px;
   color: #1f7e59;
   text-decoration: none;
   font-weight: 700;
-}
-
-.login-row a:hover {
-  text-decoration: underline;
 }
 
 .message {
@@ -199,12 +202,12 @@
     font-size: 18px;
   }
 
-  .register-card {
+  .login-card {
     padding: 28px 22px 24px;
     border-radius: 18px;
   }
 
-  .register-title {
+  .login-title {
     font-size: 30px;
   }
 }

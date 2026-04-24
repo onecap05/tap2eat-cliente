@@ -4,26 +4,20 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
-import { IRegisterRequest } from '../../models/IRegisterRequest';
+import { ILoginRequest } from '../../models/ILoginRequest';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './register.component.html',
-  styleUrl: './register.css'
+  templateUrl: './login.component.html',
+  styleUrl: './login.component.css'
 })
-export class RegisterComponent {
-  public request: IRegisterRequest = {
+export class LoginComponent {
+  public request: ILoginRequest = {
     email: '',
-    password: '',
-    role: 'CUSTOMER'
+    password: ''
   };
-
-  public availableRoles = [
-    { label: 'Cliente', value: 'CUSTOMER' },
-    { label: 'Dueño restaurante', value: 'RESTAURANT_OWNER' }
-  ];
 
   public errorMessage: string = '';
   public successMessage: string = '';
@@ -39,19 +33,21 @@ export class RegisterComponent {
     this.successMessage = '';
     this.isSubmitting = true;
 
-    this.authService.registerAccount(this.request).subscribe({
+    this.authService.login(this.request).subscribe({
       next: (response) => {
-        this.successMessage = response.message;
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
+        localStorage.setItem('tokenType', response.tokenType);
+
+        this.successMessage = 'Inicio de sesión exitoso.';
         this.isSubmitting = false;
 
-        this.router.navigate(['/verify-email'], {
-          queryParams: { email: this.request.email }
-        });
+        this.router.navigate(['/dashboard']);
       },
       error: (error) => {
         this.isSubmitting = false;
         this.errorMessage =
-          error?.error?.message || 'No se pudo completar el registro.';
+          error?.error?.message || 'No se pudo iniciar sesión.';
         console.error(error);
       }
     });
