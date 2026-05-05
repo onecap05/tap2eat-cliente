@@ -161,12 +161,14 @@ p {
 }
 
 .form-grid input,
-.form-grid textarea {
+.form-grid textarea,
+.form-grid select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #d1d5db;
   border-radius: 12px;
   font: inherit;
+  background: #ffffff;
 }
 
 .form-grid textarea {
@@ -188,4 +190,44 @@ p {
 .form-grid button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+.section-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.secondary-button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  background: #f97316;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.branch-form {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.checkbox-label {
+  display: flex !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.checkbox-label input {
+  width: auto;
 }
