@@ -15,6 +15,61 @@
     {{ errorMessage }}
   </section>
 
+  <section *ngIf="showCreateRestaurantForm" class="content-card">
+  <div class="section-title">
+    <div>
+      <h2>Crear restaurante</h2>
+      <p>Este owner todavía no tiene un restaurante activo registrado.</p>
+    </div>
+  </div>
+
+  <form class="form-grid" (ngSubmit)="createRestaurant()">
+    <label>
+      Nombre del restaurante
+      <input
+        type="text"
+        name="name"
+        [(ngModel)]="restaurantForm.name"
+        placeholder="Ej. Tacos Don Juan"
+        required
+      />
+    </label>
+
+    <label>
+      Descripción
+      <textarea
+        name="description"
+        [(ngModel)]="restaurantForm.description"
+        placeholder="Descripción breve del restaurante"
+      ></textarea>
+    </label>
+
+    <label>
+      URL del logo
+      <input
+        type="text"
+        name="logoUrl"
+        [(ngModel)]="restaurantForm.logoUrl"
+        placeholder="https://cdn.tap2eat.com/restaurants/logo.jpg"
+      />
+    </label>
+
+    <label>
+      Object key del logo
+      <input
+        type="text"
+        name="logoObjectKey"
+        [(ngModel)]="restaurantForm.logoObjectKey"
+        placeholder="restaurants/logo.jpg"
+      />
+    </label>
+
+    <button type="submit" [disabled]="creatingRestaurant">
+      {{ creatingRestaurant ? 'Creando...' : 'Crear restaurante' }}
+    </button>
+  </form>
+</section>
+
   <section *ngIf="restaurant" class="restaurant-card">
     <div class="restaurant-logo-wrapper">
       <img
