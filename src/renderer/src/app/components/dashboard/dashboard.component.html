@@ -1,0 +1,31 @@
+<div class="dashboard-page">
+  <div class="brand-section">
+    <div class="brand-logo">T2E</div>
+    <h1 class="brand-title">Tap2Eat</h1>
+    <p class="brand-subtitle">Tu comida favorita sin esperas</p>
+  </div>
+
+  <div class="dashboard-card">
+    <h2 class="dashboard-title">Dashboard</h2>
+    <p class="dashboard-subtitle">Inicio de sesión exitoso</p>
+
+    <div class="status-box">
+      <p>
+        <strong>Access Token:</strong>
+        <span>{{ accessTokenSaved ? 'Guardado' : 'No guardado' }}</span>
+      </p>
+
+      <p>
+        <strong>Refresh Token:</strong>
+        <span>{{ refreshTokenSaved ? 'Guardado' : 'No guardado' }}</span>
+      </p>
+    </div>
+
+    <div class="actions">
+      <a routerLink="/login" class="secondary-button">Ir a login</a>
+      <button type="button" class="primary-button" (click)="logout()">
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+</div>

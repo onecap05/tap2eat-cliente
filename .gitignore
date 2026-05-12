@@ -15,3 +15,7 @@ out/
 # Archivos del SO
 .DS_Store
 Thumbs.db
+
+# Archivos de configuración de IDEs
+.vscode/
+.idea/
