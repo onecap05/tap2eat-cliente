@@ -15,14 +15,18 @@ import { IForgotPasswordRequest } from '../models/IForgotPasswordRequest';
 import { IForgotPasswordResponse } from '../models/IForgotPasswordResponse';
 import { IResetPasswordRequest } from '../models/IResetPasswordRequest';
 import { IResetPasswordResponse } from '../models/IResetPasswordResponse';
+import { TokenStorageService } from './token-storage.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = environment.apiUrl;
+  private readonly API_URL = environment.authApiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly tokenStorageService: TokenStorageService
+  ) {}
 
   public registerAccount(request: IRegisterRequest): Observable<IRegisterResponse> {
     return this.http.post<IRegisterResponse>(`${this.API_URL}/register`, request);
@@ -42,14 +46,74 @@ export class AuthService {
   }
 
   public login(request: ILoginRequest): Observable<ILoginResponse> {
-  return this.http.post<ILoginResponse>(`${this.API_URL}/login`, request);
+    return this.http.post<ILoginResponse>(`${this.API_URL}/login`, request);
+  }
+
+  public forgotPassword(request: IForgotPasswordRequest): Observable<IForgotPasswordResponse> {
+    return this.http.post<IForgotPasswordResponse>(`${this.API_URL}/forgot-password`, request);
+  }
+
+  public resetPassword(request: IResetPasswordRequest): Observable<IResetPasswordResponse> {
+    return this.http.post<IResetPasswordResponse>(`${this.API_URL}/reset-password`, request);
+  }
+
+  public saveSession(response: ILoginResponse): void {
+    this.tokenStorageService.saveAccessToken(response.accessToken);
+    this.tokenStorageService.saveRefreshToken(response.refreshToken);
+    this.tokenStorageService.saveTokenType(response.tokenType || 'Bearer');
+  }
+
+  public getAccessToken(): string | null {
+    return this.tokenStorageService.getAccessToken();
+  }
+
+  public isAuthenticated(): boolean {
+    return !!this.getAccessToken();
+  }
+
+  public logout(): void {
+    this.tokenStorageService.clearSession();
+  }
+
+  public getTokenPayload(): any | null {
+  const token = this.getAccessToken();
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = token.split('.')[1];
+
+    const base64 = payload
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const paddedBase64 = base64.padEnd(
+      base64.length + (4 - base64.length % 4) % 4,
+      '='
+    );
+
+    return JSON.parse(atob(paddedBase64));
+  } catch (error) {
+    console.error('Could not decode JWT payload', error);
+    return null;
+  }
 }
 
-public forgotPassword(request: IForgotPasswordRequest): Observable<IForgotPasswordResponse> {
-  return this.http.post<IForgotPasswordResponse>(`${this.API_URL}/forgot-password`, request);
+public getAccountId(): string | null {
+  const payload = this.getTokenPayload();
+
+  return payload?.accountId || payload?.id || payload?.sub || null;
 }
 
-public resetPassword(request: IResetPasswordRequest): Observable<IResetPasswordResponse> {
-  return this.http.post<IResetPasswordResponse>(`${this.API_URL}/reset-password`, request);
+public getUserRole(): string | null {
+  const payload = this.getTokenPayload();
+
+  return payload?.role || payload?.authorities?.[0] || null;
+}
+
+public isRestaurantOwner(): boolean {
+  return this.getUserRole() === 'RESTAURANT_OWNER';
 }
 }

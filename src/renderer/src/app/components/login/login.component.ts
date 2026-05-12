@@ -24,32 +24,44 @@ export class LoginComponent {
   public isSubmitting: boolean = false;
 
   constructor(
-    private authService: AuthService,
-    private router: Router
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {}
 
   public onSubmit(): void {
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.isSubmitting = true;
+  this.errorMessage = '';
+  this.successMessage = '';
+  this.isSubmitting = true;
 
-    this.authService.login(this.request).subscribe({
-      next: (response) => {
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        localStorage.setItem('tokenType', response.tokenType);
+  this.authService.login(this.request).subscribe({
+    next: (response) => {
+  this.authService.saveSession(response);
 
-        this.successMessage = 'Inicio de sesión exitoso.';
-        this.isSubmitting = false;
+  this.isSubmitting = false;
 
-        this.router.navigate(['/dashboard']);
-      },
-      error: (error) => {
-        this.isSubmitting = false;
-        this.errorMessage =
-          error?.error?.message || 'No se pudo iniciar sesión.';
-        console.error(error);
-      }
-    });
+  const role = this.authService.getUserRole();
+
+  console.log('User role:', role);
+
+  if (role === 'RESTAURANT_OWNER') {
+    this.router.navigateByUrl('/owner/dashboard');
+    return;
   }
+
+  if (role === 'CUSTOMER') {
+    this.router.navigateByUrl('/customer/dashboard');
+    return;
+  }
+
+
+  this.authService.logout();
+  this.errorMessage = 'No se pudo determinar el tipo de usuario.';
+},
+    error: (error) => {
+      this.isSubmitting = false;
+      this.errorMessage = error?.error?.message || 'No se pudo iniciar sesión.';
+      console.error(error);
+    }
+  });
+}
 }

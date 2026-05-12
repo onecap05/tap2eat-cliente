@@ -1,0 +1,520 @@
+<section class="catalog-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Tap2Eat · Catalog Service</span>
+      <h1>Panel del restaurante</h1>
+      <p>Vista temporal para probar la integración del front con el API Gateway.</p>
+    </div>
+  </header>
+
+  <section *ngIf="loading && !restaurant && !showCreateRestaurantForm" class="state-card">
+    Cargando información del catálogo...
+  </section>
+
+  <section *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </section>
+
+  <!-- Crear restaurante -->
+  <section *ngIf="showCreateRestaurantForm" class="content-card">
+    <div class="section-title">
+      <div>
+        <h2>Crear restaurante</h2>
+        <p>Este owner todavía no tiene un restaurante activo registrado.</p>
+      </div>
+    </div>
+
+    <form class="form-grid" (ngSubmit)="createRestaurant()">
+      <label>
+        Nombre del restaurante
+        <input
+          type="text"
+          name="name"
+          [(ngModel)]="restaurantForm.name"
+          placeholder="Ej. Tacos Don Juan"
+          required
+        />
+      </label>
+
+      <label>
+        Descripción
+        <textarea
+          name="description"
+          [(ngModel)]="restaurantForm.description"
+          placeholder="Descripción breve del restaurante"
+        ></textarea>
+      </label>
+
+      <label>
+        URL del logo
+        <input
+          type="text"
+          name="logoUrl"
+          [(ngModel)]="restaurantForm.logoUrl"
+          placeholder="https://cdn.tap2eat.com/restaurants/logo.jpg"
+        />
+      </label>
+
+      <label>
+        Object key del logo
+        <input
+          type="text"
+          name="logoObjectKey"
+          [(ngModel)]="restaurantForm.logoObjectKey"
+          placeholder="restaurants/logo.jpg"
+        />
+      </label>
+
+      <button type="submit" [disabled]="creatingRestaurant">
+        {{ creatingRestaurant ? 'Creando...' : 'Crear restaurante' }}
+      </button>
+    </form>
+  </section>
+
+  <!-- Datos del restaurante -->
+  <section *ngIf="restaurant" class="restaurant-card">
+    <div class="restaurant-logo-wrapper">
+      <img
+        *ngIf="restaurant.logo?.url"
+        [src]="restaurant.logo?.url"
+        alt="Logo del restaurante"
+        class="restaurant-logo"
+      />
+
+      <div *ngIf="!restaurant.logo?.url" class="restaurant-logo placeholder">
+        {{ restaurant.name.charAt(0) }}
+      </div>
+    </div>
+
+    <div class="restaurant-info">
+      <h2>{{ restaurant.name }}</h2>
+      <p>{{ restaurant.description }}</p>
+
+      <div class="meta-grid">
+        <span>ID restaurante:</span>
+        <strong>{{ restaurant.id }}</strong>
+
+        <span>Owner:</span>
+        <strong>{{ restaurant.ownerAccountId }}</strong>
+
+        <span>Estado:</span>
+        <strong>{{ restaurant.active ? 'Activo' : 'Inactivo' }}</strong>
+
+        <span>Actualizado:</span>
+        <strong>{{ restaurant.updatedAt || 'Sin fecha' }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sucursales -->
+  <section *ngIf="restaurant" class="content-card">
+    <div class="section-title">
+      <div>
+        <h2>Sucursales</h2>
+        <p>Sucursales activas asociadas al restaurante.</p>
+      </div>
+
+      <div class="section-actions">
+        <span class="counter">{{ branches.length }}</span>
+
+        <button type="button" class="secondary-button" (click)="toggleCreateBranchForm()">
+          {{ showCreateBranchForm ? 'Cancelar' : 'Nueva sucursal' }}
+        </button>
+      </div>
+    </div>
+
+    <form
+      *ngIf="showCreateBranchForm"
+      class="form-grid branch-form"
+      (ngSubmit)="createBranch()"
+    >
+      <label>
+        Nombre de la sucursal
+        <input
+          type="text"
+          name="branchName"
+          [(ngModel)]="branchForm.name"
+          placeholder="Ej. Sucursal Centro"
+          required
+        />
+      </label>
+
+      <label>
+        Teléfono
+        <input
+          type="text"
+          name="branchPhoneNumber"
+          [(ngModel)]="branchForm.phoneNumber"
+          placeholder="Ej. 2281234567"
+        />
+      </label>
+
+      <label>
+        Dirección
+        <input
+          type="text"
+          name="branchFormattedAddress"
+          [(ngModel)]="branchForm.formattedAddress"
+          placeholder="Ej. Av. Enríquez 10, Centro, Xalapa, Veracruz"
+          required
+        />
+      </label>
+
+      <div class="form-row">
+        <label>
+          Latitud
+          <input
+            type="number"
+            step="any"
+            name="branchLatitude"
+            [(ngModel)]="branchForm.latitude"
+            placeholder="Ej. 19.5438"
+            required
+          />
+        </label>
+
+        <label>
+          Longitud
+          <input
+            type="number"
+            step="any"
+            name="branchLongitude"
+            [(ngModel)]="branchForm.longitude"
+            placeholder="Ej. -96.9101"
+            required
+          />
+        </label>
+      </div>
+
+      <label>
+        Google Place ID
+        <input
+          type="text"
+          name="branchGooglePlaceId"
+          [(ngModel)]="branchForm.googlePlaceId"
+          placeholder="Opcional por ahora"
+        />
+      </label>
+
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="branchIsMainBranch"
+          [(ngModel)]="branchForm.isMainBranch"
+        />
+        Marcar como sucursal principal
+      </label>
+
+      <button type="submit" [disabled]="creatingBranch">
+        {{ creatingBranch ? 'Creando...' : 'Crear sucursal' }}
+      </button>
+    </form>
+
+    <p *ngIf="branches.length === 0" class="empty-text">
+      Este restaurante todavía no tiene sucursales activas.
+    </p>
+
+    <div class="branch-list" *ngIf="branches.length > 0">
+      <article *ngFor="let branch of branches" class="branch-card">
+        <div>
+          <div class="branch-title">
+            <h3>{{ branch.name }}</h3>
+            <span *ngIf="branch.isMainBranch" class="badge">
+              Principal
+            </span>
+          </div>
+
+          <p>{{ branch.formattedAddress }}</p>
+
+          <small *ngIf="branch.phoneNumber">
+            Tel. {{ branch.phoneNumber }}
+          </small>
+
+          <small>
+            Coordenadas: {{ branch.latitude }}, {{ branch.longitude }}
+          </small>
+
+          <small *ngIf="branch.googlePlaceId">
+            Google Place ID: {{ branch.googlePlaceId }}
+          </small>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Categorías -->
+  <section *ngIf="restaurant" class="content-card">
+    <div class="section-title">
+      <div>
+        <h2>Categorías</h2>
+        <p>Categorías activas del menú del restaurante.</p>
+      </div>
+
+      <div class="section-actions">
+        <span class="counter">{{ categories.length }}</span>
+
+        <button type="button" class="secondary-button" (click)="toggleCreateCategoryForm()">
+          {{ showCreateCategoryForm ? 'Cancelar' : 'Nueva categoría' }}
+        </button>
+      </div>
+    </div>
+
+    <form
+      *ngIf="showCreateCategoryForm"
+      class="form-grid branch-form"
+      (ngSubmit)="createCategory()"
+    >
+      <label>
+        Nombre de la categoría
+        <input
+          type="text"
+          name="categoryName"
+          [(ngModel)]="categoryForm.name"
+          placeholder="Ej. Hamburguesas"
+          required
+        />
+      </label>
+
+      <label>
+        Descripción
+        <textarea
+          name="categoryDescription"
+          [(ngModel)]="categoryForm.description"
+          placeholder="Descripción breve de la categoría"
+        ></textarea>
+      </label>
+
+      <label>
+        Orden
+        <input
+          type="number"
+          name="categoryDisplayOrder"
+          [(ngModel)]="categoryForm.displayOrder"
+          placeholder="Ej. 1"
+          min="0"
+        />
+      </label>
+
+      <button type="submit" [disabled]="creatingCategory">
+        {{ creatingCategory ? 'Creando...' : 'Crear categoría' }}
+      </button>
+    </form>
+
+    <p *ngIf="categories.length === 0" class="empty-text">
+      Este restaurante todavía no tiene categorías activas.
+    </p>
+
+    <div class="branch-list" *ngIf="categories.length > 0">
+      <article *ngFor="let category of categories" class="branch-card">
+        <div>
+          <div class="branch-title">
+            <h3>{{ category.name }}</h3>
+            <span class="badge" *ngIf="category.active">
+              Activa
+            </span>
+          </div>
+
+          <p>{{ category.description || 'Sin descripción' }}</p>
+
+          <small>
+            Orden: {{ category.displayOrder ?? 0 }}
+          </small>
+
+          <small>
+            ID: {{ category.id }}
+          </small>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Productos -->
+  <section *ngIf="restaurant" class="content-card">
+  <div class="section-title">
+    <div>
+      <h2>Productos</h2>
+      <p>Productos activos del restaurante.</p>
+    </div>
+
+    <div class="section-actions">
+      <span class="counter">{{ products.length }}</span>
+
+      <button type="button" class="secondary-button" (click)="toggleCreateProductForm()">
+        {{ showCreateProductForm ? 'Cancelar' : 'Nuevo producto' }}
+      </button>
+    </div>
+  </div>
+
+  <form
+    *ngIf="showCreateProductForm"
+    class="form-grid branch-form"
+    (ngSubmit)="createProduct()"
+  >
+    <label>
+      Categoría
+      <select
+        name="productCategoryId"
+        [(ngModel)]="productForm.categoryId"
+        required
+      >
+        <option value="">Selecciona una categoría</option>
+        <option *ngFor="let category of categories" [value]="category.id">
+          {{ category.name }}
+        </option>
+      </select>
+    </label>
+
+    <label>
+      Nombre del producto
+      <input
+        type="text"
+        name="productName"
+        [(ngModel)]="productForm.name"
+        placeholder="Ej. Hamburguesa clásica"
+        required
+      />
+    </label>
+
+    <label>
+      Descripción
+      <textarea
+        name="productDescription"
+        [(ngModel)]="productForm.description"
+        placeholder="Descripción breve del producto"
+      ></textarea>
+    </label>
+
+    <div class="form-row">
+      <label>
+        Tipo
+        <select name="productType" [(ngModel)]="productForm.productType">
+          <option value="SIMPLE">Simple</option>
+          <option value="CUSTOMIZABLE">Personalizable</option>
+        </select>
+      </label>
+
+      <label>
+        Precio
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          name="productPrice"
+          [(ngModel)]="productForm.price"
+          placeholder="Ej. 120"
+          required
+        />
+      </label>
+    </div>
+
+    <label>
+      URL de imagen
+      <input
+        type="text"
+        name="productImageUrl"
+        [(ngModel)]="productForm.imageUrl"
+        placeholder="https://cdn.tap2eat.com/products/producto.jpg"
+      />
+    </label>
+
+    <label>
+      Object key de imagen
+      <input
+        type="text"
+        name="productImageObjectKey"
+        [(ngModel)]="productForm.imageObjectKey"
+        placeholder="products/producto.jpg"
+      />
+    </label>
+
+    <label>
+      Orden
+      <input
+        type="number"
+        min="0"
+        name="productDisplayOrder"
+        [(ngModel)]="productForm.displayOrder"
+        placeholder="Ej. 1"
+      />
+    </label>
+
+    <label>
+      Tags separados por coma
+      <input
+        type="text"
+        name="productTags"
+        [(ngModel)]="productForm.tags"
+        placeholder="popular, burger"
+      />
+    </label>
+
+    <label>
+      Dietary flags separados por coma
+      <input
+        type="text"
+        name="productDietaryFlags"
+        [(ngModel)]="productForm.dietaryFlags"
+        placeholder="vegetarian, spicy"
+      />
+    </label>
+
+    <label>
+      Alérgenos separados por coma
+      <input
+        type="text"
+        name="productAllergens"
+        [(ngModel)]="productForm.allergens"
+        placeholder="gluten, dairy"
+      />
+    </label>
+
+    <label class="checkbox-label">
+      <input
+        type="checkbox"
+        name="productFeatured"
+        [(ngModel)]="productForm.featured"
+      />
+      Marcar como destacado
+    </label>
+
+    <button type="submit" [disabled]="creatingProduct || categories.length === 0">
+      {{ creatingProduct ? 'Creando...' : 'Crear producto' }}
+    </button>
+  </form>
+
+  <p *ngIf="products.length === 0" class="empty-text">
+    Este restaurante todavía no tiene productos activos.
+  </p>
+
+  <div class="branch-list" *ngIf="products.length > 0">
+    <article *ngFor="let product of products" class="branch-card">
+      <div>
+        <div class="branch-title">
+          <h3>{{ product.name }}</h3>
+          <span class="badge" *ngIf="product.featured">
+            Destacado
+          </span>
+        </div>
+
+        <p>{{ product.description || 'Sin descripción' }}</p>
+
+        <small>
+          Tipo: {{ product.productType }}
+        </small>
+
+        <small>
+          Precio: ${{ product.price }}
+        </small>
+
+        <small>
+          Disponibilidad: {{ product.availability?.status || 'Sin configuración' }}
+        </small>
+
+        <small>
+          ID: {{ product.id }}
+        </small>
+      </div>
+    </article>
+  </div>
+</section>
+</section>
