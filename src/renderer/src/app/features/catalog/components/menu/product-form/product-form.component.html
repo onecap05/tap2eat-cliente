@@ -8,6 +8,10 @@
     Primero necesitas crear una categoría.
   </p>
 
+  <p *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </p>
+
   <form class="form-grid" (ngSubmit)="submit()">
     <label>
       Categoría
@@ -66,78 +70,101 @@
       </label>
     </div>
 
-    <label>
-      URL de imagen
-      <input
-        type="text"
-        name="productImageUrl"
-        [(ngModel)]="form.imageUrl"
-        placeholder="https://cdn.tap2eat.com/products/producto.jpg"
-      />
-    </label>
+    <div class="image-upload">
+      <span class="field-title">Imagen del producto</span>
 
-    <label>
-      Object key de imagen
-      <input
-        type="text"
-        name="productImageObjectKey"
-        [(ngModel)]="form.imageObjectKey"
-        placeholder="products/producto.jpg"
-      />
-    </label>
+      <label class="file-drop">
+        <input
+          type="file"
+          accept="image/*"
+          (change)="onImageSelected($event)"
+        />
 
-    <label>
-      Orden
-      <input
-        type="number"
-        min="0"
-        name="productDisplayOrder"
-        [(ngModel)]="form.displayOrder"
-        placeholder="Ej. 1"
-      />
-    </label>
+        <ng-container *ngIf="!imagePreviewUrl">
+          <span class="file-icon">📷</span>
+          <strong>Seleccionar imagen</strong>
+          <small>JPG, PNG o WEBP. Máximo 5 MB.</small>
+        </ng-container>
 
-    <label>
-      Tags separados por coma
-      <input
-        type="text"
-        name="productTags"
-        [(ngModel)]="form.tags"
-        placeholder="popular, burger"
-      />
-    </label>
+        <img
+          *ngIf="imagePreviewUrl"
+          [src]="imagePreviewUrl"
+          alt="Vista previa del producto"
+        />
+      </label>
 
-    <label>
-      Dietary flags separados por coma
-      <input
-        type="text"
-        name="productDietaryFlags"
-        [(ngModel)]="form.dietaryFlags"
-        placeholder="vegetarian, spicy"
-      />
-    </label>
+      <button
+        *ngIf="imagePreviewUrl"
+        type="button"
+        class="secondary-button"
+        (click)="removeSelectedImage()"
+      >
+        Quitar imagen
+      </button>
 
-    <label>
-      Alérgenos separados por coma
-      <input
-        type="text"
-        name="productAllergens"
-        [(ngModel)]="form.allergens"
-        placeholder="gluten, dairy"
-      />
-    </label>
+      <small class="hint">
+        Si no seleccionas imagen, el backend asignará una imagen por defecto.
+      </small>
+    </div>
 
-    <label class="checkbox-label">
-      <input
-        type="checkbox"
-        name="productFeatured"
-        [(ngModel)]="form.featured"
-      />
-      Marcar como destacado
-    </label>
+    <div class="switch-row">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="productFeatured"
+          [(ngModel)]="form.featured"
+        />
+        Marcar como destacado
+      </label>
 
-    <button type="submit" [disabled]="saving || categories.length === 0">
-      {{ saving ? 'Creando...' : 'Crear producto' }}
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="productAvailable"
+          [(ngModel)]="form.available"
+        />
+        Disponible
+      </label>
+    </div>
+
+    <div class="option-group">
+      <span class="field-title">Características alimentarias</span>
+
+      <div class="chips">
+        <button
+          *ngFor="let option of dietaryFlagOptions"
+          type="button"
+          class="chip"
+          [class.selected]="isDietaryFlagSelected(option.value)"
+          (click)="toggleDietaryFlag(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="field-title">Alérgenos</span>
+
+      <div class="chips">
+        <button
+          *ngFor="let option of allergenOptions"
+          type="button"
+          class="chip"
+          [class.selected]="isAllergenSelected(option.value)"
+          (click)="toggleAllergen(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+
+    <button
+      type="submit"
+      class="submit-button"
+      [disabled]="saving || uploadingImage || categories.length === 0"
+    >
+      {{ uploadingImage ? 'Subiendo imagen...' : saving ? 'Creando...' : 'Crear producto' }}
     </button>
   </form>
 </section>

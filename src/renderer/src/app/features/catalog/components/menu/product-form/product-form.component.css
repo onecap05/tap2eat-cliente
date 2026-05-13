@@ -15,6 +15,14 @@
   font-weight: 700;
 }
 
+.error-message {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
 .form-grid {
   display: grid;
   gap: 16px;
@@ -49,6 +57,57 @@ textarea {
   resize: vertical;
 }
 
+.field-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.image-upload {
+  display: grid;
+  gap: 10px;
+}
+
+.file-drop {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 18px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 18px;
+  background: #f8fafc;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.file-drop input {
+  display: none;
+}
+
+.file-drop img {
+  width: 100%;
+  max-height: 230px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.file-icon {
+  font-size: 32px;
+}
+
+.file-drop small,
+.hint {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.switch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -59,15 +118,51 @@ textarea {
   width: auto;
 }
 
-button {
+.option-group {
+  display: grid;
+  gap: 10px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #374151;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chip.selected {
+  border-color: #267f53;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.submit-button,
+.secondary-button {
   width: fit-content;
   padding: 13px 20px;
   border: none;
   border-radius: 14px;
-  background: #267f53;
-  color: #ffffff;
   font-weight: 800;
   cursor: pointer;
+}
+
+.submit-button {
+  background: #267f53;
+  color: #ffffff;
+}
+
+.secondary-button {
+  background: #e5e7eb;
+  color: #111827;
 }
 
 button:disabled {
