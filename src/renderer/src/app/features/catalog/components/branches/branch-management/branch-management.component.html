@@ -11,17 +11,23 @@
       (click)="toggleBranchForm()"
     >
       <span>+</span>
-      {{ showBranchForm ? 'Cancelar' : 'Nueva Sucursal' }}
+      Nueva Sucursal
     </button>
   </header>
-
-  <app-branch-form
-    *ngIf="showBranchForm"
-    [saving]="creatingBranch"
-    (createBranch)="onCreateBranch($event)"
-  />
 
   <app-branch-list
     [branches]="branches"
   />
+
+  <app-owner-modal
+    *ngIf="showBranchForm"
+    title="Nueva sucursal"
+    subtitle="Agrega una ubicación donde tu restaurante atiende pedidos."
+    (closeModal)="closeBranchForm()"
+  >
+    <app-branch-form
+      [saving]="creatingBranch"
+      (createBranch)="onCreateBranch($event)"
+    />
+  </app-owner-modal>
 </section>
