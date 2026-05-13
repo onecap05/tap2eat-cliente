@@ -61,6 +61,6 @@ export class MenuManagementComponent {
 
   onCreateProduct(request: Omit<ICreateProductRequest, 'restaurantId'>): void {
     this.createProduct.emit(request);
-    this.showProductForm = false;
+    
   }
 }
