@@ -1,0 +1,170 @@
+.branches-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.branches-card-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.branches-card-header h3 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.branches-card-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #ffffff;
+}
+
+th {
+  padding: 22px 32px;
+  color: #374151;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+td {
+  padding: 20px 32px;
+  border-top: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+tr:hover {
+  background: #f9fafb;
+}
+
+.branch-main {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.branch-avatar {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #267f53;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.branch-main strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #000000;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.main-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fcca59;
+  color: #4b2e00;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.address {
+  max-width: 420px;
+  margin: 0;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.location-cell {
+  display: grid;
+  gap: 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.status {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.edit-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #4b5563;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.edit-button:hover {
+  background: #f3f4f6;
+}
+
+.empty-state {
+  padding: 80px 24px;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+}
+
+.empty-icon {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  font-size: 32px;
+}
+
+.empty-state h4 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 19px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 16px;
+}

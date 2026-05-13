@@ -1,0 +1,69 @@
+<section class="products-card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody *ngIf="products.length > 0">
+        <tr *ngFor="let product of products">
+          <td>
+            <div class="product-cell">
+              <img
+                *ngIf="getProductImage(product)"
+                [src]="getProductImage(product)"
+                [alt]="product.name"
+              />
+
+              <div *ngIf="!getProductImage(product)" class="image-placeholder">
+                🍔
+              </div>
+
+              <div>
+                <strong>{{ product.name }}</strong>
+                <p>{{ product.description || 'Sin descripción' }}</p>
+              </div>
+            </div>
+          </td>
+
+          <td>
+            <span class="category-pill">
+              {{ getCategoryName(product.categoryId) }}
+            </span>
+          </td>
+
+          <td>
+            <span class="price">
+              ${{ product.price }}
+            </span>
+          </td>
+
+          <td>
+            <span class="status">
+              <span class="toggle-icon">▰</span>
+              Disponible
+            </span>
+          </td>
+
+          <td>
+            <button type="button" class="edit-button" title="Editar producto">
+              ✎
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="products.length === 0" class="empty-state">
+    <div class="empty-icon">🍽</div>
+    <h4>No hay productos todavía</h4>
+    <p>Agrega tu primer producto para empezar a construir el menú.</p>
+  </div>
+</section>

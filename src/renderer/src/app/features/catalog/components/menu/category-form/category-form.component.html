@@ -1,0 +1,43 @@
+<section class="form-card">
+  <div class="form-header">
+    <h3>Nueva categoría</h3>
+    <p>Organiza tus productos por secciones del menú.</p>
+  </div>
+
+  <form class="form-grid" (ngSubmit)="submit()">
+    <label>
+      Nombre
+      <input
+        type="text"
+        name="categoryName"
+        [(ngModel)]="form.name"
+        placeholder="Ej. Hamburguesas"
+        required
+      />
+    </label>
+
+    <label>
+      Descripción
+      <textarea
+        name="categoryDescription"
+        [(ngModel)]="form.description"
+        placeholder="Descripción breve"
+      ></textarea>
+    </label>
+
+    <label>
+      Orden
+      <input
+        type="number"
+        min="0"
+        name="categoryDisplayOrder"
+        [(ngModel)]="form.displayOrder"
+        placeholder="Ej. 1"
+      />
+    </label>
+
+    <button type="submit" [disabled]="saving">
+      {{ saving ? 'Creando...' : 'Crear categoría' }}
+    </button>
+  </form>
+</section>

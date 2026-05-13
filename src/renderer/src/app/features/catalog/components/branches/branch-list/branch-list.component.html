@@ -1,0 +1,104 @@
+<section class="branches-card">
+  <div class="branches-card-header">
+    <div>
+      <h3>Sucursales</h3>
+      <p>{{ branches.length }} sucursales registradas</p>
+    </div>
+  </div>
+
+  <div
+    *ngIf="branches.length === 0"
+    class="empty-state"
+  >
+    <div class="empty-icon">📍</div>
+
+    <h4>No hay sucursales todavía</h4>
+
+    <p>
+      Agrega una sucursal para empezar a administrar ubicaciones.
+    </p>
+  </div>
+
+  <div
+    *ngIf="branches.length > 0"
+    class="table-wrapper"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>Sucursal</th>
+          <th>Dirección</th>
+          <th>Teléfono</th>
+          <th>Ubicación</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let branch of branches">
+          <td>
+            <div class="branch-main">
+              <div class="branch-avatar">
+                {{ branch.name.charAt(0) }}
+              </div>
+
+              <div>
+                <strong>
+                  {{ branch.name }}
+                </strong>
+
+                <span
+                  *ngIf="branch.isMainBranch"
+                  class="main-badge"
+                >
+                  Principal
+                </span>
+              </div>
+            </div>
+          </td>
+
+          <td>
+            <p class="address">
+              {{ branch.formattedAddress }}
+            </p>
+          </td>
+
+          <td>
+            <span class="muted">
+              {{ branch.phoneNumber || 'Sin teléfono' }}
+            </span>
+          </td>
+
+          <td>
+            <div class="location-cell">
+              <span>
+                Lat: {{ branch.latitude }}
+              </span>
+
+              <span>
+                Lng: {{ branch.longitude }}
+              </span>
+            </div>
+          </td>
+
+          <td>
+            <span class="status">
+              Activa
+            </span>
+          </td>
+
+          <td>
+            <button
+              type="button"
+              class="edit-button"
+              title="Editar sucursal"
+            >
+              ✎
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

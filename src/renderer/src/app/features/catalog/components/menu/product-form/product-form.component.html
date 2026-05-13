@@ -1,0 +1,143 @@
+<section class="form-card">
+  <div class="form-header">
+    <h3>Nuevo producto</h3>
+    <p>Agrega un producto al menú del restaurante.</p>
+  </div>
+
+  <p *ngIf="categories.length === 0" class="warning">
+    Primero necesitas crear una categoría.
+  </p>
+
+  <form class="form-grid" (ngSubmit)="submit()">
+    <label>
+      Categoría
+      <select
+        name="productCategoryId"
+        [(ngModel)]="form.categoryId"
+        required
+      >
+        <option value="">Selecciona una categoría</option>
+        <option *ngFor="let category of categories" [value]="category.id">
+          {{ category.name }}
+        </option>
+      </select>
+    </label>
+
+    <label>
+      Nombre
+      <input
+        type="text"
+        name="productName"
+        [(ngModel)]="form.name"
+        placeholder="Ej. Hamburguesa clásica"
+        required
+      />
+    </label>
+
+    <label>
+      Descripción
+      <textarea
+        name="productDescription"
+        [(ngModel)]="form.description"
+        placeholder="Descripción breve del producto"
+      ></textarea>
+    </label>
+
+    <div class="form-row">
+      <label>
+        Tipo
+        <select name="productType" [(ngModel)]="form.productType">
+          <option value="SIMPLE">Simple</option>
+          <option value="CUSTOMIZABLE">Personalizable</option>
+        </select>
+      </label>
+
+      <label>
+        Precio
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          name="productPrice"
+          [(ngModel)]="form.price"
+          placeholder="Ej. 120"
+          required
+        />
+      </label>
+    </div>
+
+    <label>
+      URL de imagen
+      <input
+        type="text"
+        name="productImageUrl"
+        [(ngModel)]="form.imageUrl"
+        placeholder="https://cdn.tap2eat.com/products/producto.jpg"
+      />
+    </label>
+
+    <label>
+      Object key de imagen
+      <input
+        type="text"
+        name="productImageObjectKey"
+        [(ngModel)]="form.imageObjectKey"
+        placeholder="products/producto.jpg"
+      />
+    </label>
+
+    <label>
+      Orden
+      <input
+        type="number"
+        min="0"
+        name="productDisplayOrder"
+        [(ngModel)]="form.displayOrder"
+        placeholder="Ej. 1"
+      />
+    </label>
+
+    <label>
+      Tags separados por coma
+      <input
+        type="text"
+        name="productTags"
+        [(ngModel)]="form.tags"
+        placeholder="popular, burger"
+      />
+    </label>
+
+    <label>
+      Dietary flags separados por coma
+      <input
+        type="text"
+        name="productDietaryFlags"
+        [(ngModel)]="form.dietaryFlags"
+        placeholder="vegetarian, spicy"
+      />
+    </label>
+
+    <label>
+      Alérgenos separados por coma
+      <input
+        type="text"
+        name="productAllergens"
+        [(ngModel)]="form.allergens"
+        placeholder="gluten, dairy"
+      />
+    </label>
+
+    <label class="checkbox-label">
+      <input
+        type="checkbox"
+        name="productFeatured"
+        [(ngModel)]="form.featured"
+      />
+      Marcar como destacado
+    </label>
+
+    <button type="submit" [disabled]="saving || categories.length === 0">
+      {{ saving ? 'Creando...' : 'Crear producto' }}
+    </button>
+  </form>
+</section>

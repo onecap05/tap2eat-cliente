@@ -6,7 +6,7 @@ import { LoginComponent } from './components/login/login.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { OwnerCatalogDashboardComponent } from './features/catalog/pages/OwnerCatalogDashboardComponent';
+import { OwnerDashboardComponent } from './features/catalog/pages/owner-dashboard/owner-dashboard.component';
 
 import { authGuard } from './guards/auth.guard';
 
@@ -32,19 +32,19 @@ export const routes: Routes = [
     component: ResetPasswordComponent
   },
   {
-  path: 'customer/dashboard',
-  component: DashboardComponent,
-  canActivate: [authGuard]
-},
-{
-  path: 'owner/dashboard',
-  component: OwnerCatalogDashboardComponent,
-  canActivate: [authGuard]
-},
+    path: 'customer/dashboard',
+    component: DashboardComponent,
+    canActivate: [authGuard]
+  },
   {
-  path: 'catalog',
-  component: OwnerCatalogDashboardComponent,
-  canActivate: [authGuard]
+    path: 'owner/dashboard',
+    component: OwnerDashboardComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'catalog',
+    redirectTo: 'owner/dashboard',
+    pathMatch: 'full'
   },
   {
     path: '',

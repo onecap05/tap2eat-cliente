@@ -1,0 +1,55 @@
+<div class="owner-shell">
+  <app-owner-sidebar
+    [activeSection]="activeSection"
+    (sectionChange)="setSection($event)"
+  />
+
+  <main class="owner-main">
+    <section *ngIf="loading && !restaurant && !showCreateRestaurantForm" class="state-card">
+      Cargando información del restaurante...
+    </section>
+
+    <section *ngIf="errorMessage" class="error-card">
+      {{ errorMessage }}
+    </section>
+
+    <app-restaurant-form
+      *ngIf="showCreateRestaurantForm"
+      [saving]="creatingRestaurant"
+      (createRestaurant)="createRestaurant($event)"
+    />
+
+    <ng-container *ngIf="restaurant">
+      <app-restaurant-summary-card [restaurant]="restaurant" />
+
+      <app-dashboard-overview
+        *ngIf="activeSection === 'dashboard'"
+        [restaurant]="restaurant"
+        [branches]="branches"
+        [categories]="categories"
+        [products]="products"
+      />
+
+      <app-orders-preview
+        *ngIf="activeSection === 'orders'"
+      />
+
+      <app-menu-management
+        *ngIf="activeSection === 'menu'"
+        [categories]="categories"
+        [products]="products"
+        [creatingCategory]="creatingCategory"
+        [creatingProduct]="creatingProduct"
+        (createCategory)="createCategory($event)"
+        (createProduct)="createProduct($event)"
+      />
+
+      <app-branch-management
+        *ngIf="activeSection === 'branches'"
+        [branches]="branches"
+        [creatingBranch]="creatingBranch"
+        (createBranch)="createBranch($event)"
+      />
+    </ng-container>
+  </main>
+</div>

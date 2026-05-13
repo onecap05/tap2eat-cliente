@@ -1,0 +1,53 @@
+<section class="empty-card">
+  <div class="form-header">
+    <span class="eyebrow">Configuración inicial</span>
+    <h1>Crea tu restaurante</h1>
+    <p>Este owner todavía no tiene un restaurante activo registrado.</p>
+  </div>
+
+  <form class="form-grid" (ngSubmit)="submit()">
+    <label>
+      Nombre del restaurante
+      <input
+        type="text"
+        name="restaurantName"
+        [(ngModel)]="form.name"
+        placeholder="Ej. Burger Palace"
+        required
+      />
+    </label>
+
+    <label>
+      Descripción
+      <textarea
+        name="restaurantDescription"
+        [(ngModel)]="form.description"
+        placeholder="Describe brevemente tu restaurante"
+      ></textarea>
+    </label>
+
+    <label>
+      URL del logo
+      <input
+        type="text"
+        name="restaurantLogoUrl"
+        [(ngModel)]="form.logoUrl"
+        placeholder="https://cdn.tap2eat.com/restaurants/logo.jpg"
+      />
+    </label>
+
+    <label>
+      Object key del logo
+      <input
+        type="text"
+        name="restaurantLogoObjectKey"
+        [(ngModel)]="form.logoObjectKey"
+        placeholder="restaurants/logo.jpg"
+      />
+    </label>
+
+    <button type="submit" [disabled]="saving">
+      {{ saving ? 'Creando...' : 'Crear restaurante' }}
+    </button>
+  </form>
+</section>

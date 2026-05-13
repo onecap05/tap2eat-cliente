@@ -1,0 +1,36 @@
+<section class="menu-page">
+  <header class="menu-header">
+    <div>
+      <h2>Gestión de Menú</h2>
+      <p>Administra tus productos y precios</p>
+    </div>
+
+    <button type="button" class="add-product-button" (click)="toggleProductForm()">
+      <span>+</span>
+      {{ showProductForm ? 'Cancelar' : 'Agregar Producto' }}
+    </button>
+  </header>
+
+  <app-product-form
+    *ngIf="showProductForm"
+    [categories]="categories"
+    [saving]="creatingProduct"
+    (createProduct)="onCreateProduct($event)"
+  />
+
+  <app-product-table
+    [products]="products"
+    [categories]="categories"
+  />
+
+  <app-category-list
+    [categories]="categories"
+    (newCategory)="toggleCategoryForm()"
+  />
+
+  <app-category-form
+    *ngIf="showCategoryForm"
+    [saving]="creatingCategory"
+    (createCategory)="onCreateCategory($event)"
+  />
+</section>

@@ -1,0 +1,22 @@
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-logo">T2E</div>
+    <div>
+      <h2>Panel Restaurante</h2>
+      <p>Tap2Eat</p>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button
+      *ngFor="let item of items"
+      type="button"
+      class="nav-item"
+      [class.active]="activeSection === item.value"
+      (click)="selectSection(item.value)"
+    >
+      <span class="nav-icon">{{ item.icon }}</span>
+      <span>{{ item.label }}</span>
+    </button>
+  </nav>
+</aside>

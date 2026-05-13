@@ -1,0 +1,93 @@
+<section class="form-card">
+  <div class="form-header">
+    <h3>Nueva sucursal</h3>
+    <p>Agrega una ubicación donde tu restaurante atiende pedidos.</p>
+  </div>
+
+  <p *ngIf="errorMessage" class="form-error">
+    {{ errorMessage }}
+  </p>
+
+  <form class="form-grid" (ngSubmit)="submit()">
+    <label>
+      Nombre de la sucursal
+      <input
+        type="text"
+        name="branchName"
+        [(ngModel)]="form.name"
+        placeholder="Ej. Sucursal Centro"
+        required
+      />
+    </label>
+
+    <label>
+      Teléfono
+      <input
+        type="text"
+        name="branchPhoneNumber"
+        [(ngModel)]="form.phoneNumber"
+        placeholder="Ej. 2281234567"
+      />
+    </label>
+
+    <label>
+      Dirección
+      <input
+        type="text"
+        name="branchFormattedAddress"
+        [(ngModel)]="form.formattedAddress"
+        placeholder="Ej. Av. Enríquez 10, Centro, Xalapa, Veracruz"
+        required
+      />
+    </label>
+
+    <div class="form-row">
+      <label>
+        Latitud
+        <input
+          type="number"
+          step="any"
+          name="branchLatitude"
+          [(ngModel)]="form.latitude"
+          placeholder="Ej. 19.5438"
+          required
+        />
+      </label>
+
+      <label>
+        Longitud
+        <input
+          type="number"
+          step="any"
+          name="branchLongitude"
+          [(ngModel)]="form.longitude"
+          placeholder="Ej. -96.9101"
+          required
+        />
+      </label>
+    </div>
+
+    <label>
+      Google Place ID
+      <input
+        type="text"
+        name="branchGooglePlaceId"
+        [(ngModel)]="form.googlePlaceId"
+        placeholder="Opcional por ahora"
+      />
+    </label>
+
+    <label class="checkbox-label">
+      <input
+        type="checkbox"
+        name="branchIsMainBranch"
+        [(ngModel)]="form.isMainBranch"
+      />
+      Marcar como sucursal principal
+    </label>
+
+    <button type="submit" [disabled]="saving">
+      {{ saving ? 'Creando...' : 'Crear sucursal' }}
+    </button>
+  </form>
+</section>
