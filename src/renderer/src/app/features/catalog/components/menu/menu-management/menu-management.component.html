@@ -5,18 +5,15 @@
       <p>Administra tus productos y precios</p>
     </div>
 
-    <button type="button" class="add-product-button" (click)="toggleProductForm()">
+    <button
+      type="button"
+      class="add-product-button"
+      (click)="toggleProductForm()"
+    >
       <span>+</span>
-      {{ showProductForm ? 'Cancelar' : 'Agregar Producto' }}
+      Agregar Producto
     </button>
   </header>
-
-  <app-product-form
-    *ngIf="showProductForm"
-    [categories]="categories"
-    [saving]="creatingProduct"
-    (createProduct)="onCreateProduct($event)"
-  />
 
   <app-product-table
     [products]="products"
@@ -28,9 +25,28 @@
     (newCategory)="toggleCategoryForm()"
   />
 
-  <app-category-form
+  <app-owner-modal
+    *ngIf="showProductForm"
+    title="Nuevo producto"
+    subtitle="Agrega un producto al menú del restaurante."
+    (closeModal)="closeProductForm()"
+  >
+    <app-product-form
+      [categories]="categories"
+      [saving]="creatingProduct"
+      (createProduct)="onCreateProduct($event)"
+    />
+  </app-owner-modal>
+
+  <app-owner-modal
     *ngIf="showCategoryForm"
-    [saving]="creatingCategory"
-    (createCategory)="onCreateCategory($event)"
-  />
+    title="Nueva categoría"
+    subtitle="Organiza tus productos por secciones del menú."
+    (closeModal)="closeCategoryForm()"
+  >
+    <app-category-form
+      [saving]="creatingCategory"
+      (createCategory)="onCreateCategory($event)"
+    />
+  </app-owner-modal>
 </section>

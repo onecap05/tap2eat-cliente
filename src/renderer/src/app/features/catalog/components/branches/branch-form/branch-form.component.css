@@ -1,23 +1,10 @@
 .form-card {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 28px 32px;
-  margin-bottom: 32px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  padding: 28px 32px 32px;
 }
 
-.form-header h3 {
-  margin: 0 0 8px;
-  color: #111827;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.form-header p {
-  margin: 0 0 24px;
-  color: #6b7280;
-  font-size: 16px;
+.form-header {
+  display: none;
 }
 
 .form-error {

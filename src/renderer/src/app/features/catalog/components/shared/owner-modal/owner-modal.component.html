@@ -1,0 +1,24 @@
+<div class="modal-backdrop">
+  <section class="modal-card">
+    <header class="modal-header">
+      <div>
+        <h2>{{ title }}</h2>
+        <p *ngIf="subtitle">
+          {{ subtitle }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <ng-content />
+    </div>
+  </section>
+</div>

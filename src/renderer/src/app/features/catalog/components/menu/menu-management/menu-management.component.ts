@@ -10,6 +10,7 @@ import { ProductTableComponent } from '../product-table/product-table.component'
 import { CategoryListComponent } from '../category-list/category-list.component';
 import { CategoryFormComponent } from '../category-form/category-form.component';
 import { ProductFormComponent } from '../product-form/product-form.component';
+import { OwnerModalComponent } from '../../shared/owner-modal/owner-modal.component';
 
 @Component({
   selector: 'app-menu-management',
@@ -19,7 +20,8 @@ import { ProductFormComponent } from '../product-form/product-form.component';
     ProductTableComponent,
     CategoryListComponent,
     CategoryFormComponent,
-    ProductFormComponent
+    ProductFormComponent,
+    OwnerModalComponent
   ],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.css'
@@ -42,6 +44,14 @@ export class MenuManagementComponent {
 
   toggleProductForm(): void {
     this.showProductForm = !this.showProductForm;
+  }
+
+  closeCategoryForm(): void {
+    this.showCategoryForm = false;
+  }
+
+  closeProductForm(): void {
+    this.showProductForm = false;
   }
 
   onCreateCategory(request: Omit<ICreateCategoryRequest, 'restaurantId'>): void {

@@ -6,11 +6,17 @@ import { ICreateBranchRequest } from '../../../models/branch/ICreateBranchReques
 
 import { BranchListComponent } from '../branch-list/branch-list.component';
 import { BranchFormComponent } from '../branch-form/branch-form.component';
+import { OwnerModalComponent } from '../../shared/owner-modal/owner-modal.component';
 
 @Component({
   selector: 'app-branch-management',
   standalone: true,
-  imports: [CommonModule, BranchListComponent, BranchFormComponent],
+  imports: [
+    CommonModule,
+    BranchListComponent,
+    BranchFormComponent,
+    OwnerModalComponent
+  ],
   templateUrl: './branch-management.component.html',
   styleUrl: './branch-management.component.css'
 })
@@ -24,6 +30,10 @@ export class BranchManagementComponent {
 
   toggleBranchForm(): void {
     this.showBranchForm = !this.showBranchForm;
+  }
+
+  closeBranchForm(): void {
+    this.showBranchForm = false;
   }
 
   onCreateBranch(request: Omit<ICreateBranchRequest, 'restaurantId'>): void {
