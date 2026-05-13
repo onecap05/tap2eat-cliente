@@ -1,0 +1,169 @@
+.orders-header {
+  margin-bottom: 20px;
+}
+
+.orders-header h2 {
+  margin: 0 0 6px;
+  font-size: 30px;
+}
+
+.orders-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.filter-tabs button {
+  border: none;
+  border-radius: 14px;
+  padding: 11px 16px;
+  background: #ffffff;
+  color: #374151;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.filter-tabs button.active {
+  background: #267f53;
+  color: #ffffff;
+}
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.order-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.order-header h3 {
+  margin: 0 0 6px;
+}
+
+.order-header p,
+.order-header span {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.items-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  margin-bottom: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.order-total strong {
+  color: #267f53;
+  font-size: 18px;
+}
+
+.status-badge {
+  display: inline-block;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.status-badge.received {
+  background: rgba(252, 202, 89, 0.25);
+  color: #92400e;
+}
+
+.status-badge.preparing {
+  background: rgba(153, 183, 245, 0.25);
+  color: #1d4ed8;
+}
+
+.status-badge.ready {
+  background: rgba(38, 127, 83, 0.18);
+  color: #166534;
+}
+
+.status-badge.completed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.actions button {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actions .orange {
+  background: #f97316;
+}
+
+.actions .green {
+  background: #267f53;
+}
+
+.actions .gray {
+  background: #4b5563;
+}
+
+.empty-state {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 48px 24px;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.empty-state div {
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #6b7280;
+}

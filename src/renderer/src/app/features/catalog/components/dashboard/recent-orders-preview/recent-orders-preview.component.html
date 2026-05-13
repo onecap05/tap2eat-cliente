@@ -1,0 +1,21 @@
+<section class="recent-card">
+  <h3>Pedidos Recientes</h3>
+
+  <div class="orders-list">
+    <article *ngFor="let order of orders" class="order-row">
+      <div class="order-avatar">🛍</div>
+
+      <div class="order-info">
+        <strong>{{ order.customer }}</strong>
+        <span>Orden #{{ order.id }} · {{ order.items }} items</span>
+      </div>
+
+      <div class="order-total">
+        <strong>${{ order.total }}</strong>
+        <span>{{ order.time }}</span>
+      </div>
+
+      <span class="status">{{ order.status }}</span>
+    </article>
+  </div>
+</section>

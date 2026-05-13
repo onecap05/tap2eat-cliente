@@ -1,0 +1,24 @@
+<section class="restaurant-card">
+  <div class="restaurant-logo-wrapper">
+    <img
+      *ngIf="restaurant.logo?.url"
+      [src]="restaurant.logo?.url"
+      alt="Logo del restaurante"
+      class="restaurant-logo"
+    />
+
+    <div *ngIf="!restaurant.logo?.url" class="restaurant-logo placeholder">
+      {{ restaurant.name.charAt(0) }}
+    </div>
+  </div>
+
+  <div class="restaurant-info">
+    <span class="eyebrow">Restaurante activo</span>
+    <h1>{{ restaurant.name }}</h1>
+    <p>{{ restaurant.description || 'Sin descripción registrada.' }}</p>
+  </div>
+
+  <div class="restaurant-status">
+    <span class="badge">{{ restaurant.active ? 'Activo' : 'Inactivo' }}</span>
+  </div>
+</section>

@@ -1,0 +1,44 @@
+.branches-page {
+  width: 100%;
+}
+
+.branches-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 36px;
+}
+
+.branches-header h2 {
+  margin: 0 0 8px;
+  font-size: 38px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.branches-header p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 20px;
+}
+
+.add-branch-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 16px;
+  background: #267f53;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(38, 127, 83, 0.18);
+}
+
+.add-branch-button span {
+  font-size: 28px;
+  line-height: 1;
+}

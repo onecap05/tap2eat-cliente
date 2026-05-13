@@ -1,0 +1,27 @@
+<section class="branches-page">
+  <header class="branches-header">
+    <div>
+      <h2>Gestión de Sucursales</h2>
+      <p>Administra las ubicaciones físicas del restaurante</p>
+    </div>
+
+    <button
+      type="button"
+      class="add-branch-button"
+      (click)="toggleBranchForm()"
+    >
+      <span>+</span>
+      {{ showBranchForm ? 'Cancelar' : 'Nueva Sucursal' }}
+    </button>
+  </header>
+
+  <app-branch-form
+    *ngIf="showBranchForm"
+    [saving]="creatingBranch"
+    (createBranch)="onCreateBranch($event)"
+  />
+
+  <app-branch-list
+    [branches]="branches"
+  />
+</section>

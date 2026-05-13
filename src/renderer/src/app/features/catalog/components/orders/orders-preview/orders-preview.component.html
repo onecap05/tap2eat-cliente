@@ -1,0 +1,81 @@
+<section class="orders-header">
+  <div>
+    <h2>Gestión de Pedidos</h2>
+    <p>Vista temporal para el módulo de pedidos.</p>
+  </div>
+</section>
+
+<section class="filter-tabs">
+  <button
+    *ngFor="let filter of filters"
+    type="button"
+    [class.active]="selectedFilter === filter.value"
+    (click)="setFilter(filter.value)"
+  >
+    {{ filter.label }}
+  </button>
+</section>
+
+<section class="orders-grid">
+  <article *ngFor="let order of filteredOrders" class="order-card">
+    <header class="order-header">
+      <div>
+        <h3>Orden #{{ order.id }}</h3>
+        <p>👤 {{ order.customer }}</p>
+      </div>
+
+      <span>🕒 {{ order.time }}</span>
+    </header>
+
+    <div class="items-list">
+      <div *ngFor="let item of order.items" class="item-row">
+        <span>📦 {{ item.name }}</span>
+        <strong>x{{ item.quantity }}</strong>
+      </div>
+    </div>
+
+    <div class="order-total">
+      <span>Total</span>
+      <strong>${{ order.total }}</strong>
+    </div>
+
+    <span class="status-badge" [class]="order.status">
+      {{ getStatusLabel(order.status) }}
+    </span>
+
+    <div class="actions">
+      <button
+        *ngIf="order.status === 'received'"
+        type="button"
+        class="orange"
+        (click)="updateOrderStatus(order.id, 'preparing')"
+      >
+        Comenzar a preparar
+      </button>
+
+      <button
+        *ngIf="order.status === 'preparing'"
+        type="button"
+        class="green"
+        (click)="updateOrderStatus(order.id, 'ready')"
+      >
+        Marcar como listo
+      </button>
+
+      <button
+        *ngIf="order.status === 'ready'"
+        type="button"
+        class="gray"
+        (click)="updateOrderStatus(order.id, 'completed')"
+      >
+        Marcar como completado
+      </button>
+    </div>
+  </article>
+</section>
+
+<section *ngIf="filteredOrders.length === 0" class="empty-state">
+  <div>🛍</div>
+  <h3>No hay pedidos en esta categoría</h3>
+  <p>Cuando existan pedidos reales, aparecerán aquí.</p>
+</section>

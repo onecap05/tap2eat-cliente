@@ -1,0 +1,56 @@
+<section class="dashboard-header">
+  <div>
+    <h2>Dashboard</h2>
+    <p>Bienvenido, {{ restaurant.name }}</p>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card">
+    <div class="icon green">🛍</div>
+    <p>Pedidos Hoy</p>
+    <strong>28</strong>
+  </article>
+
+  <article class="stat-card">
+    <div class="icon blue">💵</div>
+    <p>Ingresos Hoy</p>
+    <strong>$920</strong>
+  </article>
+
+  <article class="stat-card">
+    <div class="icon orange">📍</div>
+    <p>Sucursales</p>
+    <strong>{{ branches.length }}</strong>
+  </article>
+
+  <article class="stat-card">
+    <div class="icon yellow">🍽</div>
+    <p>Productos</p>
+    <strong>{{ products.length }}</strong>
+  </article>
+</section>
+
+<section class="charts-grid">
+  <article class="chart-card">
+    <h3>Pedidos por Día</h3>
+    <div class="fake-chart bars">
+      <span style="height: 42%"></span>
+      <span style="height: 64%"></span>
+      <span style="height: 52%"></span>
+      <span style="height: 72%"></span>
+      <span style="height: 86%"></span>
+      <span style="height: 100%"></span>
+      <span style="height: 91%"></span>
+    </div>
+  </article>
+
+  <article class="chart-card">
+    <h3>Ingresos por Día</h3>
+    <div class="fake-chart line">
+      <div></div>
+    </div>
+  </article>
+</section>
+
+<app-recent-orders-preview />
