@@ -159,12 +159,66 @@
       </div>
     </div>
 
+    <div class="schedule-section">
+  <label class="checkbox-label">
+    <input
+      type="checkbox"
+      name="useSpecificSchedule"
+      [(ngModel)]="form.useSpecificSchedule"
+    />
+    Usar horario específico para este producto
+  </label>
+
+  <div *ngIf="form.useSpecificSchedule" class="schedule-days">
+    <div *ngFor="let day of scheduleForm" class="schedule-day">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          [name]="'schedule-' + day.dayOfWeek"
+          [(ngModel)]="day.enabled"
+        />
+        {{ day.label }}
+      </label>
+
+      <div class="schedule-time-row" *ngIf="day.enabled">
+        <label>
+          Inicio
+          <input
+            type="time"
+            [name]="'start-' + day.dayOfWeek"
+            [(ngModel)]="day.startTime"
+          />
+        </label>
+
+        <label>
+          Fin
+          <input
+            type="time"
+            [name]="'end-' + day.dayOfWeek"
+            [(ngModel)]="day.endTime"
+          />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <small class="hint">
+    Si no activas un horario específico, el producto quedará disponible según el horario general del restaurante.
+  </small>
+</div>
+
     <button
-      type="submit"
-      class="submit-button"
-      [disabled]="saving || uploadingImage || categories.length === 0"
-    >
-      {{ uploadingImage ? 'Subiendo imagen...' : saving ? 'Creando...' : 'Crear producto' }}
-    </button>
+  type="submit"
+  class="submit-button"
+  [disabled]="saving || uploadingImage || categories.length === 0"
+>
+  {{
+    uploadingImage
+      ? 'Subiendo imagen...'
+      : saving
+        ? isEditMode ? 'Guardando...' : 'Creando...'
+        : isEditMode ? 'Guardar cambios' : 'Crear producto'
+  }}
+</button>
   </form>
 </section>

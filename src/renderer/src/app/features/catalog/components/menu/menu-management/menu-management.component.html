@@ -8,7 +8,7 @@
     <button
       type="button"
       class="add-product-button"
-      (click)="toggleProductForm()"
+      (click)="openCreateProductForm()"
     >
       <span>+</span>
       Agregar Producto
@@ -16,9 +16,13 @@
   </header>
 
   <app-product-table
-    [products]="products"
-    [categories]="categories"
-  />
+  [products]="products"
+  [categories]="categories"
+  (editProduct)="openEditProductForm($event)"
+  (pauseProduct)="openPauseProductModal($event)"
+  (resumeProduct)="onResumeProduct($event)"
+  (deleteProduct)="onDeleteProduct($event)"
+/>
 
   <app-category-list
     [categories]="categories"
@@ -27,16 +31,62 @@
 
   <app-owner-modal
     *ngIf="showProductForm"
-    title="Nuevo producto"
-    subtitle="Agrega un producto al menú del restaurante."
+    [title]="selectedProductToEdit ? 'Editar producto' : 'Nuevo producto'"
+    [subtitle]="selectedProductToEdit ? 'Actualiza la información del producto.' : 'Agrega un producto al menú del restaurante.'"
     (closeModal)="closeProductForm()"
   >
     <app-product-form
       [categories]="categories"
-      [saving]="creatingProduct"
+      [saving]="creatingProduct || updatingProduct"
+      [productToEdit]="selectedProductToEdit"
       (createProduct)="onCreateProduct($event)"
+      (updateProduct)="onUpdateProduct($event)"
     />
   </app-owner-modal>
+
+  <app-owner-modal
+  *ngIf="selectedProductToPause"
+  title="Pausar producto"
+  subtitle="Indica por qué el producto no está disponible temporalmente."
+  (closeModal)="closePauseProductModal()"
+>
+  <form class="pause-form" (ngSubmit)="submitPauseProduct()">
+    <label>
+      Producto
+      <input
+        type="text"
+        [value]="selectedProductToPause.name"
+        disabled
+      />
+    </label>
+
+    <label>
+      Motivo
+      <select
+        name="temporaryReason"
+        [(ngModel)]="pauseForm.temporaryReason"
+        required
+      >
+        <option *ngFor="let option of pauseReasonOptions" [value]="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </label>
+
+    <label>
+      Detalle opcional
+      <textarea
+        name="temporaryReasonDetail"
+        [(ngModel)]="pauseForm.temporaryReasonDetail"
+        placeholder="Ej. Se agotó el pan artesanal."
+      ></textarea>
+    </label>
+
+    <button type="submit" [disabled]="pausingProduct">
+      {{ pausingProduct ? 'Pausando...' : 'Pausar producto' }}
+    </button>
+  </form>
+</app-owner-modal>
 
   <app-owner-modal
     *ngIf="showCategoryForm"
