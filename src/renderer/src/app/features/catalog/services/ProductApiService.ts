@@ -100,4 +100,33 @@ public resumeProduct(
     }
   );
 }
+  public deleteProduct(
+  productId: string,
+  restaurantId: string
+): Observable<IProductResponse> {
+  return this.http.patch<IProductResponse>(
+    `${this.baseUrl}/${productId}/delete`,
+    null,
+    {
+      params: {
+        restaurantId
+      }
+    }
+  );
+}
+
+public restoreProduct(
+  productId: string,
+  restaurantId: string
+): Observable<IProductResponse> {
+  return this.http.patch<IProductResponse>(
+    `${this.baseUrl}/${productId}/restore`,
+    null,
+    {
+      params: {
+        restaurantId
+      }
+    }
+  );
+}
 }
