@@ -28,6 +28,10 @@
               <div>
                 <strong>{{ product.name }}</strong>
                 <p>{{ product.description || 'Sin descripción' }}</p>
+
+                <small *ngIf="product.availability?.temporaryReasonDetail" class="pause-detail">
+                  {{ product.availability?.temporaryReasonDetail }}
+                </small>
               </div>
             </div>
           </td>
@@ -45,16 +49,56 @@
           </td>
 
           <td>
-            <span class="status">
+            <span
+              class="status"
+              [class.paused]="isPaused(product)"
+              [class.inactive]="!product.active"
+            >
               <span class="toggle-icon">▰</span>
-              Disponible
+              {{ getAvailabilityLabel(product) }}
             </span>
           </td>
 
           <td>
-            <button type="button" class="edit-button" title="Editar producto">
-              ✎
-            </button>
+            <div class="actions">
+              <button
+                type="button"
+                class="edit-button"
+                title="Editar producto"
+                (click)="onEditProduct(product)"
+              >
+                ✎
+              </button>
+
+              <button
+                *ngIf="product.active && !isPaused(product)"
+                type="button"
+                class="pause-button"
+                title="Pausar producto"
+                (click)="onPauseProduct(product)"
+              >
+                ⏸
+              </button>
+
+              <button
+                *ngIf="product.active && isPaused(product)"
+                type="button"
+                class="resume-button"
+                title="Reactivar producto"
+                (click)="onResumeProduct(product)"
+              >
+                ▶
+              </button>
+
+              <button
+                type="button"
+                class="delete-button"
+                title="Eliminar producto"
+                (click)="onDeleteProduct(product)"
+              >
+                🗑
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>

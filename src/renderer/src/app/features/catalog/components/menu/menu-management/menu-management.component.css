@@ -42,3 +42,48 @@
   font-size: 28px;
   line-height: 1;
 }
+.pause-form {
+  display: grid;
+  gap: 16px;
+  padding: 28px 32px 32px;
+  background: #ffffff;
+}
+
+.pause-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.pause-form input,
+.pause-form textarea,
+.pause-form select {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  background: #ffffff;
+  font: inherit;
+}
+
+.pause-form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.pause-form button {
+  width: fit-content;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 14px;
+  background: #92400e;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pause-form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

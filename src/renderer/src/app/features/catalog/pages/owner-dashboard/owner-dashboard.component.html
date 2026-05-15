@@ -40,8 +40,16 @@
         [products]="products"
         [creatingCategory]="creatingCategory"
         [creatingProduct]="creatingProduct"
+        [updatingProduct]="updatingProduct"
+        [productOperationVersion]="productOperationVersion"
         (createCategory)="createCategory($event)"
         (createProduct)="createProduct($event)"
+        (updateProduct)="updateProduct($event)"
+        (deactivateProduct)="deactivateProduct($event)"
+        [pausingProduct]="pausingProduct"
+        (pauseProduct)="pauseProduct($event)"
+        (resumeProduct)="resumeProduct($event)"
+        (deleteProduct)="deleteProduct($event)"
       />
 
       <app-branch-management
