@@ -50,9 +50,10 @@
 
           <td>
             <span
-              class="status"
-              [class.paused]="isPaused(product)"
-              [class.inactive]="!product.active"
+                class="status"
+                [class.paused]="isPaused(product)"
+                [class.out-of-schedule]="isOutOfSchedule(product)"
+                [class.inactive]="!product.active"
             >
               <span class="toggle-icon">▰</span>
               {{ getAvailabilityLabel(product) }}

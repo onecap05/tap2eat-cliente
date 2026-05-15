@@ -226,3 +226,12 @@ tr:hover {
   border-color: #991b1b;
   color: #991b1b;
 }
+
+.status.out-of-schedule {
+  color: #7c2d12;
+}
+
+.status.out-of-schedule .toggle-icon {
+  border-color: #7c2d12;
+  color: #7c2d12;
+}

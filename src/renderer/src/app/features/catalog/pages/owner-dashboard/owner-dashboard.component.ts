@@ -417,6 +417,32 @@ resumeProduct(product: IProductResponse): void {
 }
 
 deleteProduct(product: IProductResponse): void {
-  this.deactivateProduct(product);
+  if (!this.restaurant) {
+    this.errorMessage = 'Primero debes crear un restaurante.';
+    return;
+  }
+
+  this.deactivatingProduct = true;
+  this.errorMessage = '';
+
+  this.productApiService.deleteProduct(
+    product.id,
+    this.restaurant.id
+  ).subscribe({
+    next: (deletedProduct) => {
+      this.products = this.products.filter(existingProduct =>
+        existingProduct.id !== deletedProduct.id
+      );
+
+      this.deactivatingProduct = false;
+      this.changeDetectorRef.detectChanges();
+    },
+    error: (error) => {
+      console.error('Delete product error:', error);
+      this.deactivatingProduct = false;
+      this.errorMessage = 'No se pudo eliminar el producto.';
+      this.changeDetectorRef.detectChanges();
+    }
+  });
 }
 }
