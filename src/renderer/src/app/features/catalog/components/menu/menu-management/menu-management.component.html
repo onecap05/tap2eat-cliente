@@ -2,7 +2,7 @@
   <header class="menu-header">
     <div>
       <h2>Gestión de Menú</h2>
-      <p>Administra tus productos y precios</p>
+      <p>Administra tus productos, categorías, precios y orden del menú.</p>
     </div>
 
     <button
@@ -15,14 +15,39 @@
     </button>
   </header>
 
+  <div *ngIf="categories.length > 0" class="category-tabs">
+    <button
+      *ngFor="let category of orderedCategories"
+      type="button"
+      class="category-tab"
+      [class.active]="selectedCategoryId === category.id"
+      (click)="selectCategory(category.id)"
+    >
+      {{ category.name }}
+      <span>{{ productsByCategory(category.id).length }}</span>
+    </button>
+  </div>
+
+  <section class="selected-category-panel" *ngIf="selectedCategoryId">
+    <div>
+      <h3>{{ selectedCategoryName }}</h3>
+      <p>
+        Arrastra los productos para cambiar el orden dentro de esta categoría.
+        <span *ngIf="savingProductOrder">Guardando orden...</span>
+      </p>
+    </div>
+  </section>
+
   <app-product-table
-  [products]="products"
-  [categories]="categories"
-  (editProduct)="openEditProductForm($event)"
-  (pauseProduct)="openPauseProductModal($event)"
-  (resumeProduct)="onResumeProduct($event)"
-  (deleteProduct)="onDeleteProduct($event)"
-/>
+    [products]="selectedCategoryProducts"
+    [categories]="categories"
+    [reordering]="savingProductOrder"
+    (editProduct)="openEditProductForm($event)"
+    (pauseProduct)="openPauseProductModal($event)"
+    (resumeProduct)="onResumeProduct($event)"
+    (deleteProduct)="onDeleteProduct($event)"
+    (reorderProducts)="onReorderProducts($event)"
+  />
 
   <app-category-list
     [categories]="categories"
@@ -45,48 +70,48 @@
   </app-owner-modal>
 
   <app-owner-modal
-  *ngIf="selectedProductToPause"
-  title="Pausar producto"
-  subtitle="Indica por qué el producto no está disponible temporalmente."
-  (closeModal)="closePauseProductModal()"
->
-  <form class="pause-form" (ngSubmit)="submitPauseProduct()">
-    <label>
-      Producto
-      <input
-        type="text"
-        [value]="selectedProductToPause.name"
-        disabled
-      />
-    </label>
+    *ngIf="selectedProductToPause"
+    title="Pausar producto"
+    subtitle="Indica por qué el producto no está disponible temporalmente."
+    (closeModal)="closePauseProductModal()"
+  >
+    <form class="pause-form" (ngSubmit)="submitPauseProduct()">
+      <label>
+        Producto
+        <input
+          type="text"
+          [value]="selectedProductToPause.name"
+          disabled
+        />
+      </label>
 
-    <label>
-      Motivo
-      <select
-        name="temporaryReason"
-        [(ngModel)]="pauseForm.temporaryReason"
-        required
-      >
-        <option *ngFor="let option of pauseReasonOptions" [value]="option.value">
-          {{ option.label }}
-        </option>
-      </select>
-    </label>
+      <label>
+        Motivo
+        <select
+          name="temporaryReason"
+          [(ngModel)]="pauseForm.temporaryReason"
+          required
+        >
+          <option *ngFor="let option of pauseReasonOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
 
-    <label>
-      Detalle opcional
-      <textarea
-        name="temporaryReasonDetail"
-        [(ngModel)]="pauseForm.temporaryReasonDetail"
-        placeholder="Ej. Se agotó el pan artesanal."
-      ></textarea>
-    </label>
+      <label>
+        Detalle opcional
+        <textarea
+          name="temporaryReasonDetail"
+          [(ngModel)]="pauseForm.temporaryReasonDetail"
+          placeholder="Ej. Se agotó el pan artesanal."
+        ></textarea>
+      </label>
 
-    <button type="submit" [disabled]="pausingProduct">
-      {{ pausingProduct ? 'Pausando...' : 'Pausar producto' }}
-    </button>
-  </form>
-</app-owner-modal>
+      <button type="submit" [disabled]="pausingProduct">
+        {{ pausingProduct ? 'Pausando...' : 'Pausar producto' }}
+      </button>
+    </form>
+  </app-owner-modal>
 
   <app-owner-modal
     *ngIf="showCategoryForm"

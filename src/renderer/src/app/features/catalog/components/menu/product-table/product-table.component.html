@@ -1,8 +1,9 @@
 <section class="products-card">
-  <div class="table-wrapper">
+  <div *ngIf="products.length > 0" class="table-wrapper">
     <table>
       <thead>
         <tr>
+          <th>Orden</th>
           <th>Producto</th>
           <th>Categoría</th>
           <th>Precio</th>
@@ -11,8 +12,19 @@
         </tr>
       </thead>
 
-      <tbody *ngIf="products.length > 0">
-        <tr *ngFor="let product of products">
+      <tbody
+        cdkDropList
+        [cdkDropListData]="products"
+        (cdkDropListDropped)="dropProduct($event)"
+      >
+        <tr *ngFor="let product of products; let productIndex = index" cdkDrag>
+          <td>
+            <div class="order-cell" cdkDragHandle title="Arrastrar producto">
+              <span class="drag-handle">☰</span>
+              <strong>{{ productIndex + 1 }}</strong>
+            </div>
+          </td>
+
           <td>
             <div class="product-cell">
               <img
@@ -50,10 +62,10 @@
 
           <td>
             <span
-                class="status"
-                [class.paused]="isPaused(product)"
-                [class.out-of-schedule]="isOutOfSchedule(product)"
-                [class.inactive]="!product.active"
+              class="status"
+              [class.paused]="isPaused(product)"
+              [class.out-of-schedule]="isOutOfSchedule(product)"
+              [class.inactive]="!product.active"
             >
               <span class="toggle-icon">▰</span>
               {{ getAvailabilityLabel(product) }}
@@ -108,7 +120,7 @@
 
   <div *ngIf="products.length === 0" class="empty-state">
     <div class="empty-icon">🍽</div>
-    <h4>No hay productos todavía</h4>
-    <p>Agrega tu primer producto para empezar a construir el menú.</p>
+    <h4>No hay productos en esta categoría</h4>
+    <p>Agrega un producto o cambia de categoría.</p>
   </div>
 </section>

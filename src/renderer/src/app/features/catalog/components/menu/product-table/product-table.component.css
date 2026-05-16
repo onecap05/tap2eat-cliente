@@ -235,3 +235,46 @@ tr:hover {
   border-color: #7c2d12;
   color: #7c2d12;
 }
+
+.order-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drag-handle {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 900;
+  cursor: grab;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.cdk-drag-preview {
+  display: table;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+.cdk-drag-animating {
+  transition: transform 180ms ease;
+}
+
+tbody.cdk-drop-list-dragging tr:not(.cdk-drag-placeholder) {
+  transition: transform 180ms ease;
+}

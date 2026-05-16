@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 
@@ -19,16 +19,23 @@ import { ICreateRestaurantRequest } from '../../models/restaurant/ICreateRestaur
 import { ICreateBranchRequest } from '../../models/branch/ICreateBranchRequest';
 import { ICreateCategoryRequest } from '../../models/category/ICreateCategoryRequest';
 import { ICreateProductRequest } from '../../models/product/ICreateProductRequest';
+import { IUpdateProductRequest } from '../../models/product/IUpdateProductRequest';
+import { IPauseProductRequest } from '../../models/product/IPauseProductRequest';
+import { IReorderProductsRequest } from '../../models/product/IReorderProductsRequest';
 
-import { OwnerSidebarComponent, OwnerPanelSection } from '../../components/layout/owner-sidebar/owner-sidebar.component';
+import {
+  OwnerSidebarComponent,
+  OwnerPanelSection
+} from '../../components/layout/owner-sidebar/owner-sidebar.component';
 import { RestaurantSummaryCardComponent } from '../../components/restaurant/restaurant-summary-card/restaurant-summary-card.component';
-import { RestaurantFormComponent, RestaurantFormValue } from '../../components/restaurant/restaurant-form/restaurant-form.component';
+import {
+  RestaurantFormComponent,
+  RestaurantFormValue
+} from '../../components/restaurant/restaurant-form/restaurant-form.component';
 import { DashboardOverviewComponent } from '../../components/dashboard/dashboard-overview/dashboard-overview.component';
 import { MenuManagementComponent } from '../../components/menu/menu-management/menu-management.component';
 import { BranchManagementComponent } from '../../components/branches/branch-management/branch-management.component';
 import { OrdersPreviewComponent } from '../../components/orders/orders-preview/orders-preview.component';
-import { IUpdateProductRequest } from '../../models/product/IUpdateProductRequest';
-import { IPauseProductRequest } from '../../models/product/IPauseProductRequest';
 
 @Component({
   selector: 'app-owner-dashboard',
@@ -53,7 +60,6 @@ export class OwnerDashboardComponent implements OnInit {
   branches: IBranchResponse[] = [];
   categories: ICategoryResponse[] = [];
   products: IProductResponse[] = [];
-  
 
   loading = false;
   errorMessage = '';
@@ -67,6 +73,8 @@ export class OwnerDashboardComponent implements OnInit {
   updatingProduct = false;
   deactivatingProduct = false;
   pausingProduct = false;
+  savingProductOrder = false;
+
   productOperationVersion = 0;
 
   constructor(
@@ -105,13 +113,7 @@ export class OwnerDashboardComponent implements OnInit {
       ownerAccountId,
       name: formValue.name,
       description: formValue.description || null,
-      logo: formValue.logoUrl
-        ? {
-            url: formValue.logoUrl,
-            objectKey: formValue.logoObjectKey || 'restaurants/default-logo.jpg',
-            provider: formValue.logoProvider || 'CLOUDINARY'
-          }
-        : null
+      logo: this.buildRestaurantLogoRequest(formValue)
     };
 
     this.restaurantApiService.createRestaurant(request).subscribe({
@@ -207,11 +209,11 @@ export class OwnerDashboardComponent implements OnInit {
 
     this.productApiService.createProduct(finalRequest).subscribe({
       next: (product) => {
-  this.products = [...this.products, product];
-  this.creatingProduct = false;
-  this.productOperationVersion++;
-  this.changeDetectorRef.detectChanges();
-},
+        this.products = [...this.products, product];
+        this.creatingProduct = false;
+        this.productOperationVersion++;
+        this.changeDetectorRef.detectChanges();
+      },
       error: (error) => {
         console.error('Create product error:', error);
         this.creatingProduct = false;
@@ -222,66 +224,181 @@ export class OwnerDashboardComponent implements OnInit {
   }
 
   updateProduct(event: { productId: string; request: IUpdateProductRequest }): void {
-  if (!this.restaurant) {
-    this.errorMessage = 'Primero debes crear un restaurante.';
-    return;
+    if (!this.restaurant) {
+      this.errorMessage = 'Primero debes crear un restaurante.';
+      return;
+    }
+
+    this.updatingProduct = true;
+    this.errorMessage = '';
+
+    this.productApiService.updateProduct(
+      event.productId,
+      this.restaurant.id,
+      event.request
+    ).subscribe({
+      next: (updatedProduct) => {
+        this.products = this.replaceProduct(updatedProduct);
+        this.updatingProduct = false;
+        this.productOperationVersion++;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Update product error:', error);
+        this.updatingProduct = false;
+        this.errorMessage = 'No se pudo actualizar el producto.';
+        this.changeDetectorRef.detectChanges();
+      }
+    });
   }
 
-  this.updatingProduct = true;
-  this.errorMessage = '';
-
-  this.productApiService.updateProduct(
-    event.productId,
-    this.restaurant.id,
-    event.request
-  ).subscribe({
-    next: (updatedProduct) => {
-      this.products = this.products.map(product =>
-        product.id === updatedProduct.id ? updatedProduct : product
-      );
-
-      this.updatingProduct = false;
-      this.productOperationVersion++;
-      this.changeDetectorRef.detectChanges();
-    },
-    error: (error) => {
-      console.error('Update product error:', error);
-      this.updatingProduct = false;
-      this.errorMessage = 'No se pudo actualizar el producto.';
-      this.changeDetectorRef.detectChanges();
+  deactivateProduct(product: IProductResponse): void {
+    if (!this.restaurant) {
+      this.errorMessage = 'Primero debes crear un restaurante.';
+      return;
     }
-  });
-}
 
-deactivateProduct(product: IProductResponse): void {
-  if (!this.restaurant) {
-    this.errorMessage = 'Primero debes crear un restaurante.';
-    return;
+    this.deactivatingProduct = true;
+    this.errorMessage = '';
+
+    this.productApiService.deactivateProduct(product.id, this.restaurant.id).subscribe({
+      next: (updatedProduct) => {
+        this.products = this.products.filter(existingProduct =>
+          existingProduct.id !== updatedProduct.id
+        );
+
+        this.deactivatingProduct = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Deactivate product error:', error);
+        this.deactivatingProduct = false;
+        this.errorMessage = 'No se pudo desactivar el producto.';
+        this.changeDetectorRef.detectChanges();
+      }
+    });
   }
 
-  this.deactivatingProduct = true;
-  this.errorMessage = '';
-
-  this.productApiService.deactivateProduct(
-    product.id,
-    this.restaurant.id
-  ).subscribe({
-    next: (updatedProduct) => {
-      this.products = this.products.filter(existingProduct =>
-        existingProduct.id !== updatedProduct.id
-      );
-
-      this.deactivatingProduct = false;
-      this.changeDetectorRef.detectChanges();
-    },
-    error: (error) => {
-      console.error('Deactivate product error:', error);
-      this.deactivatingProduct = false;
-      this.errorMessage = 'No se pudo desactivar el producto.';
-      this.changeDetectorRef.detectChanges();
+  pauseProduct(event: { productId: string; request: IPauseProductRequest }): void {
+    if (!this.restaurant) {
+      this.errorMessage = 'Primero debes crear un restaurante.';
+      return;
     }
-  });
-}
+
+    this.pausingProduct = true;
+    this.errorMessage = '';
+
+    this.productApiService.pauseProduct(
+      event.productId,
+      this.restaurant.id,
+      event.request
+    ).subscribe({
+      next: (updatedProduct) => {
+        this.products = this.replaceProduct(updatedProduct);
+        this.pausingProduct = false;
+        this.productOperationVersion++;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Pause product error:', error);
+        this.pausingProduct = false;
+        this.errorMessage = 'No se pudo pausar el producto.';
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  resumeProduct(product: IProductResponse): void {
+    if (!this.restaurant) {
+      this.errorMessage = 'Primero debes crear un restaurante.';
+      return;
+    }
+
+    this.pausingProduct = true;
+    this.errorMessage = '';
+
+    this.productApiService.resumeProduct(product.id, this.restaurant.id).subscribe({
+      next: (updatedProduct) => {
+        this.products = this.replaceProduct(updatedProduct);
+        this.pausingProduct = false;
+        this.productOperationVersion++;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Resume product error:', error);
+        this.pausingProduct = false;
+        this.errorMessage = 'No se pudo reactivar el producto.';
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  deleteProduct(product: IProductResponse): void {
+    if (!this.restaurant) {
+      this.errorMessage = 'Primero debes crear un restaurante.';
+      return;
+    }
+
+    this.deactivatingProduct = true;
+    this.errorMessage = '';
+
+    this.productApiService.deleteProduct(product.id, this.restaurant.id).subscribe({
+      next: (deletedProduct) => {
+        this.products = this.products.filter(existingProduct =>
+          existingProduct.id !== deletedProduct.id
+        );
+
+        this.deactivatingProduct = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Delete product error:', error);
+        this.deactivatingProduct = false;
+        this.errorMessage = 'No se pudo eliminar el producto.';
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  onReorderProducts(request: Omit<IReorderProductsRequest, 'restaurantId'>): void {
+    if (!this.restaurant || this.savingProductOrder) {
+      return;
+    }
+
+    this.savingProductOrder = true;
+    this.errorMessage = '';
+
+    const finalRequest: IReorderProductsRequest = {
+      ...request,
+      restaurantId: this.restaurant.id
+    };
+
+    this.productApiService.reorderProducts(finalRequest)
+      .pipe(
+        finalize(() => {
+          this.savingProductOrder = false;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (updatedProducts) => {
+          this.products = this.products.map(product => {
+            const updatedProduct = updatedProducts.find(item => item.id === product.id);
+            return updatedProduct ?? product;
+          });
+
+          this.productOperationVersion++;
+        },
+        error: (error) => {
+          console.error('Reorder products error:', error);
+          this.errorMessage = 'No se pudo guardar el orden de los productos.';
+
+          if (this.restaurant) {
+            this.loadCatalogDetails(this.restaurant.id);
+          }
+        }
+      });
+  }
 
   private loadCatalog(): void {
     this.loading = true;
@@ -353,96 +470,21 @@ deactivateProduct(product: IProductResponse): void {
     return ownerAccountId;
   }
 
-  pauseProduct(event: { productId: string; request: IPauseProductRequest }): void {
-  if (!this.restaurant) {
-    this.errorMessage = 'Primero debes crear un restaurante.';
-    return;
+  private buildRestaurantLogoRequest(formValue: RestaurantFormValue) {
+    if (!formValue.logoUrl) {
+      return null;
+    }
+
+    return {
+      url: formValue.logoUrl,
+      objectKey: formValue.logoObjectKey || 'restaurants/default-logo.jpg',
+      provider: formValue.logoProvider || 'CLOUDINARY'
+    };
   }
 
-  this.pausingProduct = true;
-  this.errorMessage = '';
-
-  this.productApiService.pauseProduct(
-    event.productId,
-    this.restaurant.id,
-    event.request
-  ).subscribe({
-    next: (updatedProduct) => {
-      this.products = this.products.map(product =>
-        product.id === updatedProduct.id ? updatedProduct : product
-      );
-
-      this.pausingProduct = false;
-      this.productOperationVersion++;
-      this.changeDetectorRef.detectChanges();
-    },
-    error: (error) => {
-      console.error('Pause product error:', error);
-      this.pausingProduct = false;
-      this.errorMessage = 'No se pudo pausar el producto.';
-      this.changeDetectorRef.detectChanges();
-    }
-  });
-}
-
-resumeProduct(product: IProductResponse): void {
-  if (!this.restaurant) {
-    this.errorMessage = 'Primero debes crear un restaurante.';
-    return;
+  private replaceProduct(updatedProduct: IProductResponse): IProductResponse[] {
+    return this.products.map(product =>
+      product.id === updatedProduct.id ? updatedProduct : product
+    );
   }
-
-  this.pausingProduct = true;
-  this.errorMessage = '';
-
-  this.productApiService.resumeProduct(
-    product.id,
-    this.restaurant.id
-  ).subscribe({
-    next: (updatedProduct) => {
-      this.products = this.products.map(existingProduct =>
-        existingProduct.id === updatedProduct.id ? updatedProduct : existingProduct
-      );
-
-      this.pausingProduct = false;
-      this.productOperationVersion++;
-      this.changeDetectorRef.detectChanges();
-    },
-    error: (error) => {
-      console.error('Resume product error:', error);
-      this.pausingProduct = false;
-      this.errorMessage = 'No se pudo reactivar el producto.';
-      this.changeDetectorRef.detectChanges();
-    }
-  });
-}
-
-deleteProduct(product: IProductResponse): void {
-  if (!this.restaurant) {
-    this.errorMessage = 'Primero debes crear un restaurante.';
-    return;
-  }
-
-  this.deactivatingProduct = true;
-  this.errorMessage = '';
-
-  this.productApiService.deleteProduct(
-    product.id,
-    this.restaurant.id
-  ).subscribe({
-    next: (deletedProduct) => {
-      this.products = this.products.filter(existingProduct =>
-        existingProduct.id !== deletedProduct.id
-      );
-
-      this.deactivatingProduct = false;
-      this.changeDetectorRef.detectChanges();
-    },
-    error: (error) => {
-      console.error('Delete product error:', error);
-      this.deactivatingProduct = false;
-      this.errorMessage = 'No se pudo eliminar el producto.';
-      this.changeDetectorRef.detectChanges();
-    }
-  });
-}
 }

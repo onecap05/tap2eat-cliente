@@ -41,15 +41,17 @@
         [creatingCategory]="creatingCategory"
         [creatingProduct]="creatingProduct"
         [updatingProduct]="updatingProduct"
+        [pausingProduct]="pausingProduct"
+        [savingProductOrder]="savingProductOrder"
         [productOperationVersion]="productOperationVersion"
         (createCategory)="createCategory($event)"
         (createProduct)="createProduct($event)"
         (updateProduct)="updateProduct($event)"
         (deactivateProduct)="deactivateProduct($event)"
-        [pausingProduct]="pausingProduct"
         (pauseProduct)="pauseProduct($event)"
         (resumeProduct)="resumeProduct($event)"
         (deleteProduct)="deleteProduct($event)"
+        (reorderProducts)="onReorderProducts($event)"
       />
 
       <app-branch-management

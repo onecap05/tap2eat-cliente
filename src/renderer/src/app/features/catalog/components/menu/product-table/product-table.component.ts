@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 
 import { IProductResponse } from '../../../models/product/IProductResponse';
 import { ICategoryResponse } from '../../../models/category/ICategoryResponse';
@@ -16,18 +17,20 @@ type DayOfWeek =
 @Component({
   selector: 'app-product-table',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DragDropModule],
   templateUrl: './product-table.component.html',
   styleUrl: './product-table.component.css'
 })
 export class ProductTableComponent implements OnInit, OnDestroy {
   @Input() products: IProductResponse[] = [];
   @Input() categories: ICategoryResponse[] = [];
+  @Input() reordering = false;
 
   @Output() editProduct = new EventEmitter<IProductResponse>();
   @Output() pauseProduct = new EventEmitter<IProductResponse>();
   @Output() resumeProduct = new EventEmitter<IProductResponse>();
   @Output() deleteProduct = new EventEmitter<IProductResponse>();
+  @Output() reorderProducts = new EventEmitter<IProductResponse[]>();
 
   private now = new Date();
   private intervalId: number | null = null;
@@ -111,6 +114,18 @@ export class ProductTableComponent implements OnInit, OnDestroy {
     );
 
     return !isInsideAnyRange;
+  }
+
+  dropProduct(event: CdkDragDrop<IProductResponse[]>): void {
+    if (this.reordering) {
+      return;
+    }
+
+    const reorderedProducts = [...this.products];
+
+    moveItemInArray(reorderedProducts, event.previousIndex, event.currentIndex);
+
+    this.reorderProducts.emit(reorderedProducts);
   }
 
   onEditProduct(product: IProductResponse): void {
