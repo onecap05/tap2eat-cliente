@@ -50,7 +50,11 @@
     <div class="form-row">
       <label>
         Tipo
-        <select name="productType" [(ngModel)]="form.productType">
+        <select
+          name="productType"
+          [(ngModel)]="form.productType"
+          (ngModelChange)="onProductTypeChange()"
+        >
           <option value="SIMPLE">Simple</option>
           <option value="CUSTOMIZABLE">Personalizable</option>
         </select>
@@ -68,6 +72,217 @@
           required
         />
       </label>
+    </div>
+
+    <div *ngIf="isCustomizableProduct" class="modifier-section">
+      <div class="modifier-header">
+        <div>
+          <span class="field-title">Grupos de modificadores</span>
+          <small class="hint">
+            Configura las opciones que el cliente podrá elegir al ordenar este producto.
+          </small>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="addModifierGroup()"
+        >
+          Agregar grupo
+        </button>
+      </div>
+
+      <div
+        class="modifier-list"
+        cdkDropList
+        [cdkDropListData]="modifierGroups"
+        (cdkDropListDropped)="dropModifierGroup($event)"
+      >
+        <div
+          *ngFor="let group of modifierGroups; let groupIndex = index"
+          class="modifier-card"
+          cdkDrag
+        >
+          <div class="modifier-card-header">
+            <div class="modifier-title-area">
+              <span class="drag-handle" cdkDragHandle title="Arrastrar grupo">
+                ☰
+              </span>
+
+              <div class="modifier-title-content">
+                <strong>{{ getModifierGroupTitle(group, groupIndex) }}</strong>
+                <small class="hint">
+                  {{ getModifierGroupSummary(group) }}
+                </small>
+              </div>
+            </div>
+
+            <div class="modifier-header-actions">
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="toggleModifierGroup(group)"
+              >
+                {{ group.expanded ? 'Ocultar detalles' : 'Ver detalles' }}
+              </button>
+
+              <button
+                type="button"
+                class="danger-button"
+                (click)="removeModifierGroup(groupIndex)"
+              >
+                Quitar grupo
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="group.expanded" class="modifier-card-body">
+            <label>
+              Nombre del grupo
+              <input
+                type="text"
+                [name]="'modifier-group-name-' + groupIndex"
+                [(ngModel)]="group.name"
+                placeholder="Ej. Tipo de pan"
+              />
+            </label>
+
+            <div class="form-row">
+              <label>
+                Tipo de selección
+                <select
+                  [name]="'modifier-group-selection-' + groupIndex"
+                  [(ngModel)]="group.selectionType"
+                  (ngModelChange)="onModifierGroupSelectionTypeChange(group)"
+                >
+                  <option value="SINGLE">Selección única</option>
+                  <option value="MULTIPLE">Selección múltiple</option>
+                </select>
+              </label>
+
+              <label class="checkbox-label modifier-checkbox">
+                <input
+                  type="checkbox"
+                  [name]="'modifier-group-required-' + groupIndex"
+                  [(ngModel)]="group.required"
+                  (ngModelChange)="onModifierGroupRequiredChange(group)"
+                />
+                Requerido
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Mínimo
+                <input
+                  type="number"
+                  min="0"
+                  [name]="'modifier-group-min-' + groupIndex"
+                  [(ngModel)]="group.minSelections"
+                  [disabled]="isSingleSelection(group)"
+                />
+              </label>
+
+              <label>
+                Máximo
+                <input
+                  type="number"
+                  min="1"
+                  [name]="'modifier-group-max-' + groupIndex"
+                  [(ngModel)]="group.maxSelections"
+                  [disabled]="isSingleSelection(group)"
+                />
+              </label>
+            </div>
+
+            <small *ngIf="isSingleSelection(group)" class="hint">
+              En selección única el máximo siempre es 1. Si es requerido, el mínimo es 1; si es opcional, el mínimo es 0.
+            </small>
+
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [name]="'modifier-group-active-' + groupIndex"
+                [(ngModel)]="group.active"
+              />
+              Grupo activo
+            </label>
+
+            <div class="modifier-options">
+              <div class="modifier-options-header">
+                <span class="field-title">Opciones</span>
+
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="addModifierOption(groupIndex)"
+                >
+                  Agregar opción
+                </button>
+              </div>
+
+              <div
+                class="modifier-option-list"
+                cdkDropList
+                [cdkDropListData]="group.options"
+                (cdkDropListDropped)="dropModifierOption($event, groupIndex)"
+              >
+                <div
+                  *ngFor="let option of group.options; let optionIndex = index"
+                  class="modifier-option-row"
+                  cdkDrag
+                >
+                  <span
+                    class="drag-handle option-drag-handle"
+                    cdkDragHandle
+                    title="Arrastrar opción"
+                  >
+                    ☰
+                  </span>
+
+                  <label>
+                    Nombre
+                    <input
+                      type="text"
+                      [name]="'modifier-option-name-' + groupIndex + '-' + optionIndex"
+                      [(ngModel)]="option.name"
+                      placeholder="Ej. Queso extra"
+                    />
+                  </label>
+
+                  <label>
+                    Precio adicional
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      [name]="'modifier-option-price-' + groupIndex + '-' + optionIndex"
+                      [(ngModel)]="option.additionalPrice"
+                    />
+                  </label>
+
+                  <label class="checkbox-label option-active">
+                    <input
+                      type="checkbox"
+                      [name]="'modifier-option-active-' + groupIndex + '-' + optionIndex"
+                      [(ngModel)]="option.active"
+                    />
+                    Activa
+                  </label>
+
+                  <button
+                    type="button"
+                    class="danger-button"
+                    (click)="removeModifierOption(groupIndex, optionIndex)"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="image-upload">
@@ -160,65 +375,65 @@
     </div>
 
     <div class="schedule-section">
-  <label class="checkbox-label">
-    <input
-      type="checkbox"
-      name="useSpecificSchedule"
-      [(ngModel)]="form.useSpecificSchedule"
-    />
-    Usar horario específico para este producto
-  </label>
-
-  <div *ngIf="form.useSpecificSchedule" class="schedule-days">
-    <div *ngFor="let day of scheduleForm" class="schedule-day">
       <label class="checkbox-label">
         <input
           type="checkbox"
-          [name]="'schedule-' + day.dayOfWeek"
-          [(ngModel)]="day.enabled"
+          name="useSpecificSchedule"
+          [(ngModel)]="form.useSpecificSchedule"
         />
-        {{ day.label }}
+        Usar horario específico para este producto
       </label>
 
-      <div class="schedule-time-row" *ngIf="day.enabled">
-        <label>
-          Inicio
-          <input
-            type="time"
-            [name]="'start-' + day.dayOfWeek"
-            [(ngModel)]="day.startTime"
-          />
-        </label>
+      <div *ngIf="form.useSpecificSchedule" class="schedule-days">
+        <div *ngFor="let day of scheduleForm" class="schedule-day">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [name]="'schedule-' + day.dayOfWeek"
+              [(ngModel)]="day.enabled"
+            />
+            {{ day.label }}
+          </label>
 
-        <label>
-          Fin
-          <input
-            type="time"
-            [name]="'end-' + day.dayOfWeek"
-            [(ngModel)]="day.endTime"
-          />
-        </label>
+          <div class="schedule-time-row" *ngIf="day.enabled">
+            <label>
+              Inicio
+              <input
+                type="time"
+                [name]="'start-' + day.dayOfWeek"
+                [(ngModel)]="day.startTime"
+              />
+            </label>
+
+            <label>
+              Fin
+              <input
+                type="time"
+                [name]="'end-' + day.dayOfWeek"
+                [(ngModel)]="day.endTime"
+              />
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <small class="hint">
-    Si no activas un horario específico, el producto quedará disponible según el horario general del restaurante.
-  </small>
-</div>
+      <small class="hint">
+        Si no activas un horario específico, el producto quedará disponible según el horario general del restaurante.
+      </small>
+    </div>
 
     <button
-  type="submit"
-  class="submit-button"
-  [disabled]="saving || uploadingImage || categories.length === 0"
->
-  {{
-    uploadingImage
-      ? 'Subiendo imagen...'
-      : saving
-        ? isEditMode ? 'Guardando...' : 'Creando...'
-        : isEditMode ? 'Guardar cambios' : 'Crear producto'
-  }}
-</button>
+      type="submit"
+      class="submit-button"
+      [disabled]="saving || uploadingImage || categories.length === 0"
+    >
+      {{
+        uploadingImage
+          ? 'Subiendo imagen...'
+          : saving
+            ? isEditMode ? 'Guardando...' : 'Creando...'
+            : isEditMode ? 'Guardar cambios' : 'Crear producto'
+      }}
+    </button>
   </form>
 </section>

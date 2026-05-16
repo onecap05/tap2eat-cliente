@@ -1,5 +1,6 @@
 import { IAvailabilityConfigRequest } from '../commons/IAvailabilityConfigRequest';
 import { IImageMetadataRequest } from '../commons/IImageMetadataRequest';
+import { IModifierGroupRequest } from './IModifierGroupRequest';
 
 export type ProductTypeRequest = 'SIMPLE' | 'CUSTOMIZABLE';
 
@@ -11,7 +12,7 @@ export interface ICreateProductRequest {
   productType: ProductTypeRequest;
   price: number;
   image?: IImageMetadataRequest | null;
-  modifierGroups: unknown[];
+  modifierGroups: IModifierGroupRequest[];
   availability?: IAvailabilityConfigRequest | null;
   active: boolean;
   displayOrder?: number | null;

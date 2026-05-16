@@ -9,6 +9,7 @@ import {
   SimpleChanges
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { firstValueFrom } from 'rxjs';
 
 import { ICategoryResponse } from '../../../models/category/ICategoryResponse';
@@ -17,10 +18,17 @@ import { IUpdateProductRequest } from '../../../models/product/IUpdateProductReq
 import { IProductResponse } from '../../../models/product/IProductResponse';
 import { IImageMetadataRequest } from '../../../models/commons/IImageMetadataRequest';
 import {
+  IModifierGroupRequest,
+  SelectionTypeRequest
+} from '../../../models/product/IModifierGroupRequest';
+import { IModifierOptionRequest } from '../../../models/product/IModifierOptionRequest';
+import {
   DayOfWeekRequest,
   IDailyAvailabilityRequest
 } from '../../../models/commons/IAvailabilityConfigRequest';
 import { ImageUploadApiService } from '../../../services/ImageUploadApiService';
+
+type ProductTypeForm = 'SIMPLE' | 'CUSTOMIZABLE';
 
 type ScheduleFormDay = {
   dayOfWeek: DayOfWeekRequest;
@@ -30,10 +38,64 @@ type ScheduleFormDay = {
   endTime: string;
 };
 
+type SavedScheduleDay = {
+  dayOfWeek: string;
+  enabled: boolean;
+  timeRanges?: { startTime: string; endTime: string }[];
+};
+
+type ModifierOptionForm = {
+  id?: string | null;
+  name: string;
+  additionalPrice: string;
+  active: boolean;
+  displayOrder: number;
+};
+
+type ModifierGroupForm = {
+  id?: string | null;
+  name: string;
+  selectionType: SelectionTypeRequest;
+  required: boolean;
+  minSelections: number;
+  maxSelections: number;
+  active: boolean;
+  displayOrder: number;
+  expanded: boolean;
+  options: ModifierOptionForm[];
+};
+
+const DEFAULT_SCHEDULE_START_TIME = '08:00';
+const DEFAULT_SCHEDULE_END_TIME = '12:00';
+const DEFAULT_MODIFIER_OPTION_PRICE = '0';
+const DEFAULT_SINGLE_MAX_SELECTIONS = 1;
+const DEFAULT_OPTIONAL_MIN_SELECTIONS = 0;
+const DEFAULT_REQUIRED_MIN_SELECTIONS = 1;
+const DEFAULT_TEMPORARY_REASON = 'OPERATIONAL_PAUSE';
+const DEFAULT_TEMPORARY_REASON_DETAIL = 'Producto pausado temporalmente.';
+const MAX_IMAGE_SIZE_IN_MB = 5;
+const BYTES_PER_MB = 1024 * 1024;
+
+const PRODUCT_FORM_MESSAGES = {
+  requiredProductFields: 'Selecciona una categoría y escribe el nombre del producto.',
+  invalidProductPrice: 'El precio debe ser un número válido mayor o igual a 0.',
+  invalidImageFile: 'Selecciona un archivo de imagen válido.',
+  invalidImageSize: `La imagen no debe superar ${MAX_IMAGE_SIZE_IN_MB} MB.`,
+  saveProductFailed: 'No se pudo guardar el producto. Revisa la imagen, horario y modificadores.',
+  requiredScheduleDay: 'Selecciona al menos un día para el horario específico.',
+  invalidScheduleTimeRange: 'Revisa las horas del horario específico.',
+  requiredModifierGroup: 'Agrega al menos un grupo de modificadores para el producto personalizable.',
+  invalidModifierGroupName: 'Cada grupo de modificadores debe tener nombre.',
+  requiredModifierOption: 'Cada grupo activo debe tener al menos una opción activa.',
+  invalidModifierOptionName: 'Cada opción de modificador debe tener nombre.',
+  invalidModifierOptionPrice: 'El precio adicional de cada opción debe ser mayor o igual a 0.',
+  invalidModifierSelections: 'Revisa el mínimo y máximo de selecciones de los modificadores.'
+};
+
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DragDropModule],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.css'
 })
@@ -80,7 +142,7 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     categoryId: '',
     name: '',
     description: '',
-    productType: 'SIMPLE',
+    productType: 'SIMPLE' as ProductTypeForm,
     price: '',
     featured: false,
     available: true,
@@ -90,6 +152,7 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
   };
 
   scheduleForm: ScheduleFormDay[] = this.createEmptyScheduleForm();
+  modifierGroups: ModifierGroupForm[] = [];
 
   selectedImageFile: File | null = null;
   imagePreviewUrl: string | null = null;
@@ -104,6 +167,10 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
 
   get isEditMode(): boolean {
     return this.productToEdit !== null;
+  }
+
+  get isCustomizableProduct(): boolean {
+    return this.form.productType === 'CUSTOMIZABLE';
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -124,14 +191,14 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     }
 
     if (!this.form.categoryId || !this.form.name.trim()) {
-      this.errorMessage = 'Selecciona una categoría y escribe el nombre del producto.';
+      this.errorMessage = PRODUCT_FORM_MESSAGES.requiredProductFields;
       return;
     }
 
     const price = Number(this.form.price);
 
     if (Number.isNaN(price) || price < 0) {
-      this.errorMessage = 'El precio debe ser un número válido mayor o igual a 0.';
+      this.errorMessage = PRODUCT_FORM_MESSAGES.invalidProductPrice;
       return;
     }
 
@@ -142,18 +209,18 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
         categoryId: this.form.categoryId,
         name: this.form.name.trim(),
         description: this.form.description.trim() || null,
-        productType: this.form.productType as 'SIMPLE' | 'CUSTOMIZABLE',
+        productType: this.form.productType,
         price,
         image,
-        modifierGroups: this.productToEdit?.modifierGroups ?? [],
+        modifierGroups: this.buildModifierGroups(),
         availability: {
           status: this.form.available ? 'AVAILABLE' : 'TEMPORARILY_UNAVAILABLE',
           temporaryReason: this.form.available
             ? null
-            : this.productToEdit?.availability?.temporaryReason ?? 'OPERATIONAL_PAUSE',
+            : this.productToEdit?.availability?.temporaryReason ?? DEFAULT_TEMPORARY_REASON,
           temporaryReasonDetail: this.form.available
             ? null
-            : this.productToEdit?.availability?.temporaryReasonDetail ?? 'Producto pausado temporalmente.',
+            : this.productToEdit?.availability?.temporaryReasonDetail ?? DEFAULT_TEMPORARY_REASON_DETAIL,
           weeklySchedule: this.buildWeeklySchedule()
         },
         active: this.productToEdit?.active ?? true,
@@ -174,9 +241,121 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
       }
 
       this.createProduct.emit(request);
-    } catch {
-      this.errorMessage = 'No se pudo guardar el producto. Revisa la imagen y el horario.';
+    } catch (error) {
+      this.errorMessage = error instanceof Error
+        ? error.message
+        : PRODUCT_FORM_MESSAGES.saveProductFailed;
     }
+  }
+
+  onProductTypeChange(): void {
+    if (!this.isCustomizableProduct) {
+      this.modifierGroups = [];
+      return;
+    }
+
+    if (this.modifierGroups.length === 0) {
+      this.addModifierGroup();
+    }
+  }
+
+  addModifierGroup(): void {
+    this.modifierGroups = [
+      this.createEmptyModifierGroup(1),
+      ...this.modifierGroups
+    ];
+
+    this.renumberModifierGroups();
+  }
+
+  removeModifierGroup(index: number): void {
+  const confirmed = window.confirm('¿Seguro que quieres quitar este grupo de modificadores?');
+
+  if (!confirmed) {
+    return;
+  }
+
+  this.modifierGroups = this.modifierGroups.filter((_, currentIndex) => currentIndex !== index);
+  this.renumberModifierGroups();
+}
+
+  toggleModifierGroup(group: ModifierGroupForm): void {
+    group.expanded = !group.expanded;
+  }
+
+  getModifierGroupTitle(group: ModifierGroupForm, index: number): string {
+    return group.name.trim() || `Grupo ${index + 1}`;
+  }
+
+  getModifierGroupSummary(group: ModifierGroupForm): string {
+    const selectionTypeLabel = group.selectionType === 'SINGLE'
+      ? 'Selección única'
+      : 'Selección múltiple';
+
+    const requiredLabel = group.required ? 'Requerido' : 'Opcional';
+    const activeOptionsCount = group.options.filter(option => option.active).length;
+
+    return `${selectionTypeLabel} · ${requiredLabel} · ${activeOptionsCount} opciones activas`;
+  }
+
+  addModifierOption(groupIndex: number): void {
+    const group = this.modifierGroups[groupIndex];
+
+    if (!group) {
+      return;
+    }
+
+    group.options = [
+      this.createEmptyModifierOption(1),
+      ...group.options
+    ];
+
+    this.renumberModifierOptions(group);
+  }
+
+  removeModifierOption(groupIndex: number, optionIndex: number): void {
+  const confirmed = window.confirm('¿Seguro que quieres quitar esta opción?');
+
+  if (!confirmed) {
+    return;
+  }
+
+  const group = this.modifierGroups[groupIndex];
+
+  if (!group) {
+    return;
+  }
+
+  group.options = group.options.filter((_, currentIndex) => currentIndex !== optionIndex);
+  this.renumberModifierOptions(group);
+}
+
+  dropModifierGroup(event: CdkDragDrop<ModifierGroupForm[]>): void {
+    moveItemInArray(this.modifierGroups, event.previousIndex, event.currentIndex);
+    this.renumberModifierGroups();
+  }
+
+  dropModifierOption(event: CdkDragDrop<ModifierOptionForm[]>, groupIndex: number): void {
+    const group = this.modifierGroups[groupIndex];
+
+    if (!group) {
+      return;
+    }
+
+    moveItemInArray(group.options, event.previousIndex, event.currentIndex);
+    this.renumberModifierOptions(group);
+  }
+
+  onModifierGroupSelectionTypeChange(group: ModifierGroupForm): void {
+    this.applySelectionDefaults(group);
+  }
+
+  onModifierGroupRequiredChange(group: ModifierGroupForm): void {
+    this.applySelectionDefaults(group);
+  }
+
+  isSingleSelection(group: ModifierGroupForm): boolean {
+    return group.selectionType === 'SINGLE';
   }
 
   onImageSelected(event: Event): void {
@@ -190,16 +369,15 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     }
 
     if (!file.type.startsWith('image/')) {
-      this.errorMessage = 'Selecciona un archivo de imagen válido.';
+      this.errorMessage = PRODUCT_FORM_MESSAGES.invalidImageFile;
       input.value = '';
       return;
     }
 
-    const maxSizeInMb = 5;
-    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+    const maxSizeInBytes = MAX_IMAGE_SIZE_IN_MB * BYTES_PER_MB;
 
     if (file.size > maxSizeInBytes) {
-      this.errorMessage = `La imagen no debe superar ${maxSizeInMb} MB.`;
+      this.errorMessage = PRODUCT_FORM_MESSAGES.invalidImageSize;
       input.value = '';
       return;
     }
@@ -281,25 +459,126 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     const enabledDays = this.scheduleForm.filter(day => day.enabled);
 
     if (enabledDays.length === 0) {
-      throw new Error('At least one schedule day is required.');
+      throw new Error(PRODUCT_FORM_MESSAGES.requiredScheduleDay);
     }
 
-    return enabledDays.map(day => {
-      if (!day.startTime || !day.endTime || day.startTime >= day.endTime) {
-        throw new Error('Invalid schedule time range.');
-      }
+    return enabledDays.map(day => this.buildDailyAvailability(day));
+  }
 
-      return {
-        dayOfWeek: day.dayOfWeek,
-        enabled: true,
-        timeRanges: [
-          {
-            startTime: day.startTime,
-            endTime: day.endTime
-          }
-        ]
-      };
-    });
+  private buildDailyAvailability(day: ScheduleFormDay): IDailyAvailabilityRequest {
+    if (!day.startTime || !day.endTime || day.startTime >= day.endTime) {
+      throw new Error(PRODUCT_FORM_MESSAGES.invalidScheduleTimeRange);
+    }
+
+    return {
+      dayOfWeek: day.dayOfWeek,
+      enabled: true,
+      timeRanges: [
+        {
+          startTime: day.startTime,
+          endTime: day.endTime
+        }
+      ]
+    };
+  }
+
+  private buildModifierGroups(): IModifierGroupRequest[] {
+    if (!this.isCustomizableProduct) {
+      return [];
+    }
+
+    if (this.modifierGroups.length === 0) {
+      throw new Error(PRODUCT_FORM_MESSAGES.requiredModifierGroup);
+    }
+
+    return this.modifierGroups.map((group, index) => this.buildModifierGroup(group, index));
+  }
+
+  private buildModifierGroup(group: ModifierGroupForm, index: number): IModifierGroupRequest {
+    const normalizedGroup = this.normalizeModifierGroup(group);
+
+    this.validateModifierGroup(normalizedGroup);
+
+    return {
+      id: normalizedGroup.id ?? null,
+      name: normalizedGroup.name.trim(),
+      selectionType: normalizedGroup.selectionType,
+      minSelections: normalizedGroup.minSelections,
+      maxSelections: normalizedGroup.maxSelections,
+      required: normalizedGroup.required,
+      active: normalizedGroup.active,
+      displayOrder: index + 1,
+      options: normalizedGroup.options.map((option, optionIndex) =>
+        this.buildModifierOption(option, optionIndex)
+      )
+    };
+  }
+
+  private buildModifierOption(option: ModifierOptionForm, index: number): IModifierOptionRequest {
+    const additionalPrice = Number(option.additionalPrice);
+
+    if (!option.name.trim()) {
+      throw new Error(PRODUCT_FORM_MESSAGES.invalidModifierOptionName);
+    }
+
+    if (Number.isNaN(additionalPrice) || additionalPrice < 0) {
+      throw new Error(PRODUCT_FORM_MESSAGES.invalidModifierOptionPrice);
+    }
+
+    return {
+      id: option.id ?? null,
+      name: option.name.trim(),
+      additionalPrice,
+      active: option.active,
+      displayOrder: index + 1
+    };
+  }
+
+  private normalizeModifierGroup(group: ModifierGroupForm): ModifierGroupForm {
+    const normalizedGroup = { ...group };
+
+    this.applySelectionDefaults(normalizedGroup);
+
+    return normalizedGroup;
+  }
+
+  private applySelectionDefaults(group: ModifierGroupForm): void {
+    if (group.selectionType === 'SINGLE') {
+      group.maxSelections = DEFAULT_SINGLE_MAX_SELECTIONS;
+      group.minSelections = group.required
+        ? DEFAULT_REQUIRED_MIN_SELECTIONS
+        : DEFAULT_OPTIONAL_MIN_SELECTIONS;
+
+      return;
+    }
+
+    if (group.required && group.minSelections < DEFAULT_REQUIRED_MIN_SELECTIONS) {
+      group.minSelections = DEFAULT_REQUIRED_MIN_SELECTIONS;
+    }
+
+    if (group.maxSelections < group.minSelections) {
+      group.maxSelections = group.minSelections;
+    }
+  }
+
+  private validateModifierGroup(group: ModifierGroupForm): void {
+    if (!group.name.trim()) {
+      throw new Error(PRODUCT_FORM_MESSAGES.invalidModifierGroupName);
+    }
+
+    if (group.minSelections < 0 || group.maxSelections < group.minSelections) {
+      throw new Error(PRODUCT_FORM_MESSAGES.invalidModifierSelections);
+    }
+
+    const activeOptions = group.options.filter(option => option.active);
+
+    if (group.active && activeOptions.length === 0) {
+      throw new Error(PRODUCT_FORM_MESSAGES.requiredModifierOption);
+    }
+
+    if (group.active && group.maxSelections > activeOptions.length) {
+      throw new Error(PRODUCT_FORM_MESSAGES.invalidModifierSelections);
+    }
   }
 
   private loadProductToEdit(): void {
@@ -333,6 +612,7 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     }
 
     this.loadScheduleFromProduct();
+    this.loadModifierGroupsFromProduct();
   }
 
   private loadScheduleFromProduct(): void {
@@ -348,18 +628,45 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     this.form.useSpecificSchedule = true;
 
     for (const savedDay of weeklySchedule) {
-      const day = this.scheduleForm.find(item => item.dayOfWeek === savedDay.dayOfWeek);
-
-      if (!day) {
-        continue;
-      }
-
-      const firstRange = savedDay.timeRanges?.[0];
-
-      day.enabled = savedDay.enabled;
-      day.startTime = firstRange?.startTime ?? '08:00';
-      day.endTime = firstRange?.endTime ?? '12:00';
+      this.loadScheduleDay(savedDay);
     }
+  }
+
+  private loadScheduleDay(savedDay: SavedScheduleDay): void {
+    const day = this.scheduleForm.find(item => item.dayOfWeek === savedDay.dayOfWeek);
+
+    if (!day) {
+      return;
+    }
+
+    const firstRange = savedDay.timeRanges?.[0];
+
+    day.enabled = savedDay.enabled;
+    day.startTime = firstRange?.startTime ?? DEFAULT_SCHEDULE_START_TIME;
+    day.endTime = firstRange?.endTime ?? DEFAULT_SCHEDULE_END_TIME;
+  }
+
+  private loadModifierGroupsFromProduct(): void {
+    const groups = this.productToEdit?.modifierGroups ?? [];
+
+    this.modifierGroups = groups.map((group, index) => ({
+      id: group.id ?? null,
+      name: group.name,
+      selectionType: group.selectionType,
+      required: group.required,
+      minSelections: group.minSelections,
+      maxSelections: group.maxSelections,
+      active: group.active,
+      displayOrder: group.displayOrder ?? index + 1,
+      expanded: false,
+      options: group.options.map((option, optionIndex) => ({
+        id: option.id ?? null,
+        name: option.name,
+        additionalPrice: String(option.additionalPrice),
+        active: option.active,
+        displayOrder: option.displayOrder ?? optionIndex + 1
+      }))
+    }));
   }
 
   private createEmptyScheduleForm(): ScheduleFormDay[] {
@@ -367,8 +674,47 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
       dayOfWeek: day.value,
       label: day.label,
       enabled: false,
-      startTime: '08:00',
-      endTime: '12:00'
+      startTime: DEFAULT_SCHEDULE_START_TIME,
+      endTime: DEFAULT_SCHEDULE_END_TIME
+    }));
+  }
+
+  private createEmptyModifierGroup(displayOrder: number): ModifierGroupForm {
+    return {
+      name: '',
+      selectionType: 'SINGLE',
+      required: true,
+      minSelections: DEFAULT_REQUIRED_MIN_SELECTIONS,
+      maxSelections: DEFAULT_SINGLE_MAX_SELECTIONS,
+      active: true,
+      displayOrder,
+      expanded: true,
+      options: [
+        this.createEmptyModifierOption(1)
+      ]
+    };
+  }
+
+  private createEmptyModifierOption(displayOrder: number): ModifierOptionForm {
+    return {
+      name: '',
+      additionalPrice: DEFAULT_MODIFIER_OPTION_PRICE,
+      active: true,
+      displayOrder
+    };
+  }
+
+  private renumberModifierGroups(): void {
+    this.modifierGroups = this.modifierGroups.map((group, index) => ({
+      ...group,
+      displayOrder: index + 1
+    }));
+  }
+
+  private renumberModifierOptions(group: ModifierGroupForm): void {
+    group.options = group.options.map((option, index) => ({
+      ...option,
+      displayOrder: index + 1
     }));
   }
 
@@ -395,6 +741,7 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     };
 
     this.scheduleForm = this.createEmptyScheduleForm();
+    this.modifierGroups = [];
     this.selectedImageFile = null;
     this.imagePreviewUrl = null;
     this.currentImageMetadata = null;
