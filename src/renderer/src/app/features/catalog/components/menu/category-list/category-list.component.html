@@ -27,6 +27,16 @@
       >
         ✎
       </button>
+
+      <button
+        type="button"
+        class="delete-category-button"
+        title="Eliminar categoría"
+        [disabled]="deletingCategory"
+        (click)="requestDeleteCategory(category)"
+      >
+        🗑
+      </button>
     </div>
   </div>
 </section>

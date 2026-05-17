@@ -70,6 +70,7 @@ export class OwnerDashboardComponent implements OnInit {
   creatingBranch = false;
   creatingCategory = false;
   updatingCategory = false;
+  deletingCategory = false;
   creatingProduct = false;
 
   updatingProduct = false;
@@ -224,6 +225,36 @@ export class OwnerDashboardComponent implements OnInit {
       }
     });
   }
+
+  deleteCategory(category: ICategoryResponse): void {
+  if (!this.restaurant) {
+    this.errorMessage = 'Primero debes crear un restaurante.';
+    return;
+  }
+
+  this.deletingCategory = true;
+  this.errorMessage = '';
+
+  this.categoryApiService.deleteCategory(
+    category.id,
+    this.restaurant.id
+  ).subscribe({
+    next: (deletedCategory) => {
+      this.categories = this.categories.filter(existingCategory =>
+        existingCategory.id !== deletedCategory.id
+      );
+
+      this.deletingCategory = false;
+      this.changeDetectorRef.detectChanges();
+    },
+    error: (error) => {
+      console.error('Delete category error:', error);
+      this.deletingCategory = false;
+      this.errorMessage = 'No se pudo eliminar la categoría. Verifica que no tenga productos asociados.';
+      this.changeDetectorRef.detectChanges();
+    }
+  });
+}
 
   updateProduct(event: { productId: string; request: IUpdateProductRequest }): void {
     if (!this.restaurant) {

@@ -87,3 +87,25 @@
 .edit-category-button:hover {
   background: #e5e7eb;
 }
+
+.delete-category-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #991b1b;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.delete-category-button:hover {
+  background: #fee2e2;
+}
+
+.delete-category-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

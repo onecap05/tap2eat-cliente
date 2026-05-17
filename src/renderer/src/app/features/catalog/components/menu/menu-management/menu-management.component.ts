@@ -39,6 +39,7 @@ export class MenuManagementComponent implements OnChanges {
   @Input() products: IProductResponse[] = [];
   @Input() creatingCategory = false;
   @Input() updatingCategory = false;
+  @Input() deletingCategory = false;
   @Input() creatingProduct = false;
   @Input() updatingProduct = false;
   @Input() pausingProduct = false;
@@ -47,6 +48,7 @@ export class MenuManagementComponent implements OnChanges {
 
   @Output() createCategory = new EventEmitter<Omit<ICreateCategoryRequest, 'restaurantId'>>();
   @Output() updateCategory = new EventEmitter<{ categoryId: string; request: IUpdateCategoryRequest }>();
+  @Output() deleteCategory = new EventEmitter<ICategoryResponse>();
   @Output() createProduct = new EventEmitter<Omit<ICreateProductRequest, 'restaurantId'>>();
   @Output() updateProduct = new EventEmitter<{ productId: string; request: IUpdateProductRequest }>();
   @Output() deactivateProduct = new EventEmitter<IProductResponse>();
@@ -199,6 +201,23 @@ onUpdateCategory(event: { categoryId: string; request: IUpdateCategoryRequest })
 
     this.deactivateProduct.emit(product);
   }
+
+  onDeleteCategory(category: ICategoryResponse): void {
+  const productCount = this.productsByCategory(category.id).length;
+
+  if (productCount > 0) {
+    window.alert('No puedes eliminar esta categoría porque tiene productos asociados. Mueve o elimina esos productos antes de eliminarla.');
+    return;
+  }
+
+  const confirmed = window.confirm(`¿Seguro que deseas eliminar la categoría "${category.name}"?`);
+
+  if (!confirmed) {
+    return;
+  }
+
+  this.deleteCategory.emit(category);
+}
 
   openPauseProductModal(product: IProductResponse): void {
     this.selectedProductToPause = product;

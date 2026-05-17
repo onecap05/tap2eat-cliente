@@ -38,4 +38,16 @@ export class CategoryApiService {
     }
   );
 }
+
+public deleteCategory(categoryId: string, restaurantId: string): Observable<ICategoryResponse> {
+  return this.http.patch<ICategoryResponse>(
+    `${this.baseUrl}/${categoryId}/delete`,
+    null,
+    {
+      params: {
+        restaurantId
+      }
+    }
+  );
+}
 }

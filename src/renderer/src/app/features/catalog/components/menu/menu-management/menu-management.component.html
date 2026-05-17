@@ -54,9 +54,11 @@
   />
 
   <app-category-list
-    [categories]="categories"
-    (newCategory)="openCreateCategoryForm()"
-    (editCategory)="openEditCategoryForm($event)"
+  [categories]="categories"
+  [deletingCategory]="deletingCategory"
+  (newCategory)="openCreateCategoryForm()"
+  (editCategory)="openEditCategoryForm($event)"
+  (deleteCategory)="onDeleteCategory($event)"
   />
 
   <app-owner-modal
