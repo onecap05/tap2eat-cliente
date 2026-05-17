@@ -4,6 +4,10 @@
     <p>Organiza tus productos por secciones del menú.</p>
   </div>
 
+  <p *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </p>
+
   <form class="form-grid" (ngSubmit)="submit()">
     <label>
       Nombre
@@ -11,7 +15,7 @@
         type="text"
         name="categoryName"
         [(ngModel)]="form.name"
-        placeholder="Ej. Hamburguesas"
+        placeholder="Ej. Desayunos"
         required
       />
     </label>
@@ -36,8 +40,60 @@
       />
     </label>
 
+    <div class="schedule-section">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="useSpecificSchedule"
+          [(ngModel)]="form.useSpecificSchedule"
+        />
+        Usar horario específico para esta categoría
+      </label>
+
+      <div *ngIf="form.useSpecificSchedule" class="schedule-days">
+        <div *ngFor="let day of scheduleForm" class="schedule-day">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [name]="'category-schedule-' + day.dayOfWeek"
+              [(ngModel)]="day.enabled"
+            />
+            {{ day.label }}
+          </label>
+
+          <div class="schedule-time-row" *ngIf="day.enabled">
+            <label>
+              Inicio
+              <input
+                type="time"
+                [name]="'category-start-' + day.dayOfWeek"
+                [(ngModel)]="day.startTime"
+              />
+            </label>
+
+            <label>
+              Fin
+              <input
+                type="time"
+                [name]="'category-end-' + day.dayOfWeek"
+                [(ngModel)]="day.endTime"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <small class="hint">
+        Si no activas un horario específico, la categoría estará disponible según el horario general del restaurante.
+      </small>
+    </div>
+
     <button type="submit" [disabled]="saving">
-      {{ saving ? 'Creando...' : 'Crear categoría' }}
-    </button>
+  {{
+    saving
+      ? isEditMode ? 'Guardando...' : 'Creando...'
+      : isEditMode ? 'Guardar cambios' : 'Crear categoría'
+  }}
+</button>
   </form>
 </section>

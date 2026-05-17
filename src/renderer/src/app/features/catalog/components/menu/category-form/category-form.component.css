@@ -7,6 +7,14 @@
   display: none;
 }
 
+.error-message {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
 .form-grid {
   display: grid;
   gap: 16px;
@@ -43,4 +51,75 @@ button {
   color: #ffffff;
   font-weight: 800;
   cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+.hint {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.schedule-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.schedule-days {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-day {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.schedule-time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.schedule-time-row label {
+  min-width: 0;
+}
+
+.schedule-time-row input[type='time'] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  background: #ffffff;
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .schedule-time-row {
+    grid-template-columns: 1fr;
+  }
 }

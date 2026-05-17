@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 
 import { IProductResponse } from '../../../models/product/IProductResponse';
 import { ICategoryResponse } from '../../../models/category/ICategoryResponse';
+import { isOutOfSchedule } from '../../../utils/availability-schedule.utils';
 
 type DayOfWeek =
   | 'MONDAY'
@@ -16,18 +18,21 @@ type DayOfWeek =
 @Component({
   selector: 'app-product-table',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DragDropModule],
   templateUrl: './product-table.component.html',
   styleUrl: './product-table.component.css'
 })
 export class ProductTableComponent implements OnInit, OnDestroy {
   @Input() products: IProductResponse[] = [];
   @Input() categories: ICategoryResponse[] = [];
+  @Input() selectedCategory: ICategoryResponse | null = null;
+  @Input() reordering = false;
 
   @Output() editProduct = new EventEmitter<IProductResponse>();
   @Output() pauseProduct = new EventEmitter<IProductResponse>();
   @Output() resumeProduct = new EventEmitter<IProductResponse>();
   @Output() deleteProduct = new EventEmitter<IProductResponse>();
+  @Output() reorderProducts = new EventEmitter<IProductResponse[]>();
 
   private now = new Date();
   private intervalId: number | null = null;
@@ -56,6 +61,10 @@ export class ProductTableComponent implements OnInit, OnDestroy {
     if (!product.active) {
       return 'Eliminado';
     }
+
+    if (this.isSelectedCategoryUnavailable()) {
+  return this.getSelectedCategoryUnavailableLabel();
+}
 
     if (product.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
       return 'Pausado';
@@ -113,6 +122,18 @@ export class ProductTableComponent implements OnInit, OnDestroy {
     return !isInsideAnyRange;
   }
 
+  dropProduct(event: CdkDragDrop<IProductResponse[]>): void {
+    if (this.reordering) {
+      return;
+    }
+
+    const reorderedProducts = [...this.products];
+
+    moveItemInArray(reorderedProducts, event.previousIndex, event.currentIndex);
+
+    this.reorderProducts.emit(reorderedProducts);
+  }
+
   onEditProduct(product: IProductResponse): void {
     this.editProduct.emit(product);
   }
@@ -128,6 +149,62 @@ export class ProductTableComponent implements OnInit, OnDestroy {
   onDeleteProduct(product: IProductResponse): void {
     this.deleteProduct.emit(product);
   }
+
+  getCategoryNotice(): string | null {
+  if (!this.selectedCategory) {
+    return null;
+  }
+
+  if (!this.selectedCategory.active) {
+    return 'Esta categoría está eliminada. Sus productos no estarán disponibles para el cliente.';
+  }
+
+  if (this.selectedCategory.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
+    return 'Esta categoría está pausada temporalmente. Sus productos no estarán disponibles para el cliente.';
+  }
+
+  if (this.selectedCategory.availability?.status === 'PERMANENTLY_UNAVAILABLE') {
+    return 'Esta categoría no está disponible. Sus productos no estarán disponibles para el cliente.';
+  }
+
+  if (this.isSelectedCategoryOutOfSchedule()) {
+    return 'Esta categoría está fuera de horario. Sus productos se mostrarán como no disponibles para el cliente.';
+  }
+
+  return null;
+}
+
+isSelectedCategoryUnavailable(): boolean {
+  return Boolean(
+    this.selectedCategory
+    && (
+      !this.selectedCategory.active
+      || this.selectedCategory.availability?.status === 'TEMPORARILY_UNAVAILABLE'
+      || this.selectedCategory.availability?.status === 'PERMANENTLY_UNAVAILABLE'
+      || this.isSelectedCategoryOutOfSchedule()
+    )
+  );
+}
+
+isSelectedCategoryOutOfSchedule(): boolean {
+  return isOutOfSchedule(this.selectedCategory, this.now);
+}
+
+getSelectedCategoryUnavailableLabel(): string {
+  if (!this.selectedCategory?.active) {
+    return 'Categoría eliminada';
+  }
+
+  if (this.selectedCategory.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
+    return 'Categoría pausada';
+  }
+
+  if (this.selectedCategory.availability?.status === 'PERMANENTLY_UNAVAILABLE') {
+    return 'Categoría no disponible';
+  }
+
+  return 'Categoría fuera de horario';
+}
 
   private getCurrentDayOfWeek(): DayOfWeek {
     const day = this.now.getDay();

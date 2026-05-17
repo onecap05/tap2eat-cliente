@@ -7,6 +7,7 @@ import { IProductResponse } from '../models/product/IProductResponse';
 import { ICreateProductRequest } from '../models/product/ICreateProductRequest';
 import { IUpdateProductRequest } from '../models/product/IUpdateProductRequest';
 import { IPauseProductRequest } from '../models/product/IPauseProductRequest';
+import { IReorderProductsRequest } from '../models/product/IReorderProductsRequest';
 
 @Injectable({
   providedIn: 'root'
@@ -128,5 +129,8 @@ public restoreProduct(
       }
     }
   );
+}
+public reorderProducts(request: IReorderProductsRequest): Observable<IProductResponse[]> {
+  return this.http.patch<IProductResponse[]>(`${this.baseUrl}/reorder`, request);
 }
 }
