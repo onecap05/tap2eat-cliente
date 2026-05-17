@@ -278,3 +278,21 @@ tr:hover {
 tbody.cdk-drop-list-dragging tr:not(.cdk-drag-placeholder) {
   transition: transform 180ms ease;
 }
+
+.category-notice {
+  padding: 14px 18px;
+  border-bottom: 1px solid #fed7aa;
+  background: #ffedd5;
+  color: #7c2d12;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.status.category-unavailable {
+  color: #7c2d12;
+}
+
+.status.category-unavailable .toggle-icon {
+  border-color: #7c2d12;
+  color: #7c2d12;
+}

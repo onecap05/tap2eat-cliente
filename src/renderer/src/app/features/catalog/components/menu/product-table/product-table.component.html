@@ -1,4 +1,8 @@
 <section class="products-card">
+
+  <div *ngIf="getCategoryNotice()" class="category-notice">
+  {{ getCategoryNotice() }}
+</div>
   <div *ngIf="products.length > 0" class="table-wrapper">
     <table>
       <thead>
@@ -62,11 +66,12 @@
 
           <td>
             <span
-              class="status"
-              [class.paused]="isPaused(product)"
-              [class.out-of-schedule]="isOutOfSchedule(product)"
-              [class.inactive]="!product.active"
-            >
+  class="status"
+  [class.paused]="isPaused(product)"
+  [class.out-of-schedule]="isOutOfSchedule(product)"
+  [class.inactive]="!product.active"
+  [class.category-unavailable]="isSelectedCategoryUnavailable()"
+>
               <span class="toggle-icon">▰</span>
               {{ getAvailabilityLabel(product) }}
             </span>

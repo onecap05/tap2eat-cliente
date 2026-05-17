@@ -4,6 +4,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 
 import { IProductResponse } from '../../../models/product/IProductResponse';
 import { ICategoryResponse } from '../../../models/category/ICategoryResponse';
+import { isOutOfSchedule } from '../../../utils/availability-schedule.utils';
 
 type DayOfWeek =
   | 'MONDAY'
@@ -24,6 +25,7 @@ type DayOfWeek =
 export class ProductTableComponent implements OnInit, OnDestroy {
   @Input() products: IProductResponse[] = [];
   @Input() categories: ICategoryResponse[] = [];
+  @Input() selectedCategory: ICategoryResponse | null = null;
   @Input() reordering = false;
 
   @Output() editProduct = new EventEmitter<IProductResponse>();
@@ -59,6 +61,10 @@ export class ProductTableComponent implements OnInit, OnDestroy {
     if (!product.active) {
       return 'Eliminado';
     }
+
+    if (this.isSelectedCategoryUnavailable()) {
+  return this.getSelectedCategoryUnavailableLabel();
+}
 
     if (product.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
       return 'Pausado';
@@ -143,6 +149,62 @@ export class ProductTableComponent implements OnInit, OnDestroy {
   onDeleteProduct(product: IProductResponse): void {
     this.deleteProduct.emit(product);
   }
+
+  getCategoryNotice(): string | null {
+  if (!this.selectedCategory) {
+    return null;
+  }
+
+  if (!this.selectedCategory.active) {
+    return 'Esta categoría está eliminada. Sus productos no estarán disponibles para el cliente.';
+  }
+
+  if (this.selectedCategory.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
+    return 'Esta categoría está pausada temporalmente. Sus productos no estarán disponibles para el cliente.';
+  }
+
+  if (this.selectedCategory.availability?.status === 'PERMANENTLY_UNAVAILABLE') {
+    return 'Esta categoría no está disponible. Sus productos no estarán disponibles para el cliente.';
+  }
+
+  if (this.isSelectedCategoryOutOfSchedule()) {
+    return 'Esta categoría está fuera de horario. Sus productos se mostrarán como no disponibles para el cliente.';
+  }
+
+  return null;
+}
+
+isSelectedCategoryUnavailable(): boolean {
+  return Boolean(
+    this.selectedCategory
+    && (
+      !this.selectedCategory.active
+      || this.selectedCategory.availability?.status === 'TEMPORARILY_UNAVAILABLE'
+      || this.selectedCategory.availability?.status === 'PERMANENTLY_UNAVAILABLE'
+      || this.isSelectedCategoryOutOfSchedule()
+    )
+  );
+}
+
+isSelectedCategoryOutOfSchedule(): boolean {
+  return isOutOfSchedule(this.selectedCategory, this.now);
+}
+
+getSelectedCategoryUnavailableLabel(): string {
+  if (!this.selectedCategory?.active) {
+    return 'Categoría eliminada';
+  }
+
+  if (this.selectedCategory.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
+    return 'Categoría pausada';
+  }
+
+  if (this.selectedCategory.availability?.status === 'PERMANENTLY_UNAVAILABLE') {
+    return 'Categoría no disponible';
+  }
+
+  return 'Categoría fuera de horario';
+}
 
   private getCurrentDayOfWeek(): DayOfWeek {
     const day = this.now.getDay();

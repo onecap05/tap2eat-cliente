@@ -16,6 +16,7 @@ import { ProductFormComponent } from '../product-form/product-form.component';
 import { OwnerModalComponent } from '../../shared/owner-modal/owner-modal.component';
 import { IPauseProductRequest } from '../../../models/product/IPauseProductRequest';
 import { TemporaryUnavailabilityReason } from '../../../models/commons/IAvailabilityConfigResponse';
+import { isOutOfSchedule } from '../../../utils/availability-schedule.utils';
 
 @Component({
   selector: 'app-menu-management',
@@ -87,6 +88,10 @@ export class MenuManagementComponent implements OnChanges {
   get selectedCategoryName(): string {
     const category = this.categories.find(item => item.id === this.selectedCategoryId);
     return category?.name ?? 'Sin categoría seleccionada';
+  }
+
+  get selectedCategory(): ICategoryResponse | null {
+    return this.categories.find(category => category.id === this.selectedCategoryId) ?? null;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -221,6 +226,34 @@ export class MenuManagementComponent implements OnChanges {
 
     this.deleteProduct.emit(product);
   }
+
+  getCategoryAvailabilityLabel(category: ICategoryResponse): string {
+  if (!category.active) {
+    return 'Eliminada';
+  }
+
+  if (category.availability?.status === 'TEMPORARILY_UNAVAILABLE') {
+    return 'Pausada';
+  }
+
+  if (category.availability?.status === 'PERMANENTLY_UNAVAILABLE') {
+    return 'No disponible';
+  }
+
+  if (this.isCategoryOutOfSchedule(category)) {
+    return 'Fuera de horario';
+  }
+
+  return 'Disponible';
+}
+
+isCategoryOutOfSchedule(category: ICategoryResponse): boolean {
+  return isOutOfSchedule(category);
+}
+
+isCategoryPaused(category: ICategoryResponse): boolean {
+  return category.availability?.status === 'TEMPORARILY_UNAVAILABLE';
+}
 
   private ensureSelectedCategory(): void {
     if (this.selectedCategoryId && this.categories.some(category => category.id === this.selectedCategoryId)) {
