@@ -17,15 +17,20 @@
 
   <div *ngIf="categories.length > 0" class="category-tabs">
     <button
-      *ngFor="let category of orderedCategories"
-      type="button"
-      class="category-tab"
-      [class.active]="selectedCategoryId === category.id"
-      (click)="selectCategory(category.id)"
-    >
-      {{ category.name }}
-      <span>{{ productsByCategory(category.id).length }}</span>
-    </button>
+  *ngFor="let category of orderedCategories"
+  type="button"
+  class="category-tab"
+  [class.active]="selectedCategoryId === category.id"
+  [class.paused]="isCategoryPaused(category)"
+  [class.out-of-schedule]="isCategoryOutOfSchedule(category)"
+  (click)="selectCategory(category.id)"
+>
+  <strong>{{ category.name }}</strong>
+
+  <small>{{ getCategoryAvailabilityLabel(category) }}</small>
+
+  <span>{{ productsByCategory(category.id).length }}</span>
+</button>
   </div>
 
   <section class="selected-category-panel" *ngIf="selectedCategoryId">
@@ -39,15 +44,16 @@
   </section>
 
   <app-product-table
-    [products]="selectedCategoryProducts"
-    [categories]="categories"
-    [reordering]="savingProductOrder"
-    (editProduct)="openEditProductForm($event)"
-    (pauseProduct)="openPauseProductModal($event)"
-    (resumeProduct)="onResumeProduct($event)"
-    (deleteProduct)="onDeleteProduct($event)"
-    (reorderProducts)="onReorderProducts($event)"
-  />
+  [products]="selectedCategoryProducts"
+  [categories]="categories"
+  [selectedCategory]="selectedCategory"
+  [reordering]="savingProductOrder"
+  (editProduct)="openEditProductForm($event)"
+  (pauseProduct)="openPauseProductModal($event)"
+  (resumeProduct)="onResumeProduct($event)"
+  (deleteProduct)="onDeleteProduct($event)"
+  (reorderProducts)="onReorderProducts($event)"
+/>
 
   <app-category-list
     [categories]="categories"

@@ -149,3 +149,34 @@
   color: #64748b;
   font-weight: 600;
 }
+
+.category-tab {
+  flex-wrap: wrap;
+}
+
+.category-tab strong {
+  font-size: 14px;
+}
+
+.category-tab small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.category-tab.paused {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.category-tab.out-of-schedule {
+  border-color: #fb923c;
+  background: #ffedd5;
+  color: #7c2d12;
+}
+
+.category-tab.paused span,
+.category-tab.out-of-schedule span {
+  background: #ffffff;
+}
