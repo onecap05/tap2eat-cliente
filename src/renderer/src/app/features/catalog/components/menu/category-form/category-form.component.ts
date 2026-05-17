@@ -1,8 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ICreateCategoryRequest } from '../../../models/category/ICreateCategoryRequest';
+import { IUpdateCategoryRequest } from '../../../models/category/IUpdateCategoryRequest';
+import { ICategoryResponse } from '../../../models/category/ICategoryResponse';
 import {
   DayOfWeekRequest,
   IDailyAvailabilityRequest
@@ -14,6 +23,12 @@ type ScheduleFormDay = {
   enabled: boolean;
   startTime: string;
   endTime: string;
+};
+
+type SavedScheduleDay = {
+  dayOfWeek: string;
+  enabled: boolean;
+  timeRanges?: { startTime: string; endTime: string }[];
 };
 
 const DEFAULT_SCHEDULE_START_TIME = '08:00';
@@ -33,9 +48,12 @@ const CATEGORY_FORM_MESSAGES = {
   templateUrl: './category-form.component.html',
   styleUrl: './category-form.component.css'
 })
-export class CategoryFormComponent {
+export class CategoryFormComponent implements OnChanges {
   @Input() saving = false;
+  @Input() categoryToEdit: ICategoryResponse | null = null;
+
   @Output() createCategory = new EventEmitter<Omit<ICreateCategoryRequest, 'restaurantId'>>();
+  @Output() updateCategory = new EventEmitter<{ categoryId: string; request: IUpdateCategoryRequest }>();
 
   readonly dayOptions: { label: string; value: DayOfWeekRequest }[] = [
     { label: 'Lunes', value: 'MONDAY' },
@@ -57,6 +75,16 @@ export class CategoryFormComponent {
   scheduleForm: ScheduleFormDay[] = this.createEmptyScheduleForm();
   errorMessage = '';
 
+  get isEditMode(): boolean {
+    return this.categoryToEdit !== null;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['categoryToEdit']) {
+      this.loadCategoryToEdit();
+    }
+  }
+
   submit(): void {
     this.errorMessage = '';
 
@@ -73,19 +101,35 @@ export class CategoryFormComponent {
     }
 
     try {
-      this.createCategory.emit({
+      const request: IUpdateCategoryRequest = {
         name: this.form.name.trim(),
         description: this.form.description.trim() || null,
         displayOrder,
-        image: null,
+        image: this.categoryToEdit?.image
+          ? {
+              url: this.categoryToEdit.image.url,
+              objectKey: this.categoryToEdit.image.objectKey,
+              provider: this.categoryToEdit.image.provider
+            }
+          : null,
         availability: {
-          status: 'AVAILABLE',
-          temporaryReason: null,
-          temporaryReasonDetail: null,
+          status: this.categoryToEdit?.availability?.status ?? 'AVAILABLE',
+          temporaryReason: this.categoryToEdit?.availability?.temporaryReason ?? null,
+          temporaryReasonDetail: this.categoryToEdit?.availability?.temporaryReasonDetail ?? null,
           weeklySchedule: this.buildWeeklySchedule()
         }
-      });
+      };
 
+      if (this.categoryToEdit) {
+        this.updateCategory.emit({
+          categoryId: this.categoryToEdit.id,
+          request
+        });
+
+        return;
+      }
+
+      this.createCategory.emit(request);
       this.resetForm();
     } catch (error) {
       this.errorMessage = error instanceof Error
@@ -137,6 +181,54 @@ export class CategoryFormComponent {
         }
       ]
     };
+  }
+
+  private loadCategoryToEdit(): void {
+    this.resetForm();
+
+    if (!this.categoryToEdit) {
+      return;
+    }
+
+    this.form = {
+      name: this.categoryToEdit.name,
+      description: this.categoryToEdit.description ?? '',
+      displayOrder: String(this.categoryToEdit.displayOrder ?? ''),
+      useSpecificSchedule: false
+    };
+
+    this.loadScheduleFromCategory();
+  }
+
+  private loadScheduleFromCategory(): void {
+    this.scheduleForm = this.createEmptyScheduleForm();
+
+    const weeklySchedule = this.categoryToEdit?.availability?.weeklySchedule ?? [];
+
+    if (weeklySchedule.length === 0) {
+      this.form.useSpecificSchedule = false;
+      return;
+    }
+
+    this.form.useSpecificSchedule = true;
+
+    for (const savedDay of weeklySchedule) {
+      this.loadScheduleDay(savedDay);
+    }
+  }
+
+  private loadScheduleDay(savedDay: SavedScheduleDay): void {
+    const day = this.scheduleForm.find(item => item.dayOfWeek === savedDay.dayOfWeek);
+
+    if (!day) {
+      return;
+    }
+
+    const firstRange = savedDay.timeRanges?.[0];
+
+    day.enabled = savedDay.enabled;
+    day.startTime = firstRange?.startTime ?? DEFAULT_SCHEDULE_START_TIME;
+    day.endTime = firstRange?.endTime ?? DEFAULT_SCHEDULE_END_TIME;
   }
 
   private createEmptyScheduleForm(): ScheduleFormDay[] {

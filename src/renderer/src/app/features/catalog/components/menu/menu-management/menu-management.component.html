@@ -17,20 +17,18 @@
 
   <div *ngIf="categories.length > 0" class="category-tabs">
     <button
-  *ngFor="let category of orderedCategories"
-  type="button"
-  class="category-tab"
-  [class.active]="selectedCategoryId === category.id"
-  [class.paused]="isCategoryPaused(category)"
-  [class.out-of-schedule]="isCategoryOutOfSchedule(category)"
-  (click)="selectCategory(category.id)"
->
-  <strong>{{ category.name }}</strong>
-
-  <small>{{ getCategoryAvailabilityLabel(category) }}</small>
-
-  <span>{{ productsByCategory(category.id).length }}</span>
-</button>
+      *ngFor="let category of orderedCategories"
+      type="button"
+      class="category-tab"
+      [class.active]="selectedCategoryId === category.id"
+      [class.paused]="isCategoryPaused(category)"
+      [class.out-of-schedule]="isCategoryOutOfSchedule(category)"
+      (click)="selectCategory(category.id)"
+    >
+      <strong>{{ category.name }}</strong>
+      <small>{{ getCategoryAvailabilityLabel(category) }}</small>
+      <span>{{ productsByCategory(category.id).length }}</span>
+    </button>
   </div>
 
   <section class="selected-category-panel" *ngIf="selectedCategoryId">
@@ -44,20 +42,21 @@
   </section>
 
   <app-product-table
-  [products]="selectedCategoryProducts"
-  [categories]="categories"
-  [selectedCategory]="selectedCategory"
-  [reordering]="savingProductOrder"
-  (editProduct)="openEditProductForm($event)"
-  (pauseProduct)="openPauseProductModal($event)"
-  (resumeProduct)="onResumeProduct($event)"
-  (deleteProduct)="onDeleteProduct($event)"
-  (reorderProducts)="onReorderProducts($event)"
-/>
+    [products]="selectedCategoryProducts"
+    [categories]="categories"
+    [selectedCategory]="selectedCategory"
+    [reordering]="savingProductOrder"
+    (editProduct)="openEditProductForm($event)"
+    (pauseProduct)="openPauseProductModal($event)"
+    (resumeProduct)="onResumeProduct($event)"
+    (deleteProduct)="onDeleteProduct($event)"
+    (reorderProducts)="onReorderProducts($event)"
+  />
 
   <app-category-list
     [categories]="categories"
-    (newCategory)="toggleCategoryForm()"
+    (newCategory)="openCreateCategoryForm()"
+    (editCategory)="openEditCategoryForm($event)"
   />
 
   <app-owner-modal
@@ -72,6 +71,20 @@
       [productToEdit]="selectedProductToEdit"
       (createProduct)="onCreateProduct($event)"
       (updateProduct)="onUpdateProduct($event)"
+    />
+  </app-owner-modal>
+
+  <app-owner-modal
+    *ngIf="showCategoryForm"
+    [title]="selectedCategoryToEdit ? 'Editar categoría' : 'Nueva categoría'"
+    [subtitle]="selectedCategoryToEdit ? 'Actualiza la información y horario de la categoría.' : 'Organiza tus productos por secciones del menú.'"
+    (closeModal)="closeCategoryForm()"
+  >
+    <app-category-form
+      [saving]="creatingCategory || updatingCategory"
+      [categoryToEdit]="selectedCategoryToEdit"
+      (createCategory)="onCreateCategory($event)"
+      (updateCategory)="onUpdateCategory($event)"
     />
   </app-owner-modal>
 
@@ -117,17 +130,5 @@
         {{ pausingProduct ? 'Pausando...' : 'Pausar producto' }}
       </button>
     </form>
-  </app-owner-modal>
-
-  <app-owner-modal
-    *ngIf="showCategoryForm"
-    title="Nueva categoría"
-    subtitle="Organiza tus productos por secciones del menú."
-    (closeModal)="closeCategoryForm()"
-  >
-    <app-category-form
-      [saving]="creatingCategory"
-      (createCategory)="onCreateCategory($event)"
-    />
   </app-owner-modal>
 </section>

@@ -89,7 +89,11 @@
     </div>
 
     <button type="submit" [disabled]="saving">
-      {{ saving ? 'Creando...' : 'Crear categoría' }}
-    </button>
+  {{
+    saving
+      ? isEditMode ? 'Guardando...' : 'Creando...'
+      : isEditMode ? 'Guardar cambios' : 'Crear categoría'
+  }}
+</button>
   </form>
 </section>

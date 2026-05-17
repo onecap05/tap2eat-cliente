@@ -17,6 +17,7 @@ import { OwnerModalComponent } from '../../shared/owner-modal/owner-modal.compon
 import { IPauseProductRequest } from '../../../models/product/IPauseProductRequest';
 import { TemporaryUnavailabilityReason } from '../../../models/commons/IAvailabilityConfigResponse';
 import { isOutOfSchedule } from '../../../utils/availability-schedule.utils';
+import { IUpdateCategoryRequest } from '../../../models/category/IUpdateCategoryRequest';
 
 @Component({
   selector: 'app-menu-management',
@@ -37,6 +38,7 @@ export class MenuManagementComponent implements OnChanges {
   @Input() categories: ICategoryResponse[] = [];
   @Input() products: IProductResponse[] = [];
   @Input() creatingCategory = false;
+  @Input() updatingCategory = false;
   @Input() creatingProduct = false;
   @Input() updatingProduct = false;
   @Input() pausingProduct = false;
@@ -44,6 +46,7 @@ export class MenuManagementComponent implements OnChanges {
   @Input() productOperationVersion = 0;
 
   @Output() createCategory = new EventEmitter<Omit<ICreateCategoryRequest, 'restaurantId'>>();
+  @Output() updateCategory = new EventEmitter<{ categoryId: string; request: IUpdateCategoryRequest }>();
   @Output() createProduct = new EventEmitter<Omit<ICreateProductRequest, 'restaurantId'>>();
   @Output() updateProduct = new EventEmitter<{ productId: string; request: IUpdateProductRequest }>();
   @Output() deactivateProduct = new EventEmitter<IProductResponse>();
@@ -55,6 +58,7 @@ export class MenuManagementComponent implements OnChanges {
   showCategoryForm = false;
   showProductForm = false;
   selectedProductToEdit: IProductResponse | null = null;
+  selectedCategoryToEdit: ICategoryResponse | null = null;
   selectedProductToPause: IProductResponse | null = null;
   selectedCategoryId: string | null = null;
 
@@ -108,6 +112,19 @@ export class MenuManagementComponent implements OnChanges {
   selectCategory(categoryId: string): void {
     this.selectedCategoryId = categoryId;
   }
+  openCreateCategoryForm(): void {
+  this.selectedCategoryToEdit = null;
+  this.showCategoryForm = true;
+}
+
+openEditCategoryForm(category: ICategoryResponse): void {
+  this.selectedCategoryToEdit = category;
+  this.showCategoryForm = true;
+}
+
+onUpdateCategory(event: { categoryId: string; request: IUpdateCategoryRequest }): void {
+  this.updateCategory.emit(event);
+}
 
   productsByCategory(categoryId: string): IProductResponse[] {
     return this.products
@@ -132,8 +149,13 @@ export class MenuManagementComponent implements OnChanges {
   }
 
   toggleCategoryForm(): void {
-    this.showCategoryForm = !this.showCategoryForm;
+  if (this.showCategoryForm) {
+    this.closeCategoryForm();
+    return;
   }
+
+  this.openCreateCategoryForm();
+}
 
   openCreateProductForm(): void {
     this.selectedProductToEdit = null;
@@ -146,8 +168,9 @@ export class MenuManagementComponent implements OnChanges {
   }
 
   closeCategoryForm(): void {
-    this.showCategoryForm = false;
-  }
+  this.showCategoryForm = false;
+  this.selectedCategoryToEdit = null;
+}
 
   closeProductForm(): void {
     this.showProductForm = false;

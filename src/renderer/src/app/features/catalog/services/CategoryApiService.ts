@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ICategoryResponse } from '../models/category/ICategoryResponse';
 import { ICreateCategoryRequest } from '../models/category/ICreateCategoryRequest';
+import { IUpdateCategoryRequest } from '../models/category/IUpdateCategoryRequest';
 
 @Injectable({
   providedIn: 'root'
@@ -21,4 +22,20 @@ export class CategoryApiService {
   public createCategory(request: ICreateCategoryRequest): Observable<ICategoryResponse> {
     return this.http.post<ICategoryResponse>(this.baseUrl, request);
   }
+
+  public updateCategory(
+  categoryId: string,
+  restaurantId: string,
+  request: IUpdateCategoryRequest
+): Observable<ICategoryResponse> {
+  return this.http.put<ICategoryResponse>(
+    `${this.baseUrl}/${categoryId}`,
+    request,
+    {
+      params: {
+        restaurantId
+      }
+    }
+  );
+}
 }

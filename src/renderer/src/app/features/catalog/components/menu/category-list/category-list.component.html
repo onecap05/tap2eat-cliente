@@ -13,12 +13,20 @@
   </p>
 
   <div *ngIf="categories.length > 0" class="category-list">
-    <button
+    <div
       *ngFor="let category of categories"
-      type="button"
       class="category-chip"
     >
-      {{ category.name }}
-    </button>
+      <span class="category-name">{{ category.name }}</span>
+
+      <button
+        type="button"
+        class="edit-category-button"
+        title="Editar categoría"
+        (click)="requestEditCategory(category)"
+      >
+        ✎
+      </button>
+    </div>
   </div>
 </section>

@@ -22,6 +22,7 @@ import { ICreateProductRequest } from '../../models/product/ICreateProductReques
 import { IUpdateProductRequest } from '../../models/product/IUpdateProductRequest';
 import { IPauseProductRequest } from '../../models/product/IPauseProductRequest';
 import { IReorderProductsRequest } from '../../models/product/IReorderProductsRequest';
+import { IUpdateCategoryRequest } from '../../models/category/IUpdateCategoryRequest';
 
 import {
   OwnerSidebarComponent,
@@ -68,6 +69,7 @@ export class OwnerDashboardComponent implements OnInit {
   creatingRestaurant = false;
   creatingBranch = false;
   creatingCategory = false;
+  updatingCategory = false;
   creatingProduct = false;
 
   updatingProduct = false;
@@ -487,4 +489,35 @@ export class OwnerDashboardComponent implements OnInit {
       product.id === updatedProduct.id ? updatedProduct : product
     );
   }
+
+  updateCategory(event: { categoryId: string; request: IUpdateCategoryRequest }): void {
+  if (!this.restaurant) {
+    this.errorMessage = 'Primero debes crear un restaurante.';
+    return;
+  }
+
+  this.updatingCategory = true;
+  this.errorMessage = '';
+
+  this.categoryApiService.updateCategory(
+    event.categoryId,
+    this.restaurant.id,
+    event.request
+  ).subscribe({
+    next: (updatedCategory) => {
+      this.categories = this.categories.map(category =>
+        category.id === updatedCategory.id ? updatedCategory : category
+      );
+
+      this.updatingCategory = false;
+      this.changeDetectorRef.detectChanges();
+    },
+    error: (error) => {
+      console.error('Update category error:', error);
+      this.updatingCategory = false;
+      this.errorMessage = 'No se pudo actualizar la categoría.';
+      this.changeDetectorRef.detectChanges();
+    }
+  });
+}
 }
