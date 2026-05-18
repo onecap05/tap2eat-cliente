@@ -17,6 +17,8 @@ import maplibregl, { LngLat, LngLatLike, Map, Marker } from 'maplibre-gl';
 import { firstValueFrom } from 'rxjs';
 
 import { ICreateBranchRequest } from '../../../models/branch/ICreateBranchRequest';
+import { LocationApiService } from '../../../services/LocationApiService';
+import { IPostalCodeLookupResponse } from '../../../models/location/IPostalCodeLookupResponse';
 
 interface NominatimAddress {
   road?: string;
@@ -30,6 +32,7 @@ interface NominatimAddress {
   quarter?: string;
   residential?: string;
   borough?: string;
+  hamlet?: string;
   city?: string;
   town?: string;
   village?: string;
@@ -38,7 +41,6 @@ interface NominatimAddress {
   state?: string;
   postcode?: string;
   country?: string;
-  hamlet?: string;
 }
 
 interface NominatimReverseResponse {
@@ -57,6 +59,7 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
   private static readonly DEFAULT_CENTER: [number, number] = [-96.9101, 19.5438];
   private static readonly DEFAULT_ZOOM = 14;
   private static readonly REVERSE_GEOCODING_URL = 'https://nominatim.openstreetmap.org/reverse';
+  private static readonly MEXICO_POSTAL_CODE_PATTERN = /^\d{5}$/;
 
   @ViewChild('mapContainer') mapContainer?: ElementRef<HTMLDivElement>;
 
@@ -66,6 +69,9 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
 
   errorMessage = '';
   mapMessage = 'Obteniendo ubicación actual...';
+  postalCodeMessage = '';
+  loadingPostalCode = false;
+  neighborhoodOptions: string[] = [];
 
   form = {
     name: '',
@@ -92,7 +98,8 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     @Inject(PLATFORM_ID) platformId: object,
-    private readonly http: HttpClient
+    private readonly http: HttpClient,
+    private readonly locationApiService: LocationApiService
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
@@ -144,6 +151,14 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    if (
+      this.form.country.trim().toLowerCase().includes('méxico') &&
+      !BranchFormComponent.MEXICO_POSTAL_CODE_PATTERN.test(this.form.postalCode.trim())
+    ) {
+      this.errorMessage = 'El código postal debe tener 5 dígitos para México.';
+      return;
+    }
+
     const latitude = Number(this.form.latitude);
     const longitude = Number(this.form.longitude);
 
@@ -187,6 +202,25 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
 
   centerOnCurrentLocation(): void {
     this.tryCenterMapOnCurrentLocation();
+  }
+
+  async lookupPostalCode(): Promise<void> {
+    const postalCode = this.form.postalCode.trim();
+
+    this.postalCodeMessage = '';
+
+    if (!postalCode) {
+      this.neighborhoodOptions = [];
+      return;
+    }
+
+    if (!BranchFormComponent.MEXICO_POSTAL_CODE_PATTERN.test(postalCode)) {
+      this.postalCodeMessage = 'El código postal debe tener 5 dígitos.';
+      this.neighborhoodOptions = [];
+      return;
+    }
+
+    await this.loadPostalCodeData(postalCode, true);
   }
 
   private initializeMap(center: LngLatLike, zoom: number): void {
@@ -328,6 +362,48 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  private async loadPostalCodeData(postalCode: string, clearInvalidNeighborhood: boolean): Promise<void> {
+    this.loadingPostalCode = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.locationApiService.lookupPostalCode(postalCode)
+      );
+
+      this.applyPostalCodeLookup(response, clearInvalidNeighborhood);
+      this.postalCodeMessage = 'Código postal validado.';
+    } catch (error) {
+      console.error('Postal code lookup error:', error);
+      this.postalCodeMessage = 'No se encontró información para este código postal.';
+      this.neighborhoodOptions = [];
+    } finally {
+      this.loadingPostalCode = false;
+    }
+  }
+
+  private applyPostalCodeLookup(
+    response: IPostalCodeLookupResponse,
+    clearInvalidNeighborhood: boolean
+  ): void {
+    this.form.city = response.city || response.municipality || this.form.city;
+    this.form.state = response.state || this.form.state;
+    this.form.country = response.country || 'México';
+    this.neighborhoodOptions = response.neighborhoods || [];
+
+    if (!this.form.neighborhood && this.neighborhoodOptions.length === 1) {
+      this.form.neighborhood = this.neighborhoodOptions[0];
+      return;
+    }
+
+    const currentNeighborhoodExists = this.neighborhoodOptions.some(
+      neighborhood => this.normalizeText(neighborhood) === this.normalizeText(this.form.neighborhood)
+    );
+
+    if (clearInvalidNeighborhood && this.form.neighborhood && !currentNeighborhoodExists) {
+      this.form.neighborhood = '';
+    }
+  }
+
   private applyAddressFromNominatim(response: NominatimReverseResponse): void {
     const address = response.address;
 
@@ -349,14 +425,14 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
     this.form.exteriorNumber = address.house_number || '';
 
     this.form.neighborhood = this.firstAvailable([
-  address.neighbourhood,
-  address.suburb,
-  address.city_district,
-  address.quarter,
-  address.residential,
-  address.borough,
-  address.hamlet
-]);
+      address.neighbourhood,
+      address.suburb,
+      address.city_district,
+      address.quarter,
+      address.residential,
+      address.borough,
+      address.hamlet
+    ]);
 
     this.form.city = this.firstAvailable([
       address.city,
@@ -371,6 +447,12 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
     this.form.country = address.country || '';
 
     this.form.formattedAddress = this.buildFormattedAddress();
+
+    if (
+      BranchFormComponent.MEXICO_POSTAL_CODE_PATTERN.test(this.form.postalCode.trim())
+    ) {
+      this.loadPostalCodeData(this.form.postalCode.trim(), false);
+    }
 
     if (!this.form.formattedAddress && response.display_name?.trim()) {
       this.form.formattedAddress = response.display_name.trim();
@@ -402,6 +484,14 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
     return values.find(value => value?.trim())?.trim() || '';
   }
 
+  private normalizeText(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
   private resetForm(): void {
     this.form = {
       name: '',
@@ -421,6 +511,9 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
       googlePlaceId: '',
       isMainBranch: false
     };
+
+    this.neighborhoodOptions = [];
+    this.postalCodeMessage = '';
 
     this.marker?.setLngLat(BranchFormComponent.DEFAULT_CENTER);
     this.map?.flyTo({

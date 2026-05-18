@@ -66,18 +66,37 @@
     </label>
 
     <label>
-      Colonia
+      Código postal
       <input
         type="text"
-        name="branchNeighborhood"
-        [(ngModel)]="form.neighborhood"
-        placeholder="Ej. Centro"
-        required
+        name="branchPostalCode"
+        [(ngModel)]="form.postalCode"
+        (blur)="lookupPostalCode()"
+        maxlength="5"
+        placeholder="Ej. 91020"
       />
     </label>
 
     <label>
-      Ciudad
+      Colonia
+      <select
+        name="branchNeighborhood"
+        [(ngModel)]="form.neighborhood"
+        [disabled]="loadingPostalCode || neighborhoodOptions.length === 0"
+        required
+      >
+        <option value="">Selecciona una colonia</option>
+        <option
+          *ngFor="let neighborhood of neighborhoodOptions"
+          [value]="neighborhood"
+        >
+          {{ neighborhood }}
+        </option>
+      </select>
+    </label>
+
+    <label>
+      Ciudad / Municipio
       <input
         type="text"
         name="branchCity"
@@ -99,16 +118,6 @@
     </label>
 
     <label>
-      Código postal
-      <input
-        type="text"
-        name="branchPostalCode"
-        [(ngModel)]="form.postalCode"
-        placeholder="Ej. 91000"
-      />
-    </label>
-
-    <label>
       País
       <input
         type="text"
@@ -119,6 +128,10 @@
       />
     </label>
   </div>
+
+  <p *ngIf="postalCodeMessage" class="field-message">
+    {{ postalCodeMessage }}
+  </p>
 
   <label>
     Referencias
