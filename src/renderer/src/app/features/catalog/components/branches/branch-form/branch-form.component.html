@@ -30,52 +30,131 @@
       />
     </label>
 
+    <section class="address-section">
+  <h4>Dirección de la sucursal</h4>
+
+  <div class="address-grid">
     <label>
-      Dirección
+      Calle
       <input
         type="text"
-        name="branchFormattedAddress"
-        [(ngModel)]="form.formattedAddress"
-        placeholder="Ej. Av. Enríquez 10, Centro, Xalapa, Veracruz"
+        name="branchStreet"
+        [(ngModel)]="form.street"
+        placeholder="Ej. Av. Enríquez"
         required
       />
     </label>
 
-    <div class="form-row">
-      <label>
-        Latitud
-        <input
-          type="number"
-          step="any"
-          name="branchLatitude"
-          [(ngModel)]="form.latitude"
-          placeholder="Ej. 19.5438"
-          required
-        />
-      </label>
-
-      <label>
-        Longitud
-        <input
-          type="number"
-          step="any"
-          name="branchLongitude"
-          [(ngModel)]="form.longitude"
-          placeholder="Ej. -96.9101"
-          required
-        />
-      </label>
-    </div>
-
     <label>
-      Google Place ID
+      Número exterior
       <input
         type="text"
-        name="branchGooglePlaceId"
-        [(ngModel)]="form.googlePlaceId"
-        placeholder="Opcional por ahora"
+        name="branchExteriorNumber"
+        [(ngModel)]="form.exteriorNumber"
+        placeholder="Ej. 10"
       />
     </label>
+
+    <label>
+      Número interior
+      <input
+        type="text"
+        name="branchInteriorNumber"
+        [(ngModel)]="form.interiorNumber"
+        placeholder="Opcional"
+      />
+    </label>
+
+    <label>
+      Colonia
+      <input
+        type="text"
+        name="branchNeighborhood"
+        [(ngModel)]="form.neighborhood"
+        placeholder="Ej. Centro"
+        required
+      />
+    </label>
+
+    <label>
+      Ciudad
+      <input
+        type="text"
+        name="branchCity"
+        [(ngModel)]="form.city"
+        placeholder="Ej. Xalapa"
+        required
+      />
+    </label>
+
+    <label>
+      Estado
+      <input
+        type="text"
+        name="branchState"
+        [(ngModel)]="form.state"
+        placeholder="Ej. Veracruz"
+        required
+      />
+    </label>
+
+    <label>
+      Código postal
+      <input
+        type="text"
+        name="branchPostalCode"
+        [(ngModel)]="form.postalCode"
+        placeholder="Ej. 91000"
+      />
+    </label>
+
+    <label>
+      País
+      <input
+        type="text"
+        name="branchCountry"
+        [(ngModel)]="form.country"
+        placeholder="Ej. México"
+        required
+      />
+    </label>
+  </div>
+
+  <label>
+    Referencias
+    <input
+      type="text"
+      name="branchAddressReference"
+      [(ngModel)]="form.addressReference"
+      placeholder="Ej. Frente al parque, local color verde"
+    />
+  </label>
+</section>
+
+    <section class="map-section">
+      <div class="map-section-header">
+        <div>
+          <h4>Ubicación en el mapa</h4>
+          <p>{{ mapMessage }}</p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="centerOnCurrentLocation()"
+        >
+          Usar mi ubicación
+        </button>
+      </div>
+
+      <div #mapContainer class="map-container"></div>
+
+      <p class="map-help">
+        Haz clic en el mapa o arrastra el marcador para ajustar la ubicación exacta.
+      </p>
+    </section>
+
+    
 
     <label class="checkbox-label">
       <input
