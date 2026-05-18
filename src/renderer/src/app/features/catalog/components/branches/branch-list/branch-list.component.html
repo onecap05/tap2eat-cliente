@@ -83,10 +83,14 @@
           </td>
 
           <td>
-            <span class="status">
-              Activa
-            </span>
-          </td>
+  <span
+    class="status"
+    [class.status-open]="isBranchOpen(branch)"
+    [class.status-closed]="!isBranchOpen(branch)"
+  >
+    {{ getBranchOpenState(branch) }}
+  </span>
+</td>
 
           <td>
   <div class="actions-cell">

@@ -167,6 +167,55 @@
       </p>
     </section>
 
+    <section class="schedule-section">
+  <div class="schedule-header">
+    <div>
+      <h4>Horario de atención</h4>
+      <p>Define en qué días y horarios estará abierta esta sucursal.</p>
+    </div>
+  </div>
+
+  <div class="schedule-days">
+    <article
+      *ngFor="let day of scheduleDays"
+      class="schedule-day"
+      [class.schedule-day-disabled]="!day.enabled"
+    >
+      <label class="schedule-day-toggle">
+        <input
+          type="checkbox"
+          [name]="'scheduleEnabled' + day.dayOfWeek"
+          [ngModel]="day.enabled"
+          (ngModelChange)="toggleScheduleDay(day)"
+        />
+        <span>{{ day.label }}</span>
+      </label>
+
+      <div class="schedule-time-row">
+        <label>
+          Abre
+          <input
+            type="time"
+            [name]="'startTime' + day.dayOfWeek"
+            [(ngModel)]="day.startTime"
+            [disabled]="!day.enabled"
+          />
+        </label>
+
+        <label>
+          Cierra
+          <input
+            type="time"
+            [name]="'endTime' + day.dayOfWeek"
+            [(ngModel)]="day.endTime"
+            [disabled]="!day.enabled"
+          />
+        </label>
+      </div>
+    </article>
+  </div>
+</section>
+
     
 
     <label class="checkbox-label">
