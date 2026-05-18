@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { IBranchResponse } from '../models/branch/IBranchResponse';
 import { ICreateBranchRequest } from '../models/branch/ICreateBranchRequest';
+import { IUpdateBranchRequest } from '../models/branch/IUpdateBranchRequest';
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
@@ -20,5 +21,21 @@ export class BranchApiService {
 
   createBranch(request: ICreateBranchRequest): Observable<IBranchResponse> {
     return this.http.post<IBranchResponse>(this.API_URL, request);
+  }
+
+  updateBranch(
+    branchId: string,
+    restaurantId: string,
+    request: IUpdateBranchRequest
+  ): Observable<IBranchResponse> {
+    return this.http.put<IBranchResponse>(
+      `${this.API_URL}/${branchId}`,
+      request,
+      {
+        params: {
+          restaurantId
+        }
+      }
+    );
   }
 }

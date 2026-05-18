@@ -8,7 +8,7 @@
     <button
       type="button"
       class="add-branch-button"
-      (click)="toggleBranchForm()"
+      (click)="openCreateBranchForm()"
     >
       <span>+</span>
       Nueva Sucursal
@@ -17,17 +17,20 @@
 
   <app-branch-list
     [branches]="branches"
+    (editBranch)="openEditBranchForm($event)"
   />
 
   <app-owner-modal
     *ngIf="showBranchForm"
-    title="Nueva sucursal"
-    subtitle="Agrega una ubicación donde tu restaurante atiende pedidos."
+    [title]="modalTitle"
+    [subtitle]="modalSubtitle"
     (closeModal)="closeBranchForm()"
   >
     <app-branch-form
-      [saving]="creatingBranch"
+      [saving]="creatingBranch || updatingBranch"
+      [branch]="selectedBranch"
       (createBranch)="onCreateBranch($event)"
+      (updateBranch)="onUpdateBranch($event)"
     />
   </app-owner-modal>
 </section>

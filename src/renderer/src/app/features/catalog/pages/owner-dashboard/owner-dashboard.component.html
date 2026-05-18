@@ -59,11 +59,13 @@
 />
 
       <app-branch-management
-        *ngIf="activeSection === 'branches'"
-        [branches]="branches"
-        [creatingBranch]="creatingBranch"
-        (createBranch)="createBranch($event)"
-      />
+  *ngIf="activeSection === 'branches'"
+  [branches]="branches"
+  [creatingBranch]="creatingBranch"
+  [updatingBranch]="updatingBranch"
+  (createBranch)="createBranch($event)"
+  (updateBranch)="updateBranch($event)"
+/>
     </ng-container>
   </main>
 </div>
