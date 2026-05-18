@@ -23,6 +23,7 @@ import { IUpdateProductRequest } from '../../models/product/IUpdateProductReques
 import { IPauseProductRequest } from '../../models/product/IPauseProductRequest';
 import { IReorderProductsRequest } from '../../models/product/IReorderProductsRequest';
 import { IUpdateCategoryRequest } from '../../models/category/IUpdateCategoryRequest';
+import { IUpdateBranchRequest } from '../../models/branch/IUpdateBranchRequest';
 
 import {
   OwnerSidebarComponent,
@@ -77,6 +78,9 @@ export class OwnerDashboardComponent implements OnInit {
   deactivatingProduct = false;
   pausingProduct = false;
   savingProductOrder = false;
+
+  updatingBranch = false;
+  deletingBranch = false;
 
   productOperationVersion = 0;
 
@@ -166,6 +170,67 @@ export class OwnerDashboardComponent implements OnInit {
       }
     });
   }
+
+  updateBranch(event: { branchId: string; request: IUpdateBranchRequest }): void {
+  if (!this.restaurant) {
+    this.errorMessage = 'Primero debes crear un restaurante.';
+    return;
+  }
+
+  this.updatingBranch = true;
+  this.errorMessage = '';
+
+  this.branchApiService.updateBranch(
+    event.branchId,
+    this.restaurant.id,
+    event.request
+  ).subscribe({
+    next: (updatedBranch) => {
+      this.branches = this.branches.map(branch =>
+        branch.id === updatedBranch.id ? updatedBranch : branch
+      );
+
+      this.updatingBranch = false;
+      this.changeDetectorRef.detectChanges();
+    },
+    error: (error) => {
+      console.error('Update branch error:', error);
+      this.updatingBranch = false;
+      this.errorMessage = 'No se pudo actualizar la sucursal.';
+      this.changeDetectorRef.detectChanges();
+    }
+  });
+}
+
+deleteBranch(branch: IBranchResponse): void {
+  if (!this.restaurant) {
+    this.errorMessage = 'Primero debes crear un restaurante.';
+    return;
+  }
+
+  this.deletingBranch = true;
+  this.errorMessage = '';
+
+  this.branchApiService.deactivateBranch(
+    branch.id,
+    this.restaurant.id
+  ).subscribe({
+    next: (deletedBranch) => {
+      this.branches = this.branches.filter(existingBranch =>
+        existingBranch.id !== deletedBranch.id
+      );
+
+      this.deletingBranch = false;
+      this.changeDetectorRef.detectChanges();
+    },
+    error: (error) => {
+      console.error('Delete branch error:', error);
+      this.deletingBranch = false;
+      this.errorMessage = 'No se pudo eliminar la sucursal.';
+      this.changeDetectorRef.detectChanges();
+    }
+  });
+}
 
   createCategory(request: Omit<ICreateCategoryRequest, 'restaurantId'>): void {
     if (!this.restaurant) {

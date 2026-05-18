@@ -7,18 +7,22 @@ import {
   EventEmitter,
   Inject,
   Input,
+  OnChanges,
   OnDestroy,
   Output,
   PLATFORM_ID,
+  SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import maplibregl, { LngLat, LngLatLike, Map, Marker } from 'maplibre-gl';
 import { firstValueFrom } from 'rxjs';
 
+import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { ICreateBranchRequest } from '../../../models/branch/ICreateBranchRequest';
-import { LocationApiService } from '../../../services/LocationApiService';
+import { IUpdateBranchRequest } from '../../../models/branch/IUpdateBranchRequest';
 import { IPostalCodeLookupResponse } from '../../../models/location/IPostalCodeLookupResponse';
+import { LocationApiService } from '../../../services/LocationApiService';
 
 interface NominatimAddress {
   road?: string;
@@ -55,7 +59,7 @@ interface NominatimReverseResponse {
   templateUrl: './branch-form.component.html',
   styleUrl: './branch-form.component.css'
 })
-export class BranchFormComponent implements AfterViewInit, OnDestroy {
+export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy {
   private static readonly DEFAULT_CENTER: [number, number] = [-96.9101, 19.5438];
   private static readonly DEFAULT_ZOOM = 14;
   private static readonly REVERSE_GEOCODING_URL = 'https://nominatim.openstreetmap.org/reverse';
@@ -64,8 +68,10 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer?: ElementRef<HTMLDivElement>;
 
   @Input() saving = false;
+  @Input() branch: IBranchResponse | null = null;
 
   @Output() createBranch = new EventEmitter<Omit<ICreateBranchRequest, 'restaurantId'>>();
+  @Output() updateBranch = new EventEmitter<IUpdateBranchRequest>();
 
   errorMessage = '';
   mapMessage = 'Obteniendo ubicación actual...';
@@ -73,24 +79,7 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
   loadingPostalCode = false;
   neighborhoodOptions: string[] = [];
 
-  form = {
-    name: '',
-    phoneNumber: '',
-    formattedAddress: '',
-    street: '',
-    exteriorNumber: '',
-    interiorNumber: '',
-    neighborhood: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: '',
-    addressReference: '',
-    latitude: '',
-    longitude: '',
-    googlePlaceId: '',
-    isMainBranch: false
-  };
+  form = this.getEmptyForm();
 
   private map?: Map;
   private marker?: Marker;
@@ -104,13 +93,46 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
+  get isEditing(): boolean {
+    return !!this.branch;
+  }
+
+  get submitButtonLabel(): string {
+    if (this.saving) {
+      return this.isEditing ? 'Guardando...' : 'Creando...';
+    }
+
+    return this.isEditing ? 'Guardar cambios' : 'Crear sucursal';
+  }
+
   ngAfterViewInit(): void {
     if (!this.isBrowser || !this.mapContainer) {
       return;
     }
 
     this.initializeMap(BranchFormComponent.DEFAULT_CENTER, BranchFormComponent.DEFAULT_ZOOM);
+
+    if (this.branch) {
+      this.patchFormFromBranch(this.branch);
+      return;
+    }
+
     this.tryCenterMapOnCurrentLocation();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['branch']) {
+      return;
+    }
+
+    if (this.branch) {
+      this.patchFormFromBranch(this.branch);
+      return;
+    }
+
+    this.form = this.getEmptyForm();
+    this.neighborhoodOptions = [];
+    this.postalCodeMessage = '';
   }
 
   ngOnDestroy(): void {
@@ -172,31 +194,14 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.createBranch.emit({
-      name: this.form.name.trim(),
-      phoneNumber: this.form.phoneNumber.trim() || null,
-      formattedAddress: this.buildFormattedAddress(),
-      street: this.form.street.trim(),
-      exteriorNumber: this.form.exteriorNumber.trim() || null,
-      interiorNumber: this.form.interiorNumber.trim() || null,
-      neighborhood: this.form.neighborhood.trim(),
-      city: this.form.city.trim(),
-      state: this.form.state.trim(),
-      postalCode: this.form.postalCode.trim() || null,
-      country: this.form.country.trim(),
-      addressReference: this.form.addressReference.trim() || null,
-      latitude,
-      longitude,
-      googlePlaceId: this.form.googlePlaceId.trim() || null,
-      isMainBranch: this.form.isMainBranch,
-      availability: {
-        status: 'AVAILABLE',
-        temporaryReason: null,
-        temporaryReasonDetail: null,
-        weeklySchedule: []
-      }
-    });
+    const request = this.buildBranchRequest(latitude, longitude);
 
+    if (this.isEditing) {
+      this.updateBranch.emit(request);
+      return;
+    }
+
+    this.createBranch.emit(request);
     this.resetForm();
   }
 
@@ -448,15 +453,92 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
 
     this.form.formattedAddress = this.buildFormattedAddress();
 
-    if (
-      BranchFormComponent.MEXICO_POSTAL_CODE_PATTERN.test(this.form.postalCode.trim())
-    ) {
+    if (BranchFormComponent.MEXICO_POSTAL_CODE_PATTERN.test(this.form.postalCode.trim())) {
       this.loadPostalCodeData(this.form.postalCode.trim(), false);
     }
 
     if (!this.form.formattedAddress && response.display_name?.trim()) {
       this.form.formattedAddress = response.display_name.trim();
     }
+  }
+
+  private patchFormFromBranch(branch: IBranchResponse): void {
+    this.form = {
+      name: branch.name || '',
+      phoneNumber: branch.phoneNumber || '',
+      formattedAddress: branch.formattedAddress || '',
+      street: branch.street || '',
+      exteriorNumber: branch.exteriorNumber || '',
+      interiorNumber: branch.interiorNumber || '',
+      neighborhood: branch.neighborhood || '',
+      city: branch.city || '',
+      state: branch.state || '',
+      postalCode: branch.postalCode || '',
+      country: branch.country || '',
+      addressReference: branch.addressReference || '',
+      latitude: branch.latitude?.toString() || '',
+      longitude: branch.longitude?.toString() || '',
+      googlePlaceId: branch.googlePlaceId || '',
+      isMainBranch: branch.isMainBranch
+    };
+
+    this.errorMessage = '';
+    this.postalCodeMessage = '';
+
+    if (branch.neighborhood) {
+      this.neighborhoodOptions = [branch.neighborhood];
+    }
+
+    if (BranchFormComponent.MEXICO_POSTAL_CODE_PATTERN.test(this.form.postalCode.trim())) {
+      this.loadPostalCodeData(this.form.postalCode.trim(), false);
+    }
+
+    const latitude = Number(branch.latitude);
+    const longitude = Number(branch.longitude);
+
+    if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) {
+      this.centerMapOnBranchLocation(longitude, latitude);
+    }
+  }
+
+  private centerMapOnBranchLocation(longitude: number, latitude: number): void {
+    const center: [number, number] = [longitude, latitude];
+
+    this.marker?.setLngLat(center);
+    this.map?.flyTo({
+      center,
+      zoom: BranchFormComponent.DEFAULT_ZOOM
+    });
+
+    this.updateCoordinates(new LngLat(longitude, latitude));
+    this.mapMessage = 'Ubicación cargada desde la sucursal.';
+  }
+
+  private buildBranchRequest(latitude: number, longitude: number): IUpdateBranchRequest {
+    return {
+      name: this.form.name.trim(),
+      phoneNumber: this.form.phoneNumber.trim() || null,
+      formattedAddress: this.buildFormattedAddress(),
+      street: this.form.street.trim(),
+      exteriorNumber: this.form.exteriorNumber.trim() || null,
+      interiorNumber: this.form.interiorNumber.trim() || null,
+      neighborhood: this.form.neighborhood.trim(),
+      city: this.form.city.trim(),
+      state: this.form.state.trim(),
+      postalCode: this.form.postalCode.trim() || null,
+      country: this.form.country.trim(),
+      addressReference: this.form.addressReference.trim() || null,
+      latitude,
+      longitude,
+      googlePlaceId: this.form.googlePlaceId.trim() || null,
+      isMainBranch: this.form.isMainBranch,
+      availability: {
+        status: 'AVAILABLE',
+        temporaryReason: null,
+        temporaryReasonDetail: null,
+        weeklySchedule: []
+      }
+    };
   }
 
   private buildFormattedAddress(): string {
@@ -493,7 +575,20 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
   }
 
   private resetForm(): void {
-    this.form = {
+    this.form = this.getEmptyForm();
+    this.neighborhoodOptions = [];
+    this.postalCodeMessage = '';
+
+    this.marker?.setLngLat(BranchFormComponent.DEFAULT_CENTER);
+    this.map?.flyTo({
+      center: BranchFormComponent.DEFAULT_CENTER,
+      zoom: BranchFormComponent.DEFAULT_ZOOM
+    });
+    this.updateCoordinatesFromMarker();
+  }
+
+  private getEmptyForm() {
+    return {
       name: '',
       phoneNumber: '',
       formattedAddress: '',
@@ -511,15 +606,5 @@ export class BranchFormComponent implements AfterViewInit, OnDestroy {
       googlePlaceId: '',
       isMainBranch: false
     };
-
-    this.neighborhoodOptions = [];
-    this.postalCodeMessage = '';
-
-    this.marker?.setLngLat(BranchFormComponent.DEFAULT_CENTER);
-    this.map?.flyTo({
-      center: BranchFormComponent.DEFAULT_CENTER,
-      zoom: BranchFormComponent.DEFAULT_ZOOM
-    });
-    this.updateCoordinatesFromMarker();
   }
 }

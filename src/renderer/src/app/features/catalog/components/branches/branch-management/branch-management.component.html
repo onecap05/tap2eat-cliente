@@ -8,7 +8,7 @@
     <button
       type="button"
       class="add-branch-button"
-      (click)="toggleBranchForm()"
+      (click)="openCreateBranchForm()"
     >
       <span>+</span>
       Nueva Sucursal
@@ -17,17 +17,55 @@
 
   <app-branch-list
     [branches]="branches"
+    (editBranch)="openEditBranchForm($event)"
+    (deleteBranch)="openDeleteConfirmation($event)"
   />
 
   <app-owner-modal
     *ngIf="showBranchForm"
-    title="Nueva sucursal"
-    subtitle="Agrega una ubicación donde tu restaurante atiende pedidos."
+    [title]="modalTitle"
+    [subtitle]="modalSubtitle"
     (closeModal)="closeBranchForm()"
   >
     <app-branch-form
-      [saving]="creatingBranch"
+      [saving]="creatingBranch || updatingBranch"
+      [branch]="selectedBranch"
       (createBranch)="onCreateBranch($event)"
+      (updateBranch)="onUpdateBranch($event)"
     />
+  </app-owner-modal>
+
+  <app-owner-modal
+    *ngIf="branchPendingDelete"
+    title="Eliminar sucursal"
+    subtitle="Esta acción desactivará la sucursal, no la eliminará físicamente."
+    (closeModal)="closeDeleteConfirmation()"
+  >
+    <section class="delete-confirmation">
+      <p>
+        ¿Seguro que quieres eliminar la sucursal
+        <strong>{{ branchPendingDelete.name }}</strong>?
+      </p>
+
+      <div class="delete-actions">
+        <button
+          type="button"
+          class="cancel-delete-button"
+          (click)="closeDeleteConfirmation()"
+          [disabled]="deletingBranch"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="confirm-delete-button"
+          (click)="confirmDeleteBranch()"
+          [disabled]="deletingBranch"
+        >
+          {{ deletingBranch ? 'Eliminando...' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </section>
   </app-owner-modal>
 </section>
