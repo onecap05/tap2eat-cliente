@@ -18,6 +18,11 @@ import { FormsModule } from '@angular/forms';
 import maplibregl, { LngLat, LngLatLike, Map, Marker } from 'maplibre-gl';
 import { firstValueFrom } from 'rxjs';
 
+import {
+  DayOfWeekRequest,
+  IDailyAvailabilityRequest
+} from '../../../models/commons/IAvailabilityConfigRequest';
+
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { ICreateBranchRequest } from '../../../models/branch/ICreateBranchRequest';
 import { IUpdateBranchRequest } from '../../../models/branch/IUpdateBranchRequest';
@@ -78,6 +83,8 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
   postalCodeMessage = '';
   loadingPostalCode = false;
   neighborhoodOptions: string[] = [];
+
+  scheduleDays = this.buildDefaultSchedule();
 
   form = this.getEmptyForm();
 
@@ -180,6 +187,11 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
       this.errorMessage = 'El código postal debe tener 5 dígitos para México.';
       return;
     }
+
+    if (!this.hasAtLeastOneEnabledScheduleDay()) {
+  this.errorMessage = 'La sucursal debe tener al menos un día de atención activo.';
+  return;
+}
 
     const latitude = Number(this.form.latitude);
     const longitude = Number(this.form.longitude);
@@ -482,6 +494,8 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
       isMainBranch: branch.isMainBranch
     };
 
+    this.scheduleDays = this.buildScheduleFromBranch(branch);
+
     this.errorMessage = '';
     this.postalCodeMessage = '';
 
@@ -533,11 +547,11 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
       googlePlaceId: this.form.googlePlaceId.trim() || null,
       isMainBranch: this.form.isMainBranch,
       availability: {
-        status: 'AVAILABLE',
-        temporaryReason: null,
-        temporaryReasonDetail: null,
-        weeklySchedule: []
-      }
+  status: 'AVAILABLE',
+  temporaryReason: null,
+  temporaryReasonDetail: null,
+  weeklySchedule: this.buildWeeklyScheduleRequest()
+}
     };
   }
 
@@ -562,6 +576,10 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
       .join(', ');
   }
 
+  private hasAtLeastOneEnabledScheduleDay(): boolean {
+  return this.scheduleDays.some(day => day.enabled);
+}
+
   private firstAvailable(values: Array<string | undefined>): string {
     return values.find(value => value?.trim())?.trim() || '';
   }
@@ -576,6 +594,7 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
 
   private resetForm(): void {
     this.form = this.getEmptyForm();
+    this.scheduleDays = this.buildDefaultSchedule();
     this.neighborhoodOptions = [];
     this.postalCodeMessage = '';
 
@@ -607,4 +626,75 @@ export class BranchFormComponent implements AfterViewInit, OnChanges, OnDestroy 
       isMainBranch: false
     };
   }
+
+  private buildDefaultSchedule(): BranchScheduleDay[] {
+  return [
+    this.buildScheduleDay('MONDAY', 'Lunes'),
+    this.buildScheduleDay('TUESDAY', 'Martes'),
+    this.buildScheduleDay('WEDNESDAY', 'Miércoles'),
+    this.buildScheduleDay('THURSDAY', 'Jueves'),
+    this.buildScheduleDay('FRIDAY', 'Viernes'),
+    this.buildScheduleDay('SATURDAY', 'Sábado'),
+    this.buildScheduleDay('SUNDAY', 'Domingo')
+  ];
+}
+
+private buildScheduleDay(dayOfWeek: DayOfWeekRequest, label: string): BranchScheduleDay {
+  return {
+    dayOfWeek,
+    label,
+    enabled: false,
+    startTime: '09:00',
+    endTime: '18:00'
+  };
+}
+
+private buildScheduleFromBranch(branch: IBranchResponse): BranchScheduleDay[] {
+  const schedule = this.buildDefaultSchedule();
+  const weeklySchedule = branch.availability?.weeklySchedule || [];
+
+  return schedule.map(day => {
+    const savedDay = weeklySchedule.find(item => item.dayOfWeek === day.dayOfWeek);
+    const firstTimeRange = savedDay?.timeRanges?.[0];
+
+    if (!savedDay) {
+      return day;
+    }
+
+    return {
+      ...day,
+      enabled: savedDay.enabled,
+      startTime: firstTimeRange?.startTime || day.startTime,
+      endTime: firstTimeRange?.endTime || day.endTime
+    };
+  });
+}
+
+private buildWeeklyScheduleRequest(): IDailyAvailabilityRequest[] {
+  return this.scheduleDays
+    .filter(day => day.enabled)
+    .map(day => ({
+      dayOfWeek: day.dayOfWeek,
+      enabled: true,
+      timeRanges: [
+        {
+          startTime: day.startTime,
+          endTime: day.endTime
+        }
+      ]
+    }));
+}
+
+toggleScheduleDay(day: BranchScheduleDay): void {
+  day.enabled = !day.enabled;
+}
+}
+
+
+interface BranchScheduleDay {
+  dayOfWeek: DayOfWeekRequest;
+  label: string;
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
 }

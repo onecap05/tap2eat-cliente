@@ -186,3 +186,65 @@ select:disabled {
   font-size: 13px;
   font-weight: 700;
 }
+
+.schedule-section {
+  display: grid;
+  gap: 14px;
+}
+
+.schedule-header h4 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.schedule-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.schedule-days {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-day {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.schedule-day-disabled {
+  background: #f9fafb;
+}
+
+.schedule-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.schedule-day-toggle input {
+  width: auto;
+}
+
+.schedule-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.schedule-time-row input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
