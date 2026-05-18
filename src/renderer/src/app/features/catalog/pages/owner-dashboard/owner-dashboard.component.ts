@@ -80,6 +80,7 @@ export class OwnerDashboardComponent implements OnInit {
   savingProductOrder = false;
 
   updatingBranch = false;
+  deletingBranch = false;
 
   productOperationVersion = 0;
 
@@ -196,6 +197,36 @@ export class OwnerDashboardComponent implements OnInit {
       console.error('Update branch error:', error);
       this.updatingBranch = false;
       this.errorMessage = 'No se pudo actualizar la sucursal.';
+      this.changeDetectorRef.detectChanges();
+    }
+  });
+}
+
+deleteBranch(branch: IBranchResponse): void {
+  if (!this.restaurant) {
+    this.errorMessage = 'Primero debes crear un restaurante.';
+    return;
+  }
+
+  this.deletingBranch = true;
+  this.errorMessage = '';
+
+  this.branchApiService.deactivateBranch(
+    branch.id,
+    this.restaurant.id
+  ).subscribe({
+    next: (deletedBranch) => {
+      this.branches = this.branches.filter(existingBranch =>
+        existingBranch.id !== deletedBranch.id
+      );
+
+      this.deletingBranch = false;
+      this.changeDetectorRef.detectChanges();
+    },
+    error: (error) => {
+      console.error('Delete branch error:', error);
+      this.deletingBranch = false;
+      this.errorMessage = 'No se pudo eliminar la sucursal.';
       this.changeDetectorRef.detectChanges();
     }
   });

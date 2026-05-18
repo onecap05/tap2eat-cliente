@@ -58,13 +58,15 @@
   (reorderProducts)="onReorderProducts($event)"
 />
 
-      <app-branch-management
+     <app-branch-management
   *ngIf="activeSection === 'branches'"
   [branches]="branches"
   [creatingBranch]="creatingBranch"
   [updatingBranch]="updatingBranch"
+  [deletingBranch]="deletingBranch"
   (createBranch)="createBranch($event)"
   (updateBranch)="updateBranch($event)"
+  (deleteBranch)="deleteBranch($event)"
 />
     </ng-container>
   </main>

@@ -25,15 +25,18 @@ export class BranchManagementComponent {
   @Input() branches: IBranchResponse[] = [];
   @Input() creatingBranch = false;
   @Input() updatingBranch = false;
+  @Input() deletingBranch = false;
 
   @Output() createBranch = new EventEmitter<Omit<ICreateBranchRequest, 'restaurantId'>>();
   @Output() updateBranch = new EventEmitter<{
     branchId: string;
     request: IUpdateBranchRequest;
   }>();
+  @Output() deleteBranch = new EventEmitter<IBranchResponse>();
 
   showBranchForm = false;
   selectedBranch: IBranchResponse | null = null;
+  branchPendingDelete: IBranchResponse | null = null;
 
   get isEditing(): boolean {
     return !!this.selectedBranch;
@@ -62,6 +65,23 @@ export class BranchManagementComponent {
   closeBranchForm(): void {
     this.showBranchForm = false;
     this.selectedBranch = null;
+  }
+
+  openDeleteConfirmation(branch: IBranchResponse): void {
+    this.branchPendingDelete = branch;
+  }
+
+  closeDeleteConfirmation(): void {
+    this.branchPendingDelete = null;
+  }
+
+  confirmDeleteBranch(): void {
+    if (!this.branchPendingDelete || this.deletingBranch) {
+      return;
+    }
+
+    this.deleteBranch.emit(this.branchPendingDelete);
+    this.branchPendingDelete = null;
   }
 
   onCreateBranch(request: Omit<ICreateBranchRequest, 'restaurantId'>): void {

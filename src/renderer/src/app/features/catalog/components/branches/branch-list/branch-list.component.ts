@@ -14,8 +14,13 @@ export class BranchListComponent {
   @Input() branches: IBranchResponse[] = [];
 
   @Output() editBranch = new EventEmitter<IBranchResponse>();
+  @Output() deleteBranch = new EventEmitter<IBranchResponse>();
 
   onEditBranch(branch: IBranchResponse): void {
     this.editBranch.emit(branch);
+  }
+
+  onDeleteBranch(branch: IBranchResponse): void {
+    this.deleteBranch.emit(branch);
   }
 }

@@ -42,3 +42,47 @@
   font-size: 28px;
   line-height: 1;
 }
+
+.delete-confirmation {
+  display: grid;
+  gap: 20px;
+}
+
+.delete-confirmation p {
+  margin: 0;
+  color: #374151;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-delete-button,
+.confirm-delete-button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cancel-delete-button {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.confirm-delete-button {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.cancel-delete-button:disabled,
+.confirm-delete-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

@@ -38,4 +38,19 @@ export class BranchApiService {
       }
     );
   }
+
+  deactivateBranch(
+  branchId: string,
+  restaurantId: string
+): Observable<IBranchResponse> {
+  return this.http.patch<IBranchResponse>(
+    `${this.API_URL}/${branchId}/deactivate`,
+    null,
+    {
+      params: {
+        restaurantId
+      }
+    }
+  );
+}
 }
