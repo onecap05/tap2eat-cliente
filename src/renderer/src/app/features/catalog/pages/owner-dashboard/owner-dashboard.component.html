@@ -20,7 +20,26 @@
     />
 
     <ng-container *ngIf="restaurant">
-      <app-restaurant-summary-card [restaurant]="restaurant" />
+     <app-restaurant-summary-card
+  [restaurant]="restaurant"
+  (editRestaurant)="openEditRestaurantForm()"
+  (deleteRestaurant)="deleteRestaurant()"
+  (restoreRestaurant)="restoreRestaurant()"
+/>
+
+<app-owner-modal
+  *ngIf="showEditRestaurantForm"
+  title="Editar restaurante"
+  subtitle="Actualiza los datos básicos y el logo del restaurante."
+  (closeModal)="closeEditRestaurantForm()"
+>
+  <app-restaurant-form
+    [saving]="updatingRestaurant"
+    [restaurantToEdit]="restaurant"
+    (updateRestaurant)="updateRestaurant($event)"
+    (cancel)="closeEditRestaurantForm()"
+  />
+</app-owner-modal>
 
       <app-dashboard-overview
         *ngIf="activeSection === 'dashboard'"

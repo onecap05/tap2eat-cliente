@@ -30,4 +30,14 @@ export class ImageUploadApiService {
       formData
     );
   }
+
+  public uploadRestaurantLogo(file: File): Observable<ImageMetadataResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return this.http.post<ImageMetadataResponse>(
+    `${this.baseUrl}/restaurants/logos`,
+    formData
+  );
+}
 }

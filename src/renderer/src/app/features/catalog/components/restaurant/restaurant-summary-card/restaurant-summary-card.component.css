@@ -62,3 +62,41 @@
   font-size: 13px;
   font-weight: 800;
 }
+
+.restaurant-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+}
+
+.secondary-button {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.danger-button {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 700;
+}
