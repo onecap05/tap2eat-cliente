@@ -1,13 +1,11 @@
-<section class="empty-card">
-  <div class="form-header">
-    <span class="eyebrow">Configuración inicial</span>
-    <h1>Crea tu restaurante</h1>
-    <p>Este owner todavía no tiene un restaurante activo registrado.</p>
-  </div>
+<section class="restaurant-form-card">
+  <p *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </p>
 
   <form class="form-grid" (ngSubmit)="submit()">
     <label>
-      Nombre del restaurante
+      {{ labels.name }}
       <input
         type="text"
         name="restaurantName"
@@ -18,7 +16,7 @@
     </label>
 
     <label>
-      Descripción
+      {{ labels.description }}
       <textarea
         name="restaurantDescription"
         [(ngModel)]="form.description"
@@ -26,28 +24,71 @@
       ></textarea>
     </label>
 
-    <label>
-      URL del logo
-      <input
-        type="text"
-        name="restaurantLogoUrl"
-        [(ngModel)]="form.logoUrl"
-        placeholder="https://cdn.tap2eat.com/restaurants/logo.jpg"
-      />
-    </label>
+    <div class="logo-upload">
+      <span class="field-title">{{ labels.logo }}</span>
 
-    <label>
-      Object key del logo
-      <input
-        type="text"
-        name="restaurantLogoObjectKey"
-        [(ngModel)]="form.logoObjectKey"
-        placeholder="restaurants/logo.jpg"
-      />
-    </label>
+      <label class="file-drop">
+        <input
+          type="file"
+          accept="image/*"
+          (change)="onLogoSelected($event)"
+        />
 
-    <button type="submit" [disabled]="saving">
-      {{ saving ? 'Creando...' : 'Crear restaurante' }}
-    </button>
+        <ng-container *ngIf="!logoPreviewUrl">
+          <span class="file-icon">📷</span>
+          <strong>{{ labels.selectLogo }}</strong>
+          <small>{{ labels.logoHint }}</small>
+        </ng-container>
+
+        <img
+          *ngIf="logoPreviewUrl"
+          [src]="logoPreviewUrl"
+          alt="Vista previa del logo"
+        />
+      </label>
+
+      <button
+        *ngIf="logoPreviewUrl"
+        type="button"
+        class="secondary-button"
+        (click)="removeSelectedLogo()"
+      >
+        {{ labels.removeLogo }}
+      </button>
+
+      <small class="hint">
+        {{ labels.emptyLogoHint }}
+      </small>
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="saving || uploadingLogo"
+      >
+        {{
+          uploadingLogo
+            ? labels.uploadingLogoButton
+            : saving
+              ? isEditMode
+                ? labels.updatingButton
+                : labels.creatingButton
+              : isEditMode
+                ? labels.updateButton
+                : labels.createButton
+        }}
+      </button>
+
+      <button
+        *ngIf="isEditMode"
+        type="button"
+        class="secondary-button"
+        [disabled]="saving || uploadingLogo"
+        (click)="onCancel()"
+      >
+        {{ labels.cancelButton }}
+      </button>
+    </div>
   </form>
 </section>

@@ -3,7 +3,7 @@
     <img
       *ngIf="restaurant.logo?.url"
       [src]="restaurant.logo?.url"
-      alt="Logo del restaurante"
+      [alt]="labels.logoAlt"
       class="restaurant-logo"
     />
 
@@ -13,12 +13,44 @@
   </div>
 
   <div class="restaurant-info">
-    <span class="eyebrow">Restaurante activo</span>
+    <span class="eyebrow">{{ labels.restaurant }}</span>
     <h1>{{ restaurant.name }}</h1>
-    <p>{{ restaurant.description || 'Sin descripción registrada.' }}</p>
+    <p>{{ restaurant.description || labels.noDescription }}</p>
   </div>
 
-  <div class="restaurant-status">
-    <span class="badge">{{ restaurant.active ? 'Activo' : 'Inactivo' }}</span>
+  <div class="restaurant-actions">
+    <span
+  class="badge"
+  [class.badge-active]="restaurant.active"
+  [class.badge-deleted]="!restaurant.active"
+>
+  {{ restaurant.active ? labels.active : labels.deleted }}
+</span>
+
+    <button
+      type="button"
+      class="action-button secondary-button"
+      (click)="editRestaurant.emit()"
+    >
+      {{ labels.edit }}
+    </button>
+
+    <button
+      *ngIf="restaurant.active"
+      type="button"
+      class="action-button danger-button"
+      (click)="deleteRestaurant.emit()"
+    >
+      {{ labels.delete }}
+    </button>
+
+    <button
+      *ngIf="!restaurant.active"
+      type="button"
+      class="action-button secondary-button"
+      (click)="restoreRestaurant.emit()"
+    >
+      {{ labels.restore }}
+    </button>
   </div>
 </section>
