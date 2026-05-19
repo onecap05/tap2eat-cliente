@@ -1,0 +1,152 @@
+<main class="restaurant-page">
+  <a class="back-link" routerLink="/customer/restaurants">{{ text.back }}</a>
+
+  <p class="state-message" *ngIf="isLoading">{{ text.loading }}</p>
+  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+
+  <ng-container *ngIf="!isLoading && !errorMessage && restaurant">
+    <section class="restaurant-hero">
+      <div class="restaurant-logo">
+        <img *ngIf="restaurant.logo?.url" [src]="restaurant.logo?.url" [alt]="restaurant.name" />
+        <span *ngIf="!restaurant.logo?.url">{{ restaurant.name[0] }}</span>
+      </div>
+      <div>
+        <h1>{{ restaurant.name }}</h1>
+        <p>{{ restaurant.description || 'Explora el menú disponible.' }}</p>
+      </div>
+    </section>
+
+    <section class="content-layout">
+      <div class="menu-column">
+        <section class="branch-strip" *ngIf="branches.length">
+          <h2>{{ text.branches }}</h2>
+          <div class="branch-list">
+            <article class="branch-item" *ngFor="let branch of branches">
+              <strong>{{ branch.name }}</strong>
+              <span>{{ branch.formattedAddress }}</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="menu-section">
+          <div class="section-heading">
+            <h2>{{ text.menu }}</h2>
+          </div>
+
+          <div class="category-filter">
+            <button
+              type="button"
+              [class.active]="selectedCategoryId === 'all'"
+              (click)="selectCategory('all')"
+            >
+              {{ text.allCategories }}
+            </button>
+            <button
+              type="button"
+              *ngFor="let category of categories"
+              [class.active]="selectedCategoryId === category.id"
+              (click)="selectCategory(category.id)"
+            >
+              {{ category.name }}
+            </button>
+          </div>
+
+          <div class="product-grid">
+            <button class="product-card" type="button" *ngFor="let product of filteredProducts" (click)="openProduct(product)">
+              <img *ngIf="product.image?.url" [src]="product.image?.url" [alt]="product.name" />
+              <div class="product-placeholder" *ngIf="!product.image?.url">{{ product.name[0] }}</div>
+              <div class="product-info">
+                <h3>{{ product.name }}</h3>
+                <p>{{ product.description || 'Producto disponible.' }}</p>
+                <strong>{{ formatCurrency(product.price) }}</strong>
+              </div>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="cart-panel">
+        <div class="cart-heading">
+          <h2>{{ text.cart }}</h2>
+          <strong>{{ formatCurrency(cartState.subtotal) }}</strong>
+        </div>
+
+        <p class="empty-cart" *ngIf="!cartState.items.length">{{ text.emptyCart }}</p>
+
+        <div class="cart-items" *ngIf="cartState.items.length">
+          <article class="cart-item" *ngFor="let item of cartState.items">
+            <div>
+              <h3>{{ item.productName }}</h3>
+              <p *ngFor="let modifier of item.selectedModifiers">
+                {{ modifier.groupName }}: {{ modifier.optionName }}
+              </p>
+              <strong>{{ formatCurrency(item.subtotal) }}</strong>
+            </div>
+            <div class="quantity-controls">
+              <button type="button" (click)="decreaseCartItem(item)">-</button>
+              <span>{{ item.quantity }}</span>
+              <button type="button" (click)="increaseCartItem(item)">+</button>
+            </div>
+            <button class="remove-button" type="button" (click)="removeCartItem(item)">Eliminar</button>
+          </article>
+        </div>
+
+        <button class="checkout-button" type="button" disabled>
+          {{ text.checkoutPending }}
+        </button>
+      </aside>
+    </section>
+  </ng-container>
+
+  <section class="modal-backdrop" *ngIf="selectedProduct" (click)="closeProduct()">
+    <article class="product-modal" (click)="$event.stopPropagation()">
+      <button class="close-button" type="button" (click)="closeProduct()">×</button>
+
+      <img *ngIf="selectedProduct.image?.url" [src]="selectedProduct.image?.url" [alt]="selectedProduct.name" />
+      <div class="modal-image-placeholder" *ngIf="!selectedProduct.image?.url">{{ selectedProduct.name[0] }}</div>
+
+      <h2>{{ selectedProduct.name }}</h2>
+      <p>{{ selectedProduct.description || 'Producto disponible.' }}</p>
+      <strong class="modal-price">{{ formatCurrency(getProductUnitPreview(selectedProduct)) }}</strong>
+
+      <section class="modifier-group" *ngFor="let group of getActiveModifierGroups(selectedProduct)" [class.invalid]="getGroupError(group)">
+        <div class="modifier-heading">
+          <h3>{{ group.name }}</h3>
+          <span>{{ group.required ? 'Requerido' : 'Opcional' }}</span>
+        </div>
+
+        <button
+          class="modifier-option"
+          type="button"
+          *ngFor="let option of getActiveOptions(group)"
+          [class.selected]="isOptionSelected(group, option)"
+          (click)="toggleModifierOption(group, option)"
+        >
+          <span>{{ option.name }}</span>
+          <strong *ngIf="option.additionalPrice > 0">+ {{ formatCurrency(option.additionalPrice) }}</strong>
+        </button>
+
+        <p class="modifier-error" *ngIf="getGroupError(group)">{{ getGroupError(group) }}</p>
+      </section>
+
+      <div class="modal-footer">
+        <div class="quantity-controls">
+          <button type="button" (click)="decreaseProductQuantity()">-</button>
+          <span>{{ productQuantity }}</span>
+          <button type="button" (click)="increaseProductQuantity()">+</button>
+        </div>
+        <button class="add-button" type="button" (click)="addSelectedProductToCart()">
+          {{ text.addToCart }}
+        </button>
+      </div>
+
+      <div class="mixed-cart-warning" *ngIf="pendingAddRequest">
+        <p>{{ text.mixedCart }}</p>
+        <div>
+          <button type="button" (click)="pendingAddRequest = null">{{ text.cancel }}</button>
+          <button type="button" (click)="replaceCartAndAdd()">{{ text.replaceCart }}</button>
+        </div>
+      </div>
+    </article>
+  </section>
+</main>

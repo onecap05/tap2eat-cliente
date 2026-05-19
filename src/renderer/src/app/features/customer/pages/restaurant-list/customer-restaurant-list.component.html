@@ -1,0 +1,36 @@
+<main class="customer-page">
+  <section class="customer-header">
+    <div>
+      <span class="eyebrow">Tap2Eat</span>
+      <h1>{{ text.title }}</h1>
+      <p>{{ text.subtitle }}</p>
+    </div>
+  </section>
+
+  <section class="restaurant-grid" *ngIf="!isLoading && !errorMessage && restaurants.length">
+    <a
+      class="restaurant-card"
+      *ngFor="let restaurant of restaurants"
+      [routerLink]="['/customer/restaurants', restaurant.id]"
+      [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
+    >
+      <div class="logo-frame">
+        <img *ngIf="restaurant.logo?.url; else logoInitial" [src]="restaurant.logo?.url" [alt]="restaurant.name" />
+        <ng-template #logoInitial>
+          <span>{{ getInitials(restaurant.name) }}</span>
+        </ng-template>
+      </div>
+
+      <div class="restaurant-content">
+        <h2>{{ restaurant.name }}</h2>
+        <p>{{ restaurant.description || 'Menú disponible para ordenar.' }}</p>
+      </div>
+
+      <span class="open-action">{{ text.viewRestaurant }}</span>
+    </a>
+  </section>
+
+  <p class="state-message" *ngIf="isLoading">Cargando restaurantes...</p>
+  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+  <p class="state-message" *ngIf="!isLoading && !errorMessage && !restaurants.length">{{ text.empty }}</p>
+</main>
