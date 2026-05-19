@@ -41,6 +41,16 @@ import { MenuManagementComponent } from '../../components/menu/menu-management/m
 import { BranchManagementComponent } from '../../components/branches/branch-management/branch-management.component';
 import { OrdersPreviewComponent } from '../../components/orders/orders-preview/orders-preview.component';
 
+const OWNER_RESTAURANT_STATE_LABELS = {
+  deletedTitle: 'Restaurante eliminado',
+  deletedDescription:
+    'Este restaurante está desactivado. Para volver a administrar sucursales, menú y pedidos, primero debes restaurarlo.',
+  restoreButton: 'Restaurar restaurante',
+  editButton: 'Editar datos',
+  deletedHint:
+    'Mientras esté eliminado, no se podrán gestionar sucursales ni catálogo.'
+};
+
 const OWNER_DASHBOARD_MESSAGES = {
   restaurantRequired: 'Primero debes crear un restaurante.',
   accountNotFound: 'No se pudo identificar la cuenta del restaurante.',
@@ -140,6 +150,8 @@ export class OwnerDashboardComponent implements OnInit {
   savingProductOrder = false;
 
   productOperationVersion = 0;
+
+  readonly restaurantStateLabels = OWNER_RESTAURANT_STATE_LABELS;
 
   constructor(
     private readonly restaurantApiService: RestaurantApiService,

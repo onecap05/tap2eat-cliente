@@ -5,7 +5,10 @@
   />
 
   <main class="owner-main">
-    <section *ngIf="loading && !restaurant && !showCreateRestaurantForm" class="state-card">
+    <section
+      *ngIf="loading && !restaurant && !showCreateRestaurantForm"
+      class="state-card"
+    >
       Cargando información del restaurante...
     </section>
 
@@ -20,73 +23,105 @@
     />
 
     <ng-container *ngIf="restaurant">
-     <app-restaurant-summary-card
-  [restaurant]="restaurant"
-  (editRestaurant)="openEditRestaurantForm()"
-  (deleteRestaurant)="deleteRestaurant()"
-  (restoreRestaurant)="restoreRestaurant()"
-/>
-
-<app-owner-modal
-  *ngIf="showEditRestaurantForm"
-  title="Editar restaurante"
-  subtitle="Actualiza los datos básicos y el logo del restaurante."
-  (closeModal)="closeEditRestaurantForm()"
->
-  <app-restaurant-form
-    [saving]="updatingRestaurant"
-    [restaurantToEdit]="restaurant"
-    (updateRestaurant)="updateRestaurant($event)"
-    (cancel)="closeEditRestaurantForm()"
-  />
-</app-owner-modal>
-
-      <app-dashboard-overview
-        *ngIf="activeSection === 'dashboard'"
+      <app-restaurant-summary-card
         [restaurant]="restaurant"
-        [branches]="branches"
-        [categories]="categories"
-        [products]="products"
+        (editRestaurant)="openEditRestaurantForm()"
+        (deleteRestaurant)="deleteRestaurant()"
+        (restoreRestaurant)="restoreRestaurant()"
       />
 
-      <app-orders-preview
-        *ngIf="activeSection === 'orders'"
-      />
+      <app-owner-modal
+        *ngIf="showEditRestaurantForm"
+        title="Editar restaurante"
+        subtitle="Actualiza los datos básicos y el logo del restaurante."
+        (closeModal)="closeEditRestaurantForm()"
+      >
+        <app-restaurant-form
+          [saving]="updatingRestaurant"
+          [restaurantToEdit]="restaurant"
+          (updateRestaurant)="updateRestaurant($event)"
+          (cancel)="closeEditRestaurantForm()"
+        />
+      </app-owner-modal>
 
-      <app-menu-management
-  *ngIf="activeSection === 'menu'"
-  [categories]="categories"
-  [products]="products"
-  [creatingCategory]="creatingCategory"
-  [updatingCategory]="updatingCategory"
-  [deletingCategory]="deletingCategory"
-  [creatingProduct]="creatingProduct"
-  [updatingProduct]="updatingProduct"
-  [pausingProduct]="pausingProduct"
-  [savingProductOrder]="savingProductOrder"
-  [productOperationVersion]="productOperationVersion"
-  (createCategory)="createCategory($event)"
-  (updateCategory)="updateCategory($event)"
-  (deleteCategory)="deleteCategory($event)"
-  (createProduct)="createProduct($event)"
-  (updateProduct)="updateProduct($event)"
-  (deactivateProduct)="deactivateProduct($event)"
-  (pauseProduct)="pauseProduct($event)"
-  (resumeProduct)="resumeProduct($event)"
-  (deleteProduct)="deleteProduct($event)"
-  (reorderProducts)="onReorderProducts($event)"
-/>
+      <section *ngIf="!restaurant.active" class="deleted-restaurant-state">
+        <div class="deleted-icon">🏪</div>
 
-     <app-branch-management
-  *ngIf="activeSection === 'branches'"
-  [branches]="branches"
-  [creatingBranch]="creatingBranch"
-  [updatingBranch]="updatingBranch"
-  [deletingBranch]="deletingBranch"
-  (createBranch)="createBranch($event)"
-  (updateBranch)="updateBranch($event)"
-  (deleteBranch)="deleteBranch($event)"
-/>
+        <div>
+          <h2>{{ restaurantStateLabels.deletedTitle }}</h2>
+          <p>{{ restaurantStateLabels.deletedDescription }}</p>
+          <small>{{ restaurantStateLabels.deletedHint }}</small>
+        </div>
+
+        <div class="deleted-actions">
+          <button
+            type="button"
+            class="primary-action"
+            [disabled]="deletingRestaurant"
+            (click)="restoreRestaurant()"
+          >
+            {{ restaurantStateLabels.restoreButton }}
+          </button>
+
+          <button
+            type="button"
+            class="secondary-action"
+            [disabled]="deletingRestaurant"
+            (click)="openEditRestaurantForm()"
+          >
+            {{ restaurantStateLabels.editButton }}
+          </button>
+        </div>
+      </section>
+
+      <ng-container *ngIf="restaurant.active">
+        <app-dashboard-overview
+          *ngIf="activeSection === 'dashboard'"
+          [restaurant]="restaurant"
+          [branches]="branches"
+          [categories]="categories"
+          [products]="products"
+        />
+
+        <app-orders-preview
+          *ngIf="activeSection === 'orders'"
+        />
+
+        <app-menu-management
+          *ngIf="activeSection === 'menu'"
+          [categories]="categories"
+          [products]="products"
+          [creatingCategory]="creatingCategory"
+          [updatingCategory]="updatingCategory"
+          [deletingCategory]="deletingCategory"
+          [creatingProduct]="creatingProduct"
+          [updatingProduct]="updatingProduct"
+          [pausingProduct]="pausingProduct"
+          [savingProductOrder]="savingProductOrder"
+          [productOperationVersion]="productOperationVersion"
+          (createCategory)="createCategory($event)"
+          (updateCategory)="updateCategory($event)"
+          (deleteCategory)="deleteCategory($event)"
+          (createProduct)="createProduct($event)"
+          (updateProduct)="updateProduct($event)"
+          (deactivateProduct)="deactivateProduct($event)"
+          (pauseProduct)="pauseProduct($event)"
+          (resumeProduct)="resumeProduct($event)"
+          (deleteProduct)="deleteProduct($event)"
+          (reorderProducts)="onReorderProducts($event)"
+        />
+
+        <app-branch-management
+          *ngIf="activeSection === 'branches'"
+          [branches]="branches"
+          [creatingBranch]="creatingBranch"
+          [updatingBranch]="updatingBranch"
+          [deletingBranch]="deletingBranch"
+          (createBranch)="createBranch($event)"
+          (updateBranch)="updateBranch($event)"
+          (deleteBranch)="deleteBranch($event)"
+        />
+      </ng-container>
     </ng-container>
   </main>
 </div>

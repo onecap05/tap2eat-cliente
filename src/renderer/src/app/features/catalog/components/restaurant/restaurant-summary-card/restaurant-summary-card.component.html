@@ -19,9 +19,13 @@
   </div>
 
   <div class="restaurant-actions">
-    <span class="badge">
-      {{ restaurant.active ? labels.active : labels.deleted }}
-    </span>
+    <span
+  class="badge"
+  [class.badge-active]="restaurant.active"
+  [class.badge-deleted]="!restaurant.active"
+>
+  {{ restaurant.active ? labels.active : labels.deleted }}
+</span>
 
     <button
       type="button"
