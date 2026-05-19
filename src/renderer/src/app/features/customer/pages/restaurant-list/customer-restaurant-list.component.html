@@ -1,36 +1,126 @@
 <main class="customer-page">
-  <section class="customer-header">
-    <div>
+  <nav class="customer-navbar">
+    <a class="brand" routerLink="/customer/restaurants">
+      <span class="brand-mark">T2E</span>
+      <span>Tap2Eat</span>
+    </a>
+
+    <div class="nav-actions">
+      <a routerLink="/customer/restaurants">Explorar</a>
+      <button type="button" class="icon-button" aria-label="Carrito">
+        🛒
+      </button>
+      <button type="button" class="icon-button" aria-label="Perfil">
+        👤
+      </button>
+    </div>
+  </nav>
+
+  <section class="customer-hero">
+    <div class="hero-content">
       <span class="eyebrow">Tap2Eat</span>
-      <h1>{{ text.title }}</h1>
-      <p>{{ text.subtitle }}</p>
+      <h1>Ordena tu comida favorita</h1>
+      <p>Explora restaurantes disponibles y elige dónde quieres ordenar hoy.</p>
+
+      <div class="search-box">
+        <span>🔎</span>
+        <input
+          type="text"
+          [placeholder]="text.searchPlaceholder"
+          [(ngModel)]="searchTerm"
+        />
+        <button type="button">
+          Buscar
+        </button>
+      </div>
     </div>
   </section>
 
-  <section class="restaurant-grid" *ngIf="!isLoading && !errorMessage && restaurants.length">
-    <a
-      class="restaurant-card"
-      *ngFor="let restaurant of restaurants"
-      [routerLink]="['/customer/restaurants', restaurant.id]"
-      [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
-    >
-      <div class="logo-frame">
-        <img *ngIf="restaurant.logo?.url; else logoInitial" [src]="restaurant.logo?.url" [alt]="restaurant.name" />
-        <ng-template #logoInitial>
-          <span>{{ getInitials(restaurant.name) }}</span>
-        </ng-template>
-      </div>
+  <section class="category-section">
+    <h2>Categorías</h2>
 
-      <div class="restaurant-content">
-        <h2>{{ restaurant.name }}</h2>
-        <p>{{ restaurant.description || 'Menú disponible para ordenar.' }}</p>
-      </div>
-
-      <span class="open-action">{{ text.viewRestaurant }}</span>
-    </a>
+    <div class="category-list">
+      <button type="button" class="category-chip active">
+        🍴 Todos
+      </button>
+      <button type="button" class="category-chip">
+        🍔 Burgers
+      </button>
+      <button type="button" class="category-chip">
+        🍕 Pizza
+      </button>
+      <button type="button" class="category-chip">
+        ☕ Café
+      </button>
+      <button type="button" class="category-chip">
+        🥗 Saludable
+      </button>
+    </div>
   </section>
 
-  <p class="state-message" *ngIf="isLoading">Cargando restaurantes...</p>
-  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
-  <p class="state-message" *ngIf="!isLoading && !errorMessage && !restaurants.length">{{ text.empty }}</p>
+  <section class="restaurant-section">
+    <div class="section-heading">
+      <div>
+        <h2>Restaurantes disponibles</h2>
+        <p>Elige un restaurante para ver sucursales, menú y productos.</p>
+      </div>
+    </div>
+
+    <p class="state-message" *ngIf="isLoading">
+      Cargando restaurantes...
+    </p>
+
+    <p class="state-message error" *ngIf="!isLoading && errorMessage">
+      {{ errorMessage }}
+    </p>
+
+    <p
+      class="state-message"
+      *ngIf="!isLoading && !errorMessage && !filteredRestaurants.length"
+    >
+      {{ text.empty }}
+    </p>
+
+    <div
+      class="restaurant-grid"
+      *ngIf="!isLoading && !errorMessage && filteredRestaurants.length"
+    >
+      <a
+        class="restaurant-card"
+        *ngFor="let restaurant of filteredRestaurants"
+        [routerLink]="['/customer/restaurants', restaurant.id]"
+        [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
+      >
+        <div class="image-wrapper">
+          <img
+            *ngIf="restaurant.logo?.url; else logoInitial"
+            [src]="restaurant.logo?.url"
+            [alt]="restaurant.name"
+          />
+
+          <ng-template #logoInitial>
+            <div class="logo-placeholder">
+              {{ getInitials(restaurant.name) }}
+            </div>
+          </ng-template>
+
+          <span class="badge">Disponible</span>
+        </div>
+
+        <div class="restaurant-content">
+          <h3>{{ restaurant.name }}</h3>
+          <p>{{ restaurant.description || 'Menú disponible para ordenar.' }}</p>
+
+          <div class="restaurant-meta">
+            <span>⭐ 4.5</span>
+            <span>15-20 min</span>
+          </div>
+
+          <span class="open-action">
+            {{ text.viewRestaurant }}
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
 </main>

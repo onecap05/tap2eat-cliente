@@ -19,3 +19,5 @@ Thumbs.db
 # Archivos de configuración de IDEs
 .vscode/
 .idea/
+
+AGENTS.md
