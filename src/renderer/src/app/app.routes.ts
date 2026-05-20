@@ -5,8 +5,6 @@ import { VerifyEmailComponent } from './components/verify-email/verify-email.com
 import { LoginComponent } from './components/login/login.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { OwnerDashboardComponent } from './features/catalog/pages/owner-dashboard/owner-dashboard.component';
 
 import { authGuard } from './guards/auth.guard';
 
@@ -33,12 +31,23 @@ export const routes: Routes = [
   },
   {
     path: 'customer/dashboard',
-    component: DashboardComponent,
-    canActivate: [authGuard]
+    redirectTo: 'customer/restaurants',
+    pathMatch: 'full'
+  },
+  {
+    path: 'customer/restaurants',
+    loadComponent: () => import('./features/customer/pages/restaurant-list/customer-restaurant-list.component')
+      .then(component => component.CustomerRestaurantListComponent)
+  },
+  {
+    path: 'customer/restaurants/:restaurantId',
+    loadComponent: () => import('./features/customer/pages/restaurant-detail/customer-restaurant-detail.component')
+      .then(component => component.CustomerRestaurantDetailComponent)
   },
   {
     path: 'owner/dashboard',
-    component: OwnerDashboardComponent,
+    loadComponent: () => import('./features/catalog/pages/owner-dashboard/owner-dashboard.component')
+      .then(component => component.OwnerDashboardComponent),
     canActivate: [authGuard]
   },
   {

@@ -1,0 +1,311 @@
+<main class="restaurant-page">
+  <nav class="customer-navbar">
+    <a class="brand" routerLink="/customer/restaurants">
+      <span class="brand-mark">T2E</span>
+      <span>Tap2Eat</span>
+    </a>
+
+    <div class="nav-actions">
+      <a routerLink="/customer/restaurants">Explorar</a>
+      <button type="button" class="icon-button" aria-label="Carrito">Carrito</button>
+      <button type="button" class="icon-button" aria-label="Perfil">Perfil</button>
+    </div>
+  </nav>
+
+  <p class="state-message" *ngIf="isLoading">{{ text.loading }}</p>
+  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+  <p class="state-message warning" *ngIf="!isLoading && availabilityMessage">{{ availabilityMessage }}</p>
+
+  <ng-container *ngIf="!isLoading && !errorMessage && restaurant">
+    <section class="restaurant-hero" [class.closed]="!restaurant.open">
+      <div class="hero-overlay"></div>
+
+      <div class="hero-content">
+        <a class="back-link" routerLink="/customer/restaurants">
+          {{ text.back }}
+        </a>
+
+        <div class="restaurant-logo">
+          <img
+            *ngIf="restaurant.logo?.url"
+            [src]="restaurant.logo?.url"
+            [alt]="restaurant.name"
+          />
+          <span *ngIf="!restaurant.logo?.url">{{ restaurant.name[0] }}</span>
+        </div>
+
+        <div class="hero-text">
+          <span class="status-badge" [class.closed]="!restaurant.open">
+            {{ restaurant.open ? text.open : text.closed }}
+          </span>
+          <h1>{{ restaurant.name }}</h1>
+          <p>{{ restaurant.description || 'Explora el menu disponible.' }}</p>
+
+          <div class="hero-meta">
+            <span>{{ branches.length || 0 }} sucursales</span>
+            <span>{{ restaurant.open ? 'Aceptando pedidos' : 'Pedidos pausados' }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="state-message warning" *ngIf="!restaurant.open">
+      {{ text.closedRestaurant }}
+    </p>
+
+    <section class="category-bar">
+      <button
+        type="button"
+        [class.active]="selectedCategoryId === 'all'"
+        (click)="selectCategory('all')"
+      >
+        {{ text.allCategories }}
+      </button>
+
+      <button
+        type="button"
+        *ngFor="let category of categories"
+        [class.active]="selectedCategoryId === category.id"
+        (click)="selectCategory(category.id)"
+      >
+        {{ category.name }}
+      </button>
+    </section>
+
+    <section class="page-content">
+      <div class="menu-column">
+        <section class="branch-strip" *ngIf="branches.length">
+          <div class="section-heading">
+            <div>
+              <h2>{{ text.branches }}</h2>
+              <p>Las sucursales sin horario configurado se consideran cerradas.</p>
+            </div>
+          </div>
+
+          <div class="branch-list">
+            <article class="branch-item" *ngFor="let branch of branches" [class.closed]="!branch.open">
+              <div class="branch-icon">Sucursal</div>
+
+              <div>
+                <span class="status-badge small" [class.closed]="!branch.open">
+                  {{ branch.open ? text.branchOpen : text.branchClosed }}
+                </span>
+                <strong>{{ branch.name }}</strong>
+                <span>{{ branch.formattedAddress }}</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="menu-section">
+          <div class="section-heading">
+            <div>
+              <h2>{{ text.menu }}</h2>
+              <p>Solo se muestran productos disponibles para ordenar ahora.</p>
+            </div>
+          </div>
+
+          <div class="product-list">
+            <button
+              class="product-card"
+              type="button"
+              *ngFor="let product of filteredProducts"
+              [disabled]="!restaurant.open || !product.available"
+              [class.disabled]="!restaurant.open || !product.available"
+              (click)="openProduct(product)"
+            >
+              <div class="product-info">
+                <span class="status-badge small" [class.closed]="!product.available">
+                  {{ product.available ? 'Disponible' : 'No disponible' }}
+                </span>
+                <h3>{{ product.name }}</h3>
+                <p>{{ product.description || 'Producto disponible.' }}</p>
+                <strong>{{ formatCurrency(product.price) }}</strong>
+
+                <span class="product-type" *ngIf="product.productType === 'CUSTOMIZABLE'">
+                  Personalizable
+                </span>
+              </div>
+
+              <div class="product-actions">
+                <span class="add-product-button">
+                  + Agregar
+                </span>
+
+                <div class="product-image">
+                  <img
+                    *ngIf="product.image?.url"
+                    [src]="product.image?.url"
+                    [alt]="product.name"
+                  />
+                  <span *ngIf="!product.image?.url">
+                    {{ product.name[0] }}
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <p class="state-message" *ngIf="!filteredProducts.length">
+            No hay productos disponibles en esta categoria.
+          </p>
+        </section>
+      </div>
+
+      <aside class="cart-panel" [class.disabled]="!restaurant.open">
+        <div class="cart-heading">
+          <div>
+            <h2>{{ text.cart }}</h2>
+            <p>{{ cartState.items.length }} producto(s)</p>
+          </div>
+
+          <strong>{{ formatCurrency(cartState.subtotal) }}</strong>
+        </div>
+
+        <p class="empty-cart" *ngIf="!cartState.items.length">
+          {{ text.emptyCart }}
+        </p>
+
+        <p class="state-message warning compact" *ngIf="cartState.items.length && !restaurant.open">
+          {{ text.unavailableCart }}
+        </p>
+
+        <div class="cart-items" *ngIf="cartState.items.length">
+          <article class="cart-item" *ngFor="let item of cartState.items">
+            <div class="cart-item-main">
+              <h3>{{ item.productName }}</h3>
+
+              <p *ngFor="let modifier of item.selectedModifiers">
+                {{ modifier.groupName }}: {{ modifier.optionName }}
+              </p>
+
+              <strong>{{ formatCurrency(item.subtotal) }}</strong>
+            </div>
+
+            <div class="cart-item-actions">
+              <div class="quantity-controls">
+                <button type="button" (click)="decreaseCartItem(item)">-</button>
+                <span>{{ item.quantity }}</span>
+                <button type="button" (click)="increaseCartItem(item)">+</button>
+              </div>
+
+              <button class="remove-button" type="button" (click)="removeCartItem(item)">
+                Eliminar
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <button class="checkout-button" type="button" [disabled]="!canCheckout()">
+          {{ text.checkoutPending }}
+        </button>
+      </aside>
+    </section>
+  </ng-container>
+
+  <section class="modal-backdrop" *ngIf="selectedProduct" (click)="closeProduct()">
+    <article class="product-modal" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <span>Personalizar producto</span>
+          <h2>{{ selectedProduct.name }}</h2>
+        </div>
+
+        <button class="close-button" type="button" (click)="closeProduct()">x</button>
+      </header>
+
+      <div class="modal-body">
+        <p class="state-message warning compact" *ngIf="!canAddSelectedProduct()">
+          {{ restaurant?.open ? text.unavailableProduct : text.closedRestaurant }}
+        </p>
+
+        <div class="modal-product-summary">
+          <div class="modal-image">
+            <img
+              *ngIf="selectedProduct.image?.url"
+              [src]="selectedProduct.image?.url"
+              [alt]="selectedProduct.name"
+            />
+            <span *ngIf="!selectedProduct.image?.url">
+              {{ selectedProduct.name[0] }}
+            </span>
+          </div>
+
+          <div>
+            <h3>{{ selectedProduct.name }}</h3>
+            <p>{{ selectedProduct.description || 'Producto disponible.' }}</p>
+            <strong>{{ formatCurrency(getProductUnitPreview(selectedProduct)) }}</strong>
+          </div>
+        </div>
+
+        <section
+          class="modifier-group"
+          *ngFor="let group of getActiveModifierGroups(selectedProduct)"
+          [class.invalid]="getGroupError(group)"
+        >
+          <div class="modifier-heading">
+            <div>
+              <h3>{{ group.name }}</h3>
+              <p>{{ group.required ? 'Selecciona una opcion requerida.' : 'Opcional' }}</p>
+            </div>
+
+            <span>{{ group.required ? 'Requerido' : 'Opcional' }}</span>
+          </div>
+
+          <button
+            class="modifier-option"
+            type="button"
+            *ngFor="let option of getActiveOptions(group)"
+            [class.selected]="isOptionSelected(group, option)"
+            (click)="toggleModifierOption(group, option)"
+          >
+            <span>{{ option.name }}</span>
+
+            <strong *ngIf="option.additionalPrice > 0">
+              + {{ formatCurrency(option.additionalPrice) }}
+            </strong>
+          </button>
+
+          <p class="modifier-error" *ngIf="getGroupError(group)">
+            {{ getGroupError(group) }}
+          </p>
+        </section>
+
+        <div class="quantity-section">
+          <span>Cantidad</span>
+
+          <div class="quantity-controls large">
+            <button type="button" (click)="decreaseProductQuantity()">-</button>
+            <span>{{ productQuantity }}</span>
+            <button type="button" (click)="increaseProductQuantity()">+</button>
+          </div>
+        </div>
+
+        <div class="mixed-cart-warning" *ngIf="pendingAddRequest">
+          <p>{{ text.mixedCart }}</p>
+
+          <div>
+            <button type="button" (click)="pendingAddRequest = null">
+              {{ text.cancel }}
+            </button>
+
+            <button type="button" (click)="replaceCartAndAdd()">
+              {{ text.replaceCart }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          class="add-button"
+          type="button"
+          [disabled]="!canAddSelectedProduct()"
+          (click)="addSelectedProductToCart()"
+        >
+          {{ text.addToCart }}
+        </button>
+      </footer>
+    </article>
+  </section>
+</main>
