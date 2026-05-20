@@ -32,6 +32,10 @@ export class CartService {
     const currentState = this.getSnapshot();
     const restaurantId = request.product.restaurantId;
 
+    if (!request.product.available) {
+      return false;
+    }
+
     if (currentState.restaurantId && currentState.restaurantId !== restaurantId && !replaceRestaurantCart) {
       return false;
     }

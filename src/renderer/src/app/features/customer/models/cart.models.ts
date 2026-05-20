@@ -1,6 +1,6 @@
 import { IModifierGroupResponse } from '../../catalog/models/commons/IModifierGroupResponse';
 import { IModifierOptionResponse } from '../../catalog/models/commons/IModifierOptionResponse';
-import { IProductResponse } from '../../catalog/models/product/IProductResponse';
+import { CustomerProductResponse } from './customer-catalog.models';
 
 export interface ISelectedModifierOption {
   groupId: string;
@@ -35,7 +35,7 @@ export interface ICartState {
 }
 
 export interface IAddToCartRequest {
-  product: IProductResponse;
+  product: CustomerProductResponse;
   quantity: number;
   modifierSelections: IProductModifierSelection[];
 }

@@ -217,6 +217,10 @@
   transform: translateY(-3px);
 }
 
+.restaurant-card.closed {
+  opacity: 0.72;
+}
+
 .image-wrapper {
   position: relative;
   height: 190px;
@@ -252,6 +256,11 @@
   color: #78350f;
   font-size: 13px;
   font-weight: 900;
+}
+
+.badge.closed {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .restaurant-content {

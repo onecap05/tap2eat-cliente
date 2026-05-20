@@ -4,13 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, Subscription } from 'rxjs';
 
-import { IBranchResponse } from '../../../catalog/models/branch/IBranchResponse';
-import { ICategoryResponse } from '../../../catalog/models/category/ICategoryResponse';
 import { IModifierGroupResponse } from '../../../catalog/models/commons/IModifierGroupResponse';
 import { IModifierOptionResponse } from '../../../catalog/models/commons/IModifierOptionResponse';
-import { IProductResponse } from '../../../catalog/models/product/IProductResponse';
-import { IRestaurantResponse } from '../../../catalog/models/restaurant/IRestaurantResponse';
 import { ICartItem, ICartState, IProductModifierSelection } from '../../models/cart.models';
+import {
+  CustomerBranchResponse,
+  CustomerCategoryResponse,
+  CustomerProductResponse,
+  CustomerRestaurantResponse
+} from '../../models/customer-catalog.models';
 import { CartService } from '../../services/cart.service';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 
@@ -18,17 +20,23 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   back: 'Restaurantes',
   allCategories: 'Todo',
   branches: 'Sucursales',
-  menu: 'Menú',
+  menu: 'Menu',
   addToCart: 'Agregar al carrito',
   cart: 'Carrito',
-  checkout: 'Continuar al checkout',
-  checkoutPending: 'Checkout próximamente',
-  emptyCart: 'Tu carrito está vacío.',
+  checkoutPending: 'Checkout proximamente',
+  emptyCart: 'Tu carrito esta vacio.',
   mixedCart: 'Tu carrito tiene productos de otro restaurante. Puedes vaciarlo y empezar uno nuevo.',
   replaceCart: 'Vaciar carrito y agregar',
   cancel: 'Cancelar',
   requiredGroup: 'Selecciona las opciones requeridas.',
-  maxReached: 'Máximo de opciones alcanzado.',
+  maxReached: 'Maximo de opciones alcanzado.',
+  open: 'Abierto',
+  closed: 'Cerrado',
+  branchOpen: 'Abierta',
+  branchClosed: 'Cerrada',
+  closedRestaurant: 'Este restaurante esta cerrado ahora. Puedes consultar el menu, pero no agregar productos.',
+  unavailableProduct: 'Este producto no esta disponible ahora.',
+  unavailableCart: 'El carrito queda bloqueado mientras el restaurante este cerrado.',
   loading: 'Cargando restaurante...',
   error: 'No pudimos cargar este restaurante.'
 };
@@ -38,23 +46,31 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './customer-restaurant-detail.component.html',
-  styleUrl: './customer-restaurant-detail.component.css'
+  styleUrls: [
+    './customer-restaurant-detail.component.css',
+    './customer-restaurant-detail.modal.css'
+  ]
 })
 export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   public readonly text = CUSTOMER_RESTAURANT_DETAIL_TEXT;
-  public restaurant: IRestaurantResponse | null = null;
-  public branches: IBranchResponse[] = [];
-  public categories: ICategoryResponse[] = [];
-  public products: IProductResponse[] = [];
+  public restaurant: CustomerRestaurantResponse | null = null;
+  public branches: CustomerBranchResponse[] = [];
+  public categories: CustomerCategoryResponse[] = [];
+  public products: CustomerProductResponse[] = [];
   public selectedCategoryId = 'all';
-  public selectedProduct: IProductResponse | null = null;
+  public selectedProduct: CustomerProductResponse | null = null;
   public selectedOptionsByGroup = new Map<string, IModifierOptionResponse[]>();
   public groupErrors = new Map<string, string>();
   public productQuantity = 1;
   public isLoading = true;
   public errorMessage = '';
+  public availabilityMessage = '';
   public cartState: ICartState;
-  public pendingAddRequest: { product: IProductResponse; selections: IProductModifierSelection[]; quantity: number } | null = null;
+  public pendingAddRequest: {
+    product: CustomerProductResponse;
+    selections: IProductModifierSelection[];
+    quantity: number;
+  } | null = null;
 
   private cartSubscription?: Subscription;
 
@@ -86,7 +102,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     this.cartSubscription?.unsubscribe();
   }
 
-  public get filteredProducts(): IProductResponse[] {
+  public get filteredProducts(): CustomerProductResponse[] {
     if (this.selectedCategoryId === 'all') {
       return this.products;
     }
@@ -94,16 +110,33 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     return this.products.filter(product => product.categoryId === this.selectedCategoryId);
   }
 
-  public openProduct(product: IProductResponse): void {
+  public openProduct(product: CustomerProductResponse): void {
+    this.availabilityMessage = '';
+
+    if (!this.restaurant?.open) {
+      this.availabilityMessage = this.text.closedRestaurant;
+      return;
+    }
+
+    if (!product.available) {
+      this.availabilityMessage = this.text.unavailableProduct;
+      return;
+    }
+
     this.customerCatalogApiService.getProduct(product.id).subscribe({
       next: loadedProduct => {
+        if (!loadedProduct.available) {
+          this.availabilityMessage = this.text.unavailableProduct;
+          return;
+        }
+
         this.selectedProduct = loadedProduct;
         this.selectedOptionsByGroup = new Map();
         this.groupErrors = new Map();
         this.productQuantity = 1;
       },
       error: () => {
-        this.errorMessage = this.text.error;
+        this.availabilityMessage = this.text.unavailableProduct;
       }
     });
   }
@@ -111,6 +144,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   public closeProduct(): void {
     this.selectedProduct = null;
     this.pendingAddRequest = null;
+    this.availabilityMessage = '';
   }
 
   public selectCategory(categoryId: string): void {
@@ -161,29 +195,22 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   }
 
   public addSelectedProductToCart(replaceRestaurantCart = false): void {
+    this.availabilityMessage = '';
+
     if (!this.selectedProduct || !this.validateModifierSelections()) {
       return;
     }
 
     const selections = this.getModifierSelections();
-    const request = {
-      product: this.selectedProduct,
-      selections,
-      quantity: this.productQuantity
-    };
 
-    const wasAdded = this.cartService.addItem({
-      product: request.product,
-      quantity: request.quantity,
-      modifierSelections: request.selections
-    }, replaceRestaurantCart);
-
-    if (!wasAdded) {
-      this.pendingAddRequest = request;
-      return;
-    }
-
-    this.closeProduct();
+    this.customerCatalogApiService.getProduct(this.selectedProduct.id).subscribe({
+      next: latestProduct => {
+        this.tryAddValidatedProduct(latestProduct, selections, this.productQuantity, replaceRestaurantCart);
+      },
+      error: () => {
+        this.availabilityMessage = this.text.unavailableProduct;
+      }
+    });
   }
 
   public replaceCartAndAdd(): void {
@@ -191,12 +218,20 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.cartService.addItem({
-      product: this.pendingAddRequest.product,
-      quantity: this.pendingAddRequest.quantity,
-      modifierSelections: this.pendingAddRequest.selections
-    }, true);
-    this.closeProduct();
+    this.tryAddValidatedProduct(
+      this.pendingAddRequest.product,
+      this.pendingAddRequest.selections,
+      this.pendingAddRequest.quantity,
+      true
+    );
+  }
+
+  public canAddSelectedProduct(): boolean {
+    return Boolean(this.restaurant?.open && this.selectedProduct?.available);
+  }
+
+  public canCheckout(): boolean {
+    return Boolean(this.restaurant?.open && this.cartState.items.length);
   }
 
   public increaseCartItem(item: ICartItem): void {
@@ -226,7 +261,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     return this.groupErrors.get(this.getGroupId(group)) ?? '';
   }
 
-  public getProductUnitPreview(product: IProductResponse): number {
+  public getProductUnitPreview(product: CustomerProductResponse): number {
     if (this.selectedProduct?.id !== product.id) {
       return product.price;
     }
@@ -236,7 +271,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
       .reduce((total, option) => total + (option.additionalPrice ?? 0), 0);
   }
 
-  public getActiveModifierGroups(product: IProductResponse): IModifierGroupResponse[] {
+  public getActiveModifierGroups(product: CustomerProductResponse): IModifierGroupResponse[] {
     return (product.modifierGroups ?? [])
       .filter(group => group.active)
       .sort((first, second) => (first.displayOrder ?? 999) - (second.displayOrder ?? 999));
@@ -251,6 +286,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   private loadRestaurant(restaurantId: string): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.availabilityMessage = '';
 
     forkJoin({
       restaurant: this.customerCatalogApiService.getRestaurant(restaurantId),
@@ -262,7 +298,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
         this.restaurant = response.restaurant;
         this.branches = response.branches;
         this.categories = response.categories;
-        this.products = response.products;
+        this.products = response.products.filter(product => product.available);
         this.isLoading = false;
       },
       error: () => {
@@ -270,6 +306,37 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  private tryAddValidatedProduct(
+    product: CustomerProductResponse,
+    selections: IProductModifierSelection[],
+    quantity: number,
+    replaceRestaurantCart: boolean
+  ): void {
+    if (!this.restaurant?.open) {
+      this.availabilityMessage = this.text.closedRestaurant;
+      return;
+    }
+
+    if (!product.available) {
+      this.availabilityMessage = this.text.unavailableProduct;
+      return;
+    }
+
+    const request = { product, selections, quantity };
+    const wasAdded = this.cartService.addItem({
+      product: request.product,
+      quantity: request.quantity,
+      modifierSelections: request.selections
+    }, replaceRestaurantCart);
+
+    if (!wasAdded) {
+      this.pendingAddRequest = request;
+      return;
+    }
+
+    this.closeProduct();
   }
 
   private validateModifierSelections(): boolean {

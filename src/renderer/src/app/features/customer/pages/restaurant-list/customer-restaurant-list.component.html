@@ -8,10 +8,10 @@
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
       <button type="button" class="icon-button" aria-label="Carrito">
-        🛒
+        Carrito
       </button>
       <button type="button" class="icon-button" aria-label="Perfil">
-        👤
+        Perfil
       </button>
     </div>
   </nav>
@@ -20,10 +20,10 @@
     <div class="hero-content">
       <span class="eyebrow">Tap2Eat</span>
       <h1>Ordena tu comida favorita</h1>
-      <p>Explora restaurantes disponibles y elige dónde quieres ordenar hoy.</p>
+      <p>Explora restaurantes activos y revisa si estan abiertos ahora.</p>
 
       <div class="search-box">
-        <span>🔎</span>
+        <span>Buscar</span>
         <input
           type="text"
           [placeholder]="text.searchPlaceholder"
@@ -37,23 +37,19 @@
   </section>
 
   <section class="category-section">
-    <h2>Categorías</h2>
+    <h2>Categorias</h2>
 
     <div class="category-list">
       <button type="button" class="category-chip active">
-        🍴 Todos
+        Todos
       </button>
-      <button type="button" class="category-chip">
-        🍔 Burgers
-      </button>
-      <button type="button" class="category-chip">
-        🍕 Pizza
-      </button>
-      <button type="button" class="category-chip">
-        ☕ Café
-      </button>
-      <button type="button" class="category-chip">
-        🥗 Saludable
+      <button
+        type="button"
+        class="category-chip"
+        [class.active]="showOpenOnly"
+        (click)="toggleOpenOnly()"
+      >
+        {{ text.openNowFilter }}
       </button>
     </div>
   </section>
@@ -62,7 +58,7 @@
     <div class="section-heading">
       <div>
         <h2>Restaurantes disponibles</h2>
-        <p>Elige un restaurante para ver sucursales, menú y productos.</p>
+        <p>Los restaurantes cerrados se pueden consultar, pero no aceptan carrito.</p>
       </div>
     </div>
 
@@ -88,6 +84,7 @@
       <a
         class="restaurant-card"
         *ngFor="let restaurant of filteredRestaurants"
+        [class.closed]="!restaurant.open"
         [routerLink]="['/customer/restaurants', restaurant.id]"
         [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
       >
@@ -104,16 +101,17 @@
             </div>
           </ng-template>
 
-          <span class="badge">Disponible</span>
+          <span class="badge" [class.closed]="!restaurant.open">
+            {{ restaurant.open ? text.open : text.closed }}
+          </span>
         </div>
 
         <div class="restaurant-content">
           <h3>{{ restaurant.name }}</h3>
-          <p>{{ restaurant.description || 'Menú disponible para ordenar.' }}</p>
+          <p>{{ restaurant.description || 'Menu disponible para consultar.' }}</p>
 
           <div class="restaurant-meta">
-            <span>⭐ 4.5</span>
-            <span>15-20 min</span>
+            <span>{{ restaurant.open ? 'Aceptando pedidos' : 'Pedidos pausados' }}</span>
           </div>
 
           <span class="open-action">

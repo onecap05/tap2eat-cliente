@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { IModifierGroupResponse } from '../../catalog/models/commons/IModifierGroupResponse';
 import { IModifierOptionResponse } from '../../catalog/models/commons/IModifierOptionResponse';
-import { IProductResponse } from '../../catalog/models/product/IProductResponse';
+import { CustomerProductResponse } from '../models/customer-catalog.models';
 import { CartService } from './cart.service';
 
 describe('CartService', () => {
@@ -96,7 +96,21 @@ describe('CartService', () => {
     expect(state.subtotal).toBe(80);
   });
 
-  function product(id: string, restaurantId: string, price: number): IProductResponse {
+  it('should block unavailable products', () => {
+    const wasAdded = service.addItem({
+      product: {
+        ...product('product-1', 'restaurant-1', 100),
+        available: false
+      },
+      quantity: 1,
+      modifierSelections: []
+    });
+
+    expect(wasAdded).toBe(false);
+    expect(service.getSnapshot().items).toHaveLength(0);
+  });
+
+  function product(id: string, restaurantId: string, price: number): CustomerProductResponse {
     return {
       id,
       restaurantId,
@@ -106,6 +120,7 @@ describe('CartService', () => {
       price,
       featured: false,
       active: true,
+      available: true,
       tags: [],
       dietaryFlags: [],
       allergens: [],

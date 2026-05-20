@@ -3,13 +3,16 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { IRestaurantResponse } from '../../../catalog/models/restaurant/IRestaurantResponse';
+import { CustomerRestaurantResponse } from '../../models/customer-catalog.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 
 const CUSTOMER_RESTAURANT_LIST_TEXT = {
-  empty: 'Todavía no hay restaurantes disponibles.',
+  empty: 'Todavia no hay restaurantes disponibles.',
   error: 'No pudimos cargar los restaurantes. Intenta de nuevo.',
   viewRestaurant: 'Ver restaurante',
+  open: 'Abierto',
+  closed: 'Cerrado',
+  openNowFilter: 'Abiertos ahora',
   searchPlaceholder: 'Buscar restaurantes o platillos...'
 };
 
@@ -23,10 +26,11 @@ const CUSTOMER_RESTAURANT_LIST_TEXT = {
 export class CustomerRestaurantListComponent implements OnInit {
   public readonly text = CUSTOMER_RESTAURANT_LIST_TEXT;
 
-  public restaurants: IRestaurantResponse[] = [];
+  public restaurants: CustomerRestaurantResponse[] = [];
   public isLoading = true;
   public errorMessage = '';
   public searchTerm = '';
+  public showOpenOnly = false;
 
   constructor(private readonly customerCatalogApiService: CustomerCatalogApiService) {}
 
@@ -34,14 +38,17 @@ export class CustomerRestaurantListComponent implements OnInit {
     this.loadRestaurants();
   }
 
-  public get filteredRestaurants(): IRestaurantResponse[] {
+  public get filteredRestaurants(): CustomerRestaurantResponse[] {
     const normalizedSearchTerm = this.searchTerm.trim().toLowerCase();
+    const restaurants = this.showOpenOnly
+      ? this.restaurants.filter(restaurant => restaurant.open)
+      : this.restaurants;
 
     if (!normalizedSearchTerm) {
-      return this.restaurants;
+      return restaurants;
     }
 
-    return this.restaurants.filter(restaurant =>
+    return restaurants.filter(restaurant =>
       restaurant.name.toLowerCase().includes(normalizedSearchTerm)
       || (restaurant.description ?? '').toLowerCase().includes(normalizedSearchTerm)
     );
@@ -55,6 +62,10 @@ export class CustomerRestaurantListComponent implements OnInit {
       .map(part => part[0])
       .join('')
       .toUpperCase();
+  }
+
+  public toggleOpenOnly(): void {
+    this.showOpenOnly = !this.showOpenOnly;
   }
 
   private loadRestaurants(): void {

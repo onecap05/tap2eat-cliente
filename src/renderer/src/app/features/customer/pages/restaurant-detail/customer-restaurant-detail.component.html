@@ -7,25 +7,22 @@
 
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
-      <button type="button" class="icon-button" aria-label="Carrito">
-        🛒
-      </button>
-      <button type="button" class="icon-button" aria-label="Perfil">
-        👤
-      </button>
+      <button type="button" class="icon-button" aria-label="Carrito">Carrito</button>
+      <button type="button" class="icon-button" aria-label="Perfil">Perfil</button>
     </div>
   </nav>
 
   <p class="state-message" *ngIf="isLoading">{{ text.loading }}</p>
   <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+  <p class="state-message warning" *ngIf="!isLoading && availabilityMessage">{{ availabilityMessage }}</p>
 
   <ng-container *ngIf="!isLoading && !errorMessage && restaurant">
-    <section class="restaurant-hero">
+    <section class="restaurant-hero" [class.closed]="!restaurant.open">
       <div class="hero-overlay"></div>
 
       <div class="hero-content">
         <a class="back-link" routerLink="/customer/restaurants">
-          ← {{ text.back }}
+          {{ text.back }}
         </a>
 
         <div class="restaurant-logo">
@@ -38,17 +35,23 @@
         </div>
 
         <div class="hero-text">
+          <span class="status-badge" [class.closed]="!restaurant.open">
+            {{ restaurant.open ? text.open : text.closed }}
+          </span>
           <h1>{{ restaurant.name }}</h1>
-          <p>{{ restaurant.description || 'Explora el menú disponible.' }}</p>
+          <p>{{ restaurant.description || 'Explora el menu disponible.' }}</p>
 
           <div class="hero-meta">
-            <span>⭐ 4.5</span>
-            <span>🕒 15-20 min</span>
-            <span>📍 {{ branches.length || 0 }} sucursales</span>
+            <span>{{ branches.length || 0 }} sucursales</span>
+            <span>{{ restaurant.open ? 'Aceptando pedidos' : 'Pedidos pausados' }}</span>
           </div>
         </div>
       </div>
     </section>
+
+    <p class="state-message warning" *ngIf="!restaurant.open">
+      {{ text.closedRestaurant }}
+    </p>
 
     <section class="category-bar">
       <button
@@ -56,7 +59,7 @@
         [class.active]="selectedCategoryId === 'all'"
         (click)="selectCategory('all')"
       >
-        Todo
+        {{ text.allCategories }}
       </button>
 
       <button
@@ -75,15 +78,18 @@
           <div class="section-heading">
             <div>
               <h2>{{ text.branches }}</h2>
-              <p>Elige la ubicación más conveniente para recoger tu pedido.</p>
+              <p>Las sucursales sin horario configurado se consideran cerradas.</p>
             </div>
           </div>
 
           <div class="branch-list">
-            <article class="branch-item" *ngFor="let branch of branches">
-              <div class="branch-icon">📍</div>
+            <article class="branch-item" *ngFor="let branch of branches" [class.closed]="!branch.open">
+              <div class="branch-icon">Sucursal</div>
 
               <div>
+                <span class="status-badge small" [class.closed]="!branch.open">
+                  {{ branch.open ? text.branchOpen : text.branchClosed }}
+                </span>
                 <strong>{{ branch.name }}</strong>
                 <span>{{ branch.formattedAddress }}</span>
               </div>
@@ -95,7 +101,7 @@
           <div class="section-heading">
             <div>
               <h2>{{ text.menu }}</h2>
-              <p>Selecciona tus productos favoritos y agrégalos al carrito.</p>
+              <p>Solo se muestran productos disponibles para ordenar ahora.</p>
             </div>
           </div>
 
@@ -104,29 +110,27 @@
               class="product-card"
               type="button"
               *ngFor="let product of filteredProducts"
+              [disabled]="!restaurant.open || !product.available"
+              [class.disabled]="!restaurant.open || !product.available"
               (click)="openProduct(product)"
             >
               <div class="product-info">
+                <span class="status-badge small" [class.closed]="!product.available">
+                  {{ product.available ? 'Disponible' : 'No disponible' }}
+                </span>
                 <h3>{{ product.name }}</h3>
                 <p>{{ product.description || 'Producto disponible.' }}</p>
                 <strong>{{ formatCurrency(product.price) }}</strong>
 
-                <span
-                  class="product-type"
-                  *ngIf="product.productType === 'CUSTOMIZABLE'"
-                >
+                <span class="product-type" *ngIf="product.productType === 'CUSTOMIZABLE'">
                   Personalizable
                 </span>
               </div>
 
               <div class="product-actions">
-                <button
-                  type="button"
-                  class="add-product-button"
-                  (click)="openProduct(product); $event.stopPropagation()"
-                >
+                <span class="add-product-button">
                   + Agregar
-                </button>
+                </span>
 
                 <div class="product-image">
                   <img
@@ -143,12 +147,12 @@
           </div>
 
           <p class="state-message" *ngIf="!filteredProducts.length">
-            No hay productos disponibles en esta categoría.
+            No hay productos disponibles en esta categoria.
           </p>
         </section>
       </div>
 
-      <aside class="cart-panel">
+      <aside class="cart-panel" [class.disabled]="!restaurant.open">
         <div class="cart-heading">
           <div>
             <h2>{{ text.cart }}</h2>
@@ -160,6 +164,10 @@
 
         <p class="empty-cart" *ngIf="!cartState.items.length">
           {{ text.emptyCart }}
+        </p>
+
+        <p class="state-message warning compact" *ngIf="cartState.items.length && !restaurant.open">
+          {{ text.unavailableCart }}
         </p>
 
         <div class="cart-items" *ngIf="cartState.items.length">
@@ -181,29 +189,21 @@
                 <button type="button" (click)="increaseCartItem(item)">+</button>
               </div>
 
-              <button
-                class="remove-button"
-                type="button"
-                (click)="removeCartItem(item)"
-              >
+              <button class="remove-button" type="button" (click)="removeCartItem(item)">
                 Eliminar
               </button>
             </div>
           </article>
         </div>
 
-        <button class="checkout-button" type="button" disabled>
+        <button class="checkout-button" type="button" [disabled]="!canCheckout()">
           {{ text.checkoutPending }}
         </button>
       </aside>
     </section>
   </ng-container>
 
-  <section
-    class="modal-backdrop"
-    *ngIf="selectedProduct"
-    (click)="closeProduct()"
-  >
+  <section class="modal-backdrop" *ngIf="selectedProduct" (click)="closeProduct()">
     <article class="product-modal" (click)="$event.stopPropagation()">
       <header class="modal-header">
         <div>
@@ -211,12 +211,14 @@
           <h2>{{ selectedProduct.name }}</h2>
         </div>
 
-        <button class="close-button" type="button" (click)="closeProduct()">
-          ×
-        </button>
+        <button class="close-button" type="button" (click)="closeProduct()">x</button>
       </header>
 
       <div class="modal-body">
+        <p class="state-message warning compact" *ngIf="!canAddSelectedProduct()">
+          {{ restaurant?.open ? text.unavailableProduct : text.closedRestaurant }}
+        </p>
+
         <div class="modal-product-summary">
           <div class="modal-image">
             <img
@@ -244,13 +246,7 @@
           <div class="modifier-heading">
             <div>
               <h3>{{ group.name }}</h3>
-              <p>
-                {{
-                  group.required
-                    ? 'Selecciona una opción requerida.'
-                    : 'Opcional'
-                }}
-              </p>
+              <p>{{ group.required ? 'Selecciona una opcion requerida.' : 'Opcional' }}</p>
             </div>
 
             <span>{{ group.required ? 'Requerido' : 'Opcional' }}</span>
@@ -304,6 +300,7 @@
         <button
           class="add-button"
           type="button"
+          [disabled]="!canAddSelectedProduct()"
           (click)="addSelectedProductToCart()"
         >
           {{ text.addToCart }}
