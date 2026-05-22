@@ -11,6 +11,38 @@
 
     <form (ngSubmit)="onSubmit()" class="register-form">
       <div class="form-group">
+        <label for="firstName">Nombre</label>
+        <div class="input-wrapper">
+          <span class="input-icon">👤</span>
+          <input
+            id="firstName"
+            name="firstName"
+            type="text"
+            [(ngModel)]="request.firstName"
+            required
+            maxlength="100"
+            placeholder="Tu nombre"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="lastName">Apellido</label>
+        <div class="input-wrapper">
+          <span class="input-icon">👤</span>
+          <input
+            id="lastName"
+            name="lastName"
+            type="text"
+            [(ngModel)]="request.lastName"
+            required
+            maxlength="100"
+            placeholder="Tu apellido"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
         <label for="email">Correo Electrónico</label>
         <div class="input-wrapper">
           <span class="input-icon">✉</span>
@@ -20,6 +52,7 @@
             type="email"
             [(ngModel)]="request.email"
             required
+            maxlength="255"
             placeholder="tu@email.com"
           />
         </div>
@@ -35,6 +68,7 @@
             type="password"
             [(ngModel)]="request.password"
             required
+            maxlength="72"
             placeholder="••••••••"
           />
         </div>
@@ -56,6 +90,21 @@
               {{ role.label }}
             </option>
           </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Teléfono (opcional)</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📞</span>
+          <input
+            id="phone"
+            name="phone"
+            type="text"
+            [(ngModel)]="request.phone"
+            maxlength="30"
+            placeholder="Tu teléfono"
+          />
         </div>
       </div>
 

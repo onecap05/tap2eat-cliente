@@ -17,7 +17,10 @@ export class RegisterComponent {
   public request: IRegisterRequest = {
     email: '',
     password: '',
-    role: 'CUSTOMER'
+    role: 'CUSTOMER',
+    firstName: '',
+    lastName: '',
+    phone: ''
   };
 
   public availableRoles = [
@@ -35,11 +38,24 @@ export class RegisterComponent {
   ) {}
 
   public onSubmit(): void {
+    if (this.isSubmitting) {
+      return;
+    }
+
     this.errorMessage = '';
     this.successMessage = '';
     this.isSubmitting = true;
 
-    this.authService.registerAccount(this.request).subscribe({
+    const payload: IRegisterRequest = {
+      ...this.request,
+      firstName: this.request.firstName.trim(),
+      lastName: this.request.lastName.trim(),
+      phone: this.request.phone && this.request.phone.trim() !== ''
+        ? this.request.phone.trim()
+        : null
+    };
+
+    this.authService.registerAccount(payload).subscribe({
       next: (response) => {
         this.successMessage = response.message;
         this.isSubmitting = false;
