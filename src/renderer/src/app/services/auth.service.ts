@@ -76,44 +76,44 @@ export class AuthService {
   }
 
   public getTokenPayload(): any | null {
-  const token = this.getAccessToken();
+    const token = this.getAccessToken();
 
-  if (!token) {
-    return null;
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payload = token.split('.')[1];
+
+      const base64 = payload
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+      const paddedBase64 = base64.padEnd(
+        base64.length + (4 - base64.length % 4) % 4,
+        '='
+      );
+
+      return JSON.parse(atob(paddedBase64));
+    } catch (error) {
+      console.error('Could not decode JWT payload', error);
+      return null;
+    }
   }
 
-  try {
-    const payload = token.split('.')[1];
+  public getAccountId(): string | null {
+    const payload = this.getTokenPayload();
 
-    const base64 = payload
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-
-    const paddedBase64 = base64.padEnd(
-      base64.length + (4 - base64.length % 4) % 4,
-      '='
-    );
-
-    return JSON.parse(atob(paddedBase64));
-  } catch (error) {
-    console.error('Could not decode JWT payload', error);
-    return null;
+    return payload?.accountId || payload?.id || payload?.sub || null;
   }
-}
 
-public getAccountId(): string | null {
-  const payload = this.getTokenPayload();
+  public getUserRole(): string | null {
+    const payload = this.getTokenPayload();
 
-  return payload?.accountId || payload?.id || payload?.sub || null;
-}
+    return payload?.role || payload?.authorities?.[0] || null;
+  }
 
-public getUserRole(): string | null {
-  const payload = this.getTokenPayload();
-
-  return payload?.role || payload?.authorities?.[0] || null;
-}
-
-public isRestaurantOwner(): boolean {
-  return this.getUserRole() === 'RESTAURANT_OWNER';
-}
+  public isRestaurantOwner(): boolean {
+    return this.getUserRole() === 'RESTAURANT_OWNER';
+  }
 }
