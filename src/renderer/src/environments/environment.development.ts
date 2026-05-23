@@ -8,5 +8,7 @@ export const environment = {
 
   // URLs nuevas
   authApiUrl: 'http://localhost:8080/api/auth',
-  catalogApiUrl: 'http://localhost:8080/api'
+  catalogApiUrl: 'http://localhost:8080/api',
+
+  paymentSimulationToken: 'tap2eat-payment-dev-token'
 };

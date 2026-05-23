@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -25,14 +25,34 @@ export class PaymentApiService {
     paymentId: string,
     request: ApprovePaymentRequest
   ): Observable<PaymentResponse> {
-    return this.http.patch<PaymentResponse>(`${this.baseUrl}/${paymentId}/approve`, request);
+    return this.http.patch<PaymentResponse>(
+      `${this.baseUrl}/${paymentId}/approve`,
+      request,
+      this.getSimulationHeaders()
+    );
   }
 
   public rejectPayment(paymentId: string, request: RejectPaymentRequest): Observable<PaymentResponse> {
-    return this.http.patch<PaymentResponse>(`${this.baseUrl}/${paymentId}/reject`, request);
+    return this.http.patch<PaymentResponse>(
+      `${this.baseUrl}/${paymentId}/reject`,
+      request,
+      this.getSimulationHeaders()
+    );
   }
 
   public cancelPayment(paymentId: string): Observable<PaymentResponse> {
-    return this.http.patch<PaymentResponse>(`${this.baseUrl}/${paymentId}/cancel`, null);
+    return this.http.patch<PaymentResponse>(
+      `${this.baseUrl}/${paymentId}/cancel`,
+      null,
+      this.getSimulationHeaders()
+    );
+  }
+
+  private getSimulationHeaders(): { headers: HttpHeaders } {
+    return {
+      headers: new HttpHeaders({
+        'X-Simulated-Payment-Token': environment.paymentSimulationToken
+      })
+    };
   }
 }
