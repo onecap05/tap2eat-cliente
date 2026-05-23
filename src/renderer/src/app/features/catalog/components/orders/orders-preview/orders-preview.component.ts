@@ -112,6 +112,7 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
   public updatingOrderId: string | null = null;
 
   private realtimeOrdersSubscription?: Subscription;
+  private realtimePaymentsSubscription?: Subscription;
 
   constructor(
     private readonly orderApiService: OrderApiService,
@@ -127,6 +128,7 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
 
   public ngOnDestroy(): void {
     this.realtimeOrdersSubscription?.unsubscribe();
+    this.realtimePaymentsSubscription?.unsubscribe();
   }
 
   public get filteredOrders(): OrderResponse[] {
@@ -279,9 +281,18 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
 
   private subscribeToRealtimeOrders(): void {
     this.realtimeOrdersSubscription?.unsubscribe();
+    this.realtimePaymentsSubscription?.unsubscribe();
 
     this.realtimeOrdersSubscription = this.realtimeNotificationService
       .listenToRestaurantOrders(this.restaurantId)
+      .subscribe(event => {
+        if (event.restaurantId === this.restaurantId) {
+          this.loadOrders();
+        }
+      });
+
+    this.realtimePaymentsSubscription = this.realtimeNotificationService
+      .listenToRestaurantPayments(this.restaurantId)
       .subscribe(event => {
         if (event.restaurantId === this.restaurantId) {
           this.loadOrders();

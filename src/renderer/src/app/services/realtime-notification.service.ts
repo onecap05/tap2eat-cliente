@@ -87,6 +87,15 @@ export class RealtimeNotificationService {
     return this.listenToPaymentTopic(this.getCustomerPaymentsTopic(normalizedCustomerAccountId));
   }
 
+  public listenToRestaurantPayments(restaurantId: string): Observable<RealtimePaymentEventMessage> {
+    if (!restaurantId?.trim()) {
+      return EMPTY;
+    }
+
+    const normalizedRestaurantId = restaurantId.trim();
+    return this.listenToPaymentTopic(this.getRestaurantPaymentsTopic(normalizedRestaurantId));
+  }
+
   public getRestaurantOrdersTopic(restaurantId: string): string {
     return `/topic/restaurants/${restaurantId}/orders`;
   }
@@ -97,6 +106,10 @@ export class RealtimeNotificationService {
 
   public getCustomerPaymentsTopic(customerAccountId: string): string {
     return `/topic/customers/${customerAccountId}/payments`;
+  }
+
+  public getRestaurantPaymentsTopic(restaurantId: string): string {
+    return `/topic/restaurants/${restaurantId}/payments`;
   }
 
   private listenToOrderTopic(topic: string): Observable<RealtimeOrderEventMessage> {

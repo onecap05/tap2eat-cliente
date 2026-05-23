@@ -4,7 +4,10 @@ import { Observable, of, Subject, throwError } from 'rxjs';
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { OrderResponse, OrderStatus } from '../../../../customer/models/order.models';
 import { OrderApiService } from '../../../../customer/services/order-api.service';
-import { RealtimeOrderEventMessage } from '../../../../../models/realtime-notification.models';
+import {
+  RealtimeOrderEventMessage,
+  RealtimePaymentEventMessage
+} from '../../../../../models/realtime-notification.models';
 import { RealtimeNotificationService } from '../../../../../services/realtime-notification.service';
 import { OrdersPreviewComponent } from './orders-preview.component';
 
@@ -44,9 +47,12 @@ class FakeOrderApiService {
 
 class FakeRealtimeNotificationService {
   public lastRestaurantId = '';
+  public lastPaymentRestaurantId = '';
   public listenCalls = 0;
+  public paymentListenCalls = 0;
   public activeSubscriptions = 0;
   private readonly restaurantOrdersSubject = new Subject<RealtimeOrderEventMessage>();
+  private readonly restaurantPaymentsSubject = new Subject<RealtimePaymentEventMessage>();
 
   public listenToRestaurantOrders(restaurantId: string): Observable<RealtimeOrderEventMessage> {
     this.listenCalls++;
@@ -63,8 +69,27 @@ class FakeRealtimeNotificationService {
     });
   }
 
+  public listenToRestaurantPayments(restaurantId: string): Observable<RealtimePaymentEventMessage> {
+    this.paymentListenCalls++;
+    this.lastPaymentRestaurantId = restaurantId;
+
+    return new Observable(observer => {
+      this.activeSubscriptions++;
+      const subscription = this.restaurantPaymentsSubject.subscribe(observer);
+
+      return () => {
+        this.activeSubscriptions--;
+        subscription.unsubscribe();
+      };
+    });
+  }
+
   public emitRestaurantOrderEvent(event: RealtimeOrderEventMessage): void {
     this.restaurantOrdersSubject.next(event);
+  }
+
+  public emitRestaurantPaymentEvent(event: RealtimePaymentEventMessage): void {
+    this.restaurantPaymentsSubject.next(event);
   }
 }
 
@@ -106,6 +131,13 @@ describe('OrdersPreviewComponent', () => {
     expect(realtimeNotificationService.lastRestaurantId).toBe('restaurant-long-1384d0');
   });
 
+  it('should subscribe to realtime payments for restaurant id', () => {
+    fixture.detectChanges();
+
+    expect(realtimeNotificationService.paymentListenCalls).toBe(1);
+    expect(realtimeNotificationService.lastPaymentRestaurantId).toBe('restaurant-long-1384d0');
+  });
+
   it('should reload orders when realtime order event matches restaurant id', () => {
     fixture.detectChanges();
     const initialCalls = orderApiService.getRestaurantOrdersCalls;
@@ -133,6 +165,24 @@ describe('OrdersPreviewComponent', () => {
     expect(orderApiService.getRestaurantOrdersCalls).toBe(initialCalls);
   });
 
+  it('should reload orders when realtime payment event matches restaurant id', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.getRestaurantOrdersCalls;
+
+    realtimeNotificationService.emitRestaurantPaymentEvent(realtimePaymentEvent('payment.approved', 'restaurant-long-1384d0'));
+
+    expect(orderApiService.getRestaurantOrdersCalls).toBe(initialCalls + 1);
+  });
+
+  it('should ignore realtime payment event from another restaurant', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.getRestaurantOrdersCalls;
+
+    realtimeNotificationService.emitRestaurantPaymentEvent(realtimePaymentEvent('payment.rejected', 'another-restaurant'));
+
+    expect(orderApiService.getRestaurantOrdersCalls).toBe(initialCalls);
+  });
+
   it('should reload with selected status filter when realtime event arrives', () => {
     fixture.detectChanges();
     component.setStatusFilter('Created');
@@ -142,10 +192,19 @@ describe('OrdersPreviewComponent', () => {
     expect(orderApiService.lastFilters).toEqual({ status: 'Created' });
   });
 
-  it('should unsubscribe from realtime orders on destroy', () => {
+  it('should reload with selected status filter when realtime payment event arrives', () => {
+    fixture.detectChanges();
+    component.setStatusFilter('Created');
+
+    realtimeNotificationService.emitRestaurantPaymentEvent(realtimePaymentEvent('payment.cancelled', 'restaurant-long-1384d0'));
+
+    expect(orderApiService.lastFilters).toEqual({ status: 'Created' });
+  });
+
+  it('should unsubscribe from realtime orders and payments on destroy', () => {
     fixture.detectChanges();
 
-    expect(realtimeNotificationService.activeSubscriptions).toBe(1);
+    expect(realtimeNotificationService.activeSubscriptions).toBe(2);
 
     fixture.destroy();
 
@@ -300,6 +359,21 @@ function realtimeOrderEvent(eventType: string, restaurantId: string): RealtimeOr
     restaurantId,
     branchId: 'branch-long-8f7a',
     status: 'Created',
+    occurredAt: '2026-05-23T12:00:00Z'
+  };
+}
+
+function realtimePaymentEvent(eventType: string, restaurantId: string): RealtimePaymentEventMessage {
+  return {
+    eventType,
+    paymentId: 'payment-realtime-1',
+    orderId: 'order-1',
+    customerAccountId: 'customer-long-e95b7',
+    restaurantId,
+    branchId: 'branch-long-8f7a',
+    amount: 100,
+    currency: 'MXN',
+    status: 'Approved',
     occurredAt: '2026-05-23T12:00:00Z'
   };
 }
