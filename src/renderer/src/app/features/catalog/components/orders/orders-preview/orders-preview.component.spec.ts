@@ -66,12 +66,30 @@ describe('OrdersPreviewComponent', () => {
     expect(component.orders.length).toBe(2);
   });
 
-  it('should filter by status', () => {
+  it('should load initial orders without filters when status is all', () => {
+    fixture.detectChanges();
+
+    expect(orderApiService.lastRestaurantId).toBe('restaurant-long-1384d0');
+    expect(orderApiService.lastFilters).toBeUndefined();
+  });
+
+  it('should pass selected status filter to restaurant orders request', () => {
     fixture.detectChanges();
 
     component.setStatusFilter('Created');
 
+    expect(orderApiService.lastRestaurantId).toBe('restaurant-long-1384d0');
     expect(orderApiService.lastFilters).toEqual({ status: 'Created' });
+  });
+
+  it('should clear filters when status changes back to all', () => {
+    fixture.detectChanges();
+
+    component.setStatusFilter('Created');
+    component.setStatusFilter('all');
+
+    expect(orderApiService.lastRestaurantId).toBe('restaurant-long-1384d0');
+    expect(orderApiService.lastFilters).toBeUndefined();
   });
 
   it('should filter by branch', () => {

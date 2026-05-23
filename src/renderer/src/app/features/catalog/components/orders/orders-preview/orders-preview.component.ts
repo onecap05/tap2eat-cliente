@@ -242,7 +242,10 @@ export class OrdersPreviewComponent implements OnChanges {
     this.errorMessage = '';
     this.actionErrorMessage = '';
 
-    this.orderApiService.getRestaurantOrders(this.restaurantId)
+    this.orderApiService.getRestaurantOrders(
+      this.restaurantId,
+      this.selectedStatus === 'all' ? undefined : { status: this.selectedStatus }
+    )
       .pipe(
         finalize(() => {
           this.isLoading = false;
