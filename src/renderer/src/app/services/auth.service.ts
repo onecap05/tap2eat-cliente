@@ -130,10 +130,55 @@ export class AuthService {
   public getUserRole(): string | null {
     const payload = this.getTokenPayload();
 
-    return payload?.role || payload?.authorities?.[0] || null;
+    if (!payload) {
+      return null;
+    }
+
+    const candidates = [
+      payload.role,
+      ...(Array.isArray(payload.authorities) ? payload.authorities : [payload.authorities]),
+      ...(Array.isArray(payload.roles) ? payload.roles : [payload.roles])
+    ];
+
+    for (const candidate of candidates) {
+      const role = this.normalizeRole(candidate);
+
+      if (role) {
+        return role;
+      }
+    }
+
+    return null;
   }
 
   public isRestaurantOwner(): boolean {
     return this.getUserRole() === 'RESTAURANT_OWNER';
+  }
+
+  private normalizeRole(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const role = typeof value === 'string'
+      ? value
+      : this.getRoleFromObject(value);
+
+    if (!role) {
+      return null;
+    }
+
+    return role.trim().toUpperCase().replace(/^ROLE_/, '');
+  }
+
+  private getRoleFromObject(value: unknown): string | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const roleValue = value as { authority?: unknown; role?: unknown; name?: unknown };
+    const role = roleValue.authority ?? roleValue.role ?? roleValue.name;
+
+    return typeof role === 'string' ? role : null;
   }
 }
