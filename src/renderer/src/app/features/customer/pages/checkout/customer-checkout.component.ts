@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription, retry, switchMap } from 'rxjs';
+import { Subscription, of, retry, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 import { ICartItem, ICartState } from '../../models/cart.models';
 import { CreateOrderRequest } from '../../models/order.models';
+import { PaymentResponse } from '../../models/payment.models';
 import { CartService } from '../../services/cart.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
@@ -31,8 +32,12 @@ const CHECKOUT_TEXT = {
   missingRestaurant: 'El carrito no tiene restaurante asociado.',
   missingBranch: 'Selecciona una sucursal antes de continuar.',
   invalidItems: 'Revisa los productos del carrito antes de continuar.',
-  genericError: 'No pudimos completar el checkout. Intenta de nuevo.'
+  genericError: 'No pudimos completar el checkout. Intenta de nuevo.',
+  paymentPendingError: 'El pedido fue creado, pero no pudimos confirmar el pago. Consulta tus pedidos.'
 };
+
+const PAYMENT_LOOKUP_RETRY_COUNT = 8;
+const PAYMENT_LOOKUP_RETRY_DELAY_MS = 700;
 
 @Component({
   selector: 'app-customer-checkout',
@@ -96,6 +101,7 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.errorMessage = '';
     const request = this.buildOrderRequest();
 
     if (!request) {
@@ -103,37 +109,58 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
-    this.errorMessage = '';
+    let orderWasCreated = false;
 
     if (this.paymentMethod === 'cash') {
       this.orderApiService.createOrder(request).subscribe({
         next: order => {
+          orderWasCreated = true;
           this.cartService.clear();
           void this.router.navigate(['/customer/orders', order.id, 'confirmation']);
         },
-        error: () => this.handleSubmitError()
+        error: error => this.handleSubmitError(error, orderWasCreated),
+        complete: () => {
+          this.isSubmitting = false;
+        }
       });
       return;
     }
 
     this.orderApiService.createOrder(request).pipe(
-      switchMap(order => this.paymentApiService.getPaymentByOrderId(order.id).pipe(
-        retry({ count: 8, delay: 700 }),
-        switchMap(payment => this.paymentApiService.approvePayment(
-          payment.id,
-          { providerReference: `WEB-${order.id.slice(-8)}` }
-        )),
-        switchMap(() => {
-          this.cartService.clear();
-          return this.router.navigate(['/customer/payment-success', order.id]);
-        })
-      ))
+      switchMap(order => {
+        orderWasCreated = true;
+        this.cartService.clear();
+
+        return this.paymentApiService.getPaymentByOrderId(order.id).pipe(
+          retry({
+            count: PAYMENT_LOOKUP_RETRY_COUNT,
+            delay: PAYMENT_LOOKUP_RETRY_DELAY_MS
+          }),
+          switchMap(payment => this.approvePendingPayment(payment, order.id)),
+          switchMap(() => this.router.navigate(['/customer/payment-success', order.id]))
+        );
+      })
     ).subscribe({
       next: () => {
         this.isSubmitting = false;
       },
-      error: () => this.handleSubmitError()
+      error: error => this.handleSubmitError(error, orderWasCreated)
     });
+  }
+
+  private approvePendingPayment(payment: PaymentResponse, orderId: string) {
+    if (payment.status === 'Approved') {
+      return of(payment);
+    }
+
+    if (payment.status !== 'Pending') {
+      return of(payment);
+    }
+
+    return this.paymentApiService.approvePayment(
+      payment.id,
+      { providerReference: `WEB-${orderId.slice(-8)}` }
+    );
   }
 
   public formatCurrency(value: number): string {
@@ -179,8 +206,9 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
     };
   }
 
-  private handleSubmitError(): void {
+  private handleSubmitError(error: unknown, orderWasCreated = false): void {
+    console.error('Checkout failed:', error);
     this.isSubmitting = false;
-    this.errorMessage = this.text.genericError;
+    this.errorMessage = orderWasCreated ? this.text.paymentPendingError : this.text.genericError;
   }
 }

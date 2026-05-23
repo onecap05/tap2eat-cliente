@@ -17,12 +17,10 @@ class FakeAuthService {
 
 class FakeOrderApiService {
   public lastCustomerAccountId = '';
-  public lastFilters: unknown;
   public orders: OrderResponse[] = [order()];
 
-  public getCustomerOrders(customerAccountId: string, filters?: unknown) {
+  public getCustomerOrders(customerAccountId: string) {
     this.lastCustomerAccountId = customerAccountId;
-    this.lastFilters = filters;
     return of(this.orders);
   }
 }
@@ -57,19 +55,77 @@ describe('CustomerOrdersComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Pedido #');
   });
 
-  it('should filter by status', () => {
+  it('should show active orders by default', () => {
+    orderApiService.orders = [
+      order('Created', 'branch-1', 'order-created'),
+      order('Delivered', 'branch-1', 'order-delivered')
+    ];
     fixture.detectChanges();
 
-    component.setStatusFilter('Ready');
+    expect(component.selectedTab).toBe('active');
+    expect(component.visibleOrders.map(existingOrder => existingOrder.status)).toEqual(['Created']);
+  });
 
-    expect(orderApiService.lastFilters).toEqual({ status: 'Ready' });
+  it('should include Created, Accepted, Preparing and Ready in active orders', () => {
+    orderApiService.orders = [
+      order('Created', 'branch-1', 'order-created'),
+      order('Accepted', 'branch-1', 'order-accepted'),
+      order('Preparing', 'branch-1', 'order-preparing'),
+      order('Ready', 'branch-1', 'order-ready'),
+      order('Delivered', 'branch-1', 'order-delivered')
+    ];
+    fixture.detectChanges();
+
+    expect(component.visibleOrders.map(existingOrder => existingOrder.status)).toEqual([
+      'Created',
+      'Accepted',
+      'Preparing',
+      'Ready'
+    ]);
+  });
+
+  it('should show delivered orders when delivered tab is selected', () => {
+    orderApiService.orders = [
+      order('Ready', 'branch-1', 'order-ready'),
+      order('Delivered', 'branch-1', 'order-delivered')
+    ];
+    fixture.detectChanges();
+
+    component.setOrderTab('delivered');
+
+    expect(component.visibleOrders.length).toBe(1);
+    expect(component.visibleOrders[0].status).toBe('Delivered');
+  });
+
+  it('should update list when tab changes', () => {
+    orderApiService.orders = [
+      order('Created', 'branch-1', 'order-created'),
+      order('Delivered', 'branch-1', 'order-delivered')
+    ];
+    fixture.detectChanges();
+
+    expect(component.visibleOrders[0].status).toBe('Created');
+
+    component.setOrderTab('delivered');
+
+    expect(component.visibleOrders[0].status).toBe('Delivered');
+  });
+
+  it('should show Cancelled with cancelled badge in active orders', () => {
+    orderApiService.orders = [order('Cancelled', 'branch-1', 'order-cancelled')];
+    fixture.detectChanges();
+
+    const badge: HTMLElement = fixture.nativeElement.querySelector('.status-badge.cancelled');
+
+    expect(component.visibleOrders[0].status).toBe('Cancelled');
+    expect(badge.textContent).toContain('Cancelado');
   });
 
   it('should show empty state', () => {
     orderApiService.orders = [];
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Aun no tienes pedidos');
+    expect(fixture.nativeElement.textContent).toContain('No tienes pedidos activos');
   });
 
   it('should navigate to order detail from detail link', () => {
@@ -89,9 +145,9 @@ describe('CustomerOrdersComponent', () => {
   });
 });
 
-function order(status: OrderStatus = 'Created', branchId = 'branch-1'): OrderResponse {
+function order(status: OrderStatus = 'Created', branchId = 'branch-1', id = 'order-1'): OrderResponse {
   return {
-    id: 'order-1',
+    id,
     customerAccountId: 'customer-1',
     restaurantId: 'restaurant-1',
     branchId,

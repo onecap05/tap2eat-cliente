@@ -66,6 +66,19 @@
       <aside class="summary-panel">
         <h2>Resumen</h2>
 
+        <div class="pickup-qr">
+          <span>QR de recoleccion</span>
+          <img
+            *ngIf="pickupQrDataUrl && !pickupQrError; else qrFallback"
+            [src]="pickupQrDataUrl"
+            alt="QR de recoleccion"
+          />
+
+          <ng-template #qrFallback>
+            <p>Codigo de pedido: #{{ shortOrderId }}</p>
+          </ng-template>
+        </div>
+
         <dl>
           <div>
             <dt>Subtotal</dt>

@@ -4,17 +4,14 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
-import { OrderQueryFilters, OrderResponse, OrderStatus } from '../../models/order.models';
+import { OrderResponse } from '../../models/order.models';
 import { OrderApiService } from '../../services/order-api.service';
 
-const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus | 'all'; label: string }> = [
-  { value: 'all', label: 'Todos' },
-  { value: 'Created', label: 'Recibidos' },
-  { value: 'Accepted', label: 'Aceptados' },
-  { value: 'Preparing', label: 'Preparando' },
-  { value: 'Ready', label: 'Listos' },
-  { value: 'Delivered', label: 'Entregados' },
-  { value: 'Cancelled', label: 'Cancelados' }
+type CustomerOrderTab = 'active' | 'delivered';
+
+const ORDER_TABS: Array<{ value: CustomerOrderTab; label: string }> = [
+  { value: 'active', label: 'No entregados' },
+  { value: 'delivered', label: 'Entregados' }
 ];
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -34,10 +31,10 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   styleUrl: './customer-orders.component.css'
 })
 export class CustomerOrdersComponent implements OnInit {
-  public readonly statusOptions = ORDER_STATUS_OPTIONS;
+  public readonly orderTabs = ORDER_TABS;
 
   public orders: OrderResponse[] = [];
-  public selectedStatus: OrderStatus | 'all' = 'all';
+  public selectedTab: CustomerOrderTab = 'active';
   public isLoading = false;
   public errorMessage = '';
   public authMessage = '';
@@ -60,9 +57,22 @@ export class CustomerOrdersComponent implements OnInit {
     this.loadOrders();
   }
 
-  public setStatusFilter(status: OrderStatus | 'all'): void {
-    this.selectedStatus = status;
-    this.loadOrders();
+  public get visibleOrders(): OrderResponse[] {
+    if (this.selectedTab === 'delivered') {
+      return this.orders.filter(order => order.status === 'Delivered');
+    }
+
+    return this.orders.filter(order => order.status !== 'Delivered');
+  }
+
+  public get emptyMessage(): string {
+    return this.selectedTab === 'delivered'
+      ? 'Aun no tienes pedidos entregados.'
+      : 'No tienes pedidos activos.';
+  }
+
+  public setOrderTab(tab: CustomerOrderTab): void {
+    this.selectedTab = tab;
   }
 
   public getStatusLabel(status: string): string {
@@ -96,14 +106,10 @@ export class CustomerOrdersComponent implements OnInit {
       return;
     }
 
-    const filters: OrderQueryFilters = this.selectedStatus === 'all'
-      ? {}
-      : { status: this.selectedStatus };
-
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.orderApiService.getCustomerOrders(this.customerAccountId, filters)
+    this.orderApiService.getCustomerOrders(this.customerAccountId)
       .pipe(finalize(() => {
         this.isLoading = false;
       }))

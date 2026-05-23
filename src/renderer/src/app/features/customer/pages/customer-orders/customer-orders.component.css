@@ -101,9 +101,19 @@
   font-weight: 700;
 }
 
-.order-card h2 {
-  margin: 4px 0 0;
-  font-size: 22px;
+.status-badge {
+  width: fit-content;
+  margin: 6px 0 0;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #eef7f1;
+  color: #267f53;
+  font-size: 16px;
+}
+
+.status-badge.cancelled {
+  background: #fef2f2;
+  color: #b42318;
 }
 
 .order-card header strong {

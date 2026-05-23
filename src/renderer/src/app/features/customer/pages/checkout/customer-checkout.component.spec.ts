@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { defer, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { AuthService } from '../../../../services/auth.service';
@@ -13,10 +13,16 @@ import { CustomerCheckoutComponent } from './customer-checkout.component';
 class FakeOrderApiService {
   public createOrderCalls = 0;
   public lastRequest: unknown;
+  public shouldFail = false;
 
   public createOrder(request: unknown) {
     this.createOrderCalls++;
     this.lastRequest = request;
+
+    if (this.shouldFail) {
+      return throwError(() => new Error('create failed'));
+    }
+
     return of({
       id: 'order-1',
       customerAccountId: 'customer-1',
@@ -35,20 +41,30 @@ class FakeOrderApiService {
 class FakePaymentApiService {
   public getPaymentByOrderIdCalls = 0;
   public approvePaymentCalls = 0;
+  public failuresBeforeSuccess = 0;
+  public paymentStatus = 'Pending';
 
   public getPaymentByOrderId() {
-    this.getPaymentByOrderIdCalls++;
-    return of({
-      id: 'payment-1',
-      orderId: 'order-1',
-      customerAccountId: 'customer-1',
-      restaurantId: 'restaurant-1',
-      branchId: 'branch-1',
-      amount: 100,
-      currency: 'MXN',
-      status: 'Pending',
-      createdAt: '',
-      updatedAt: ''
+    return defer(() => {
+      this.getPaymentByOrderIdCalls++;
+
+      if (this.failuresBeforeSuccess > 0) {
+        this.failuresBeforeSuccess--;
+        return throwError(() => new Error('payment not found'));
+      }
+
+      return of({
+        id: 'payment-1',
+        orderId: 'order-1',
+        customerAccountId: 'customer-1',
+        restaurantId: 'restaurant-1',
+        branchId: 'branch-1',
+        amount: 100,
+        currency: 'MXN',
+        status: this.paymentStatus,
+        createdAt: '',
+        updatedAt: ''
+      });
     });
   }
 
@@ -109,6 +125,8 @@ describe('CustomerCheckoutComponent', () => {
 
   afterEach(() => {
     localStorage.clear();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('should show empty state when cart is empty', () => {
@@ -137,6 +155,65 @@ describe('CustomerCheckoutComponent', () => {
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(1);
     expect(paymentApiService.approvePaymentCalls).toBe(1);
     expect(navigateSpy).toHaveBeenCalledWith(['/customer/payment-success', 'order-1']);
+  });
+
+  it('should retry online checkout when payment is not available immediately', async () => {
+    vi.useFakeTimers();
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    paymentApiService.failuresBeforeSuccess = 1;
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await vi.advanceTimersByTimeAsync(700);
+    await fixture.whenStable();
+
+    expect(paymentApiService.getPaymentByOrderIdCalls).toBe(2);
+    expect(paymentApiService.approvePaymentCalls).toBe(1);
+  });
+
+  it('should not approve payment again when it is already approved', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    paymentApiService.paymentStatus = 'Approved';
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+
+    expect(paymentApiService.approvePaymentCalls).toBe(0);
+    expect(navigateSpy).toHaveBeenCalledWith(['/customer/payment-success', 'order-1']);
+  });
+
+  it('should create cash order without approving payment', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    component.paymentMethod = 'cash';
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+
+    expect(orderApiService.createOrderCalls).toBe(1);
+    expect(paymentApiService.getPaymentByOrderIdCalls).toBe(0);
+    expect(paymentApiService.approvePaymentCalls).toBe(0);
+    expect(navigateSpy).toHaveBeenCalledWith(['/customer/orders', 'order-1', 'confirmation']);
+  });
+
+  it('should show error and release submit button when create order fails', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    orderApiService.shouldFail = true;
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+
+    expect(component.isSubmitting).toBe(false);
+    expect(component.errorMessage).toContain('No pudimos completar');
+    expect(console.error).toHaveBeenCalledWith('Checkout failed:', expect.any(Error));
   });
 
   it('should not submit when branch id is missing', () => {
