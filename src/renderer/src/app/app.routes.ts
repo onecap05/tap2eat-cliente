@@ -37,37 +37,44 @@ export const routes: Routes = [
   {
     path: 'customer/restaurants',
     loadComponent: () => import('./features/customer/pages/restaurant-list/customer-restaurant-list.component')
-      .then(component => component.CustomerRestaurantListComponent)
+      .then(component => component.CustomerRestaurantListComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'customer/restaurants/:restaurantId',
     loadComponent: () => import('./features/customer/pages/restaurant-detail/customer-restaurant-detail.component')
-      .then(component => component.CustomerRestaurantDetailComponent)
+      .then(component => component.CustomerRestaurantDetailComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'customer/checkout',
     loadComponent: () => import('./features/customer/pages/checkout/customer-checkout.component')
-      .then(component => component.CustomerCheckoutComponent)
+      .then(component => component.CustomerCheckoutComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'customer/orders',
     loadComponent: () => import('./features/customer/pages/customer-orders/customer-orders.component')
-      .then(component => component.CustomerOrdersComponent)
+      .then(component => component.CustomerOrdersComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'customer/payment-success/:orderId',
     loadComponent: () => import('./features/customer/pages/payment-success/payment-success.component')
-      .then(component => component.PaymentSuccessComponent)
+      .then(component => component.PaymentSuccessComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'customer/orders/:orderId/confirmation',
     loadComponent: () => import('./features/customer/pages/order-confirmation/order-confirmation.component')
-      .then(component => component.OrderConfirmationComponent)
+      .then(component => component.OrderConfirmationComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'customer/orders/:orderId',
     loadComponent: () => import('./features/customer/pages/customer-order-detail/customer-order-detail.component')
-      .then(component => component.CustomerOrderDetailComponent)
+      .then(component => component.CustomerOrderDetailComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'owner/dashboard',

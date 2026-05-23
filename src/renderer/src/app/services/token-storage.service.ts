@@ -37,5 +37,7 @@ export class TokenStorageService {
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.TOKEN_TYPE_KEY);
     localStorage.removeItem('restaurantId');
+    // Clear customer cart on logout/expiration to avoid stale checkout state across accounts.
+    localStorage.removeItem('tap2eat.customer.cart');
   }
 }

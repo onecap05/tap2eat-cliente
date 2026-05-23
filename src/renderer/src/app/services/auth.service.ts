@@ -68,7 +68,27 @@ export class AuthService {
   }
 
   public isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    return !!this.getAccessToken() && !this.isTokenExpired();
+  }
+
+  public isTokenExpired(): boolean {
+    const token = this.getAccessToken();
+
+    if (!token) {
+      return true;
+    }
+
+    const payload = this.getTokenPayload();
+
+    if (!payload) {
+      return true;
+    }
+
+    if (!payload.exp) {
+      return false;
+    }
+
+    return Date.now() >= Number(payload.exp) * 1000;
   }
 
   public logout(): void {

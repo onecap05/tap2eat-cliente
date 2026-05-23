@@ -116,7 +116,10 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
         next: order => {
           orderWasCreated = true;
           this.cartService.clear();
-          void this.router.navigate(['/customer/orders', order.id, 'confirmation']);
+          void this.router.navigate(
+            ['/customer/orders', order.id, 'confirmation'],
+            { replaceUrl: true }
+          );
         },
         error: error => this.handleSubmitError(error, orderWasCreated),
         complete: () => {
@@ -137,7 +140,10 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
             delay: PAYMENT_LOOKUP_RETRY_DELAY_MS
           }),
           switchMap(payment => this.approvePendingPayment(payment, order.id)),
-          switchMap(() => this.router.navigate(['/customer/payment-success', order.id]))
+          switchMap(() => this.router.navigate(
+            ['/customer/payment-success', order.id],
+            { replaceUrl: true }
+          ))
         );
       })
     ).subscribe({

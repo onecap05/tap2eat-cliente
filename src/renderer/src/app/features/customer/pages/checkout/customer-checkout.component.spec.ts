@@ -154,7 +154,10 @@ describe('CustomerCheckoutComponent', () => {
     expect(orderApiService.createOrderCalls).toBe(1);
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(1);
     expect(paymentApiService.approvePaymentCalls).toBe(1);
-    expect(navigateSpy).toHaveBeenCalledWith(['/customer/payment-success', 'order-1']);
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/customer/payment-success', 'order-1'],
+      { replaceUrl: true }
+    );
   });
 
   it('should retry online checkout when payment is not available immediately', async () => {
@@ -184,7 +187,10 @@ describe('CustomerCheckoutComponent', () => {
     await fixture.whenStable();
 
     expect(paymentApiService.approvePaymentCalls).toBe(0);
-    expect(navigateSpy).toHaveBeenCalledWith(['/customer/payment-success', 'order-1']);
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/customer/payment-success', 'order-1'],
+      { replaceUrl: true }
+    );
   });
 
   it('should create cash order without approving payment', async () => {
@@ -200,7 +206,10 @@ describe('CustomerCheckoutComponent', () => {
     expect(orderApiService.createOrderCalls).toBe(1);
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(0);
     expect(paymentApiService.approvePaymentCalls).toBe(0);
-    expect(navigateSpy).toHaveBeenCalledWith(['/customer/orders', 'order-1', 'confirmation']);
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/customer/orders', 'order-1', 'confirmation'],
+      { replaceUrl: true }
+    );
   });
 
   it('should show error and release submit button when create order fails', () => {
