@@ -150,6 +150,35 @@
   margin: 0;
 }
 
+.pickup-qr {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.pickup-qr span {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.pickup-qr img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+
+.pickup-qr p {
+  margin: 0;
+  color: #18212f;
+  font-weight: 900;
+}
+
 .summary-panel dl div {
   display: flex;
   justify-content: space-between;

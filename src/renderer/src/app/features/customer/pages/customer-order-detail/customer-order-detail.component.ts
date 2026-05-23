@@ -7,6 +7,7 @@ import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
 import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
+import { PickupQrService } from '../../services/pickup-qr.service';
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   Created: 'Recibido',
@@ -39,11 +40,14 @@ export class CustomerOrderDetailComponent implements OnInit {
   public payment: PaymentResponse | null = null;
   public isLoading = true;
   public errorMessage = '';
+  public pickupQrDataUrl = '';
+  public pickupQrError = false;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly orderApiService: OrderApiService,
-    private readonly paymentApiService: PaymentApiService
+    private readonly paymentApiService: PaymentApiService,
+    private readonly pickupQrService: PickupQrService
   ) {}
 
   public ngOnInit(): void {
@@ -63,6 +67,7 @@ export class CustomerOrderDetailComponent implements OnInit {
         this.order = response.order;
         this.payment = response.payment;
         this.isLoading = false;
+        void this.generatePickupQr(response.order);
       },
       error: () => {
         this.errorMessage = 'No pudimos cargar el detalle del pedido.';
@@ -106,5 +111,16 @@ export class CustomerOrderDetailComponent implements OnInit {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(new Date(value));
+  }
+
+  private async generatePickupQr(order: OrderResponse): Promise<void> {
+    try {
+      this.pickupQrDataUrl = await this.pickupQrService.generatePickupQrDataUrl(order);
+      this.pickupQrError = false;
+    } catch (error) {
+      console.error('Pickup QR generation failed:', error);
+      this.pickupQrDataUrl = '';
+      this.pickupQrError = true;
+    }
   }
 }

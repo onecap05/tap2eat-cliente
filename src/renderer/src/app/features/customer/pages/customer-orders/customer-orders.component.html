@@ -16,10 +16,10 @@
   <ng-container *ngIf="!authMessage">
     <nav class="status-tabs" aria-label="Filtros de estado">
       <button
-        *ngFor="let option of statusOptions"
+        *ngFor="let option of orderTabs"
         type="button"
-        [class.active]="selectedStatus === option.value"
-        (click)="setStatusFilter(option.value)"
+        [class.active]="selectedTab === option.value"
+        (click)="setOrderTab(option.value)"
       >
         {{ option.label }}
       </button>
@@ -33,17 +33,19 @@
       {{ errorMessage }}
     </section>
 
-    <section *ngIf="!isLoading && !errorMessage && orders.length === 0" class="state-panel">
-      <h2>Aun no tienes pedidos.</h2>
+    <section *ngIf="!isLoading && !errorMessage && visibleOrders.length === 0" class="state-panel">
+      <h2>{{ emptyMessage }}</h2>
       <a routerLink="/customer/restaurants">Explorar restaurantes</a>
     </section>
 
-    <section *ngIf="!isLoading && orders.length > 0" class="orders-grid">
-      <article *ngFor="let order of orders" class="order-card">
+    <section *ngIf="!isLoading && visibleOrders.length > 0" class="orders-grid">
+      <article *ngFor="let order of visibleOrders" class="order-card">
         <header>
           <div>
             <span>Pedido #{{ getShortOrderId(order.id) }}</span>
-            <h2>{{ getStatusLabel(order.status) }}</h2>
+            <h2 class="status-badge" [class.cancelled]="order.status === 'Cancelled'">
+              {{ getStatusLabel(order.status) }}
+            </h2>
           </div>
 
           <strong>{{ formatCurrency(order.total) }}</strong>

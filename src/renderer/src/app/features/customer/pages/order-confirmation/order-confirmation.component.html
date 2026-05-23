@@ -27,9 +27,13 @@
         <strong>{{ statusLabel }}</strong>
       </div>
 
-      <div class="qr-card" aria-label="QR visual simulado">
-        <div *ngFor="let block of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]"></div>
+      <div class="qr-card" aria-label="QR de recoleccion del pedido">
+        <img *ngIf="pickupQrDataUrl && !pickupQrError; else qrFallback" [src]="pickupQrDataUrl" alt="QR de recoleccion" />
       </div>
+
+      <ng-template #qrFallback>
+        <p class="qr-fallback">Codigo de pedido: #{{ shortOrderNumber }}</p>
+      </ng-template>
 
       <div class="ticket-actions">
         <a class="home-button" routerLink="/customer/restaurants">Volver al inicio</a>
