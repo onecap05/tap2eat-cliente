@@ -1,0 +1,157 @@
+.orders-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f8fafc;
+  color: #18212f;
+}
+
+.orders-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.orders-hero p {
+  margin: 0 0 4px;
+  color: #267f53;
+  font-weight: 800;
+}
+
+.orders-hero h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.secondary-link,
+.state-panel a,
+.detail-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: #267f53;
+  color: #ffffff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.secondary-link {
+  background: #ffffff;
+  color: #267f53;
+  border: 1px solid #cfe8d9;
+}
+
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.status-tabs button {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.status-tabs button.active {
+  background: #267f53;
+  color: #ffffff;
+  border-color: #267f53;
+}
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.order-card,
+.state-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.order-card {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.order-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.order-card header span,
+.order-meta dt {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-card h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+
+.order-card header strong {
+  color: #267f53;
+  font-size: 18px;
+}
+
+.order-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.order-meta div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.order-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-button {
+  width: fit-content;
+}
+
+.state-panel {
+  padding: 32px;
+  text-align: center;
+}
+
+.state-panel h2 {
+  margin: 0 0 16px;
+}
+
+.state-panel.error {
+  color: #b42318;
+}
+
+@media (max-width: 640px) {
+  .orders-page {
+    padding: 22px;
+  }
+
+  .orders-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

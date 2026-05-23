@@ -12,6 +12,7 @@ import {
 const CART_STORAGE_KEY = 'tap2eat.customer.cart';
 const EMPTY_CART: ICartState = {
   restaurantId: null,
+  branchId: null,
   items: [],
   subtotal: 0
 };
@@ -40,9 +41,10 @@ export class CartService {
       return false;
     }
 
+    const branchId = request.branchId ?? currentState.branchId ?? null;
     const baseState = currentState.restaurantId === restaurantId && !replaceRestaurantCart
       ? currentState
-      : { ...EMPTY_CART, restaurantId };
+      : { ...EMPTY_CART, restaurantId, branchId };
 
     const item = this.buildCartItem(request);
     const existingItem = baseState.items.find(currentItem => currentItem.id === item.id);
@@ -54,6 +56,7 @@ export class CartService {
 
     this.updateState({
       restaurantId,
+      branchId,
       items,
       subtotal: this.calculateCartSubtotal(items)
     });
@@ -75,6 +78,7 @@ export class CartService {
 
     this.updateState({
       restaurantId: items.length ? currentState.restaurantId : null,
+      branchId: items.length ? currentState.branchId : null,
       items,
       subtotal: this.calculateCartSubtotal(items)
     });
@@ -92,6 +96,7 @@ export class CartService {
 
     this.updateState({
       restaurantId: items.length ? currentState.restaurantId : null,
+      branchId: items.length ? currentState.branchId : null,
       items,
       subtotal: this.calculateCartSubtotal(items)
     });
@@ -112,6 +117,7 @@ export class CartService {
     return {
       id: `${request.product.id}|${modifierKey}`,
       restaurantId: request.product.restaurantId,
+      branchId: request.branchId ?? null,
       productId: request.product.id,
       productName: request.product.name,
       productImageUrl: request.product.image?.url,
@@ -173,7 +179,11 @@ export class CartService {
 
       return {
         restaurantId: parsedState.restaurantId ?? null,
-        items: parsedState.items ?? [],
+        branchId: parsedState.branchId ?? null,
+        items: (parsedState.items ?? []).map(item => ({
+          ...item,
+          branchId: item.branchId ?? parsedState.branchId ?? null
+        })),
         subtotal: this.calculateCartSubtotal(parsedState.items ?? [])
       };
     } catch {

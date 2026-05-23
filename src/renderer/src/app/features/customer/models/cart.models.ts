@@ -18,6 +18,7 @@ export interface IProductModifierSelection {
 export interface ICartItem {
   id: string;
   restaurantId: string;
+  branchId?: string | null;
   productId: string;
   productName: string;
   productImageUrl?: string | null;
@@ -30,12 +31,14 @@ export interface ICartItem {
 
 export interface ICartState {
   restaurantId: string | null;
+  branchId: string | null;
   items: ICartItem[];
   subtotal: number;
 }
 
 export interface IAddToCartRequest {
   product: CustomerProductResponse;
+  branchId?: string | null;
   quantity: number;
   modifierSelections: IProductModifierSelection[];
 }

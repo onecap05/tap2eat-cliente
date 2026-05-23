@@ -1,81 +1,105 @@
 <section class="orders-header">
   <div>
-    <h2>Gestión de Pedidos</h2>
-    <p>Vista temporal para el módulo de pedidos.</p>
+    <h2>Pedidos del restaurante</h2>
+    <p>Gestiona pedidos reales recibidos desde order-service.</p>
   </div>
-</section>
 
-<section class="filter-tabs">
-  <button
-    *ngFor="let filter of filters"
-    type="button"
-    [class.active]="selectedFilter === filter.value"
-    (click)="setFilter(filter.value)"
-  >
-    {{ filter.label }}
+  <button type="button" class="refresh-button" [disabled]="isLoading" (click)="setStatusFilter(selectedStatus)">
+    Actualizar
   </button>
 </section>
 
-<section class="orders-grid">
+<section class="filters-panel">
+  <div class="filter-tabs">
+    <button
+      *ngFor="let filter of statusFilters"
+      type="button"
+      [class.active]="selectedStatus === filter.value"
+      (click)="setStatusFilter(filter.value)"
+    >
+      {{ filter.label }}
+    </button>
+  </div>
+
+  <label>
+    Sucursal
+    <select [ngModel]="selectedBranchId" (ngModelChange)="setBranchFilter($event)">
+      <option value="all">Todas</option>
+      <option *ngFor="let branch of branches" [value]="branch.id">
+        {{ branch.name }}
+      </option>
+    </select>
+  </label>
+</section>
+
+<section *ngIf="isLoading" class="state-card">
+  Cargando pedidos...
+</section>
+
+<section *ngIf="errorMessage && !isLoading" class="state-card error">
+  {{ errorMessage }}
+</section>
+
+<section *ngIf="actionErrorMessage" class="action-error">
+  {{ actionErrorMessage }}
+</section>
+
+<section *ngIf="!isLoading && !errorMessage && filteredOrders.length === 0" class="state-card">
+  <h3>No hay pedidos para estos filtros</h3>
+  <p>Cuando lleguen pedidos reales, apareceran aqui.</p>
+</section>
+
+<section *ngIf="!isLoading && filteredOrders.length > 0" class="orders-grid">
   <article *ngFor="let order of filteredOrders" class="order-card">
     <header class="order-header">
       <div>
-        <h3>Orden #{{ order.id }}</h3>
-        <p>👤 {{ order.customer }}</p>
+        <span>Pedido #{{ getShortOrderId(order.id) }}</span>
+        <h3>{{ getStatusLabel(order.status) }}</h3>
       </div>
 
-      <span>🕒 {{ order.time }}</span>
+      <strong>{{ formatCurrency(order.total) }}</strong>
     </header>
+
+    <dl class="order-meta">
+      <div>
+        <dt>Fecha</dt>
+        <dd>{{ formatDate(order.createdAt) }}</dd>
+      </div>
+      <div>
+        <dt>Cliente</dt>
+        <dd>{{ order.customerAccountId }}</dd>
+      </div>
+      <div>
+        <dt>Sucursal</dt>
+        <dd>{{ getBranchName(order.branchId) }}</dd>
+      </div>
+    </dl>
 
     <div class="items-list">
       <div *ngFor="let item of order.items" class="item-row">
-        <span>📦 {{ item.name }}</span>
+        <span>{{ item.productNameSnapshot }}</span>
         <strong>x{{ item.quantity }}</strong>
       </div>
     </div>
 
-    <div class="order-total">
-      <span>Total</span>
-      <strong>${{ order.total }}</strong>
-    </div>
+    <p *ngIf="order.notes" class="order-notes">
+      {{ order.notes }}
+    </p>
 
-    <span class="status-badge" [class]="order.status">
-      {{ getStatusLabel(order.status) }}
-    </span>
-
-    <div class="actions">
+    <div class="actions" *ngIf="getActions(order).length > 0">
       <button
-        *ngIf="order.status === 'received'"
+        *ngFor="let action of getActions(order)"
         type="button"
-        class="orange"
-        (click)="updateOrderStatus(order.id, 'preparing')"
+        [class]="action.variant"
+        [disabled]="updatingOrderId === order.id"
+        (click)="updateOrderStatus(order, action.status)"
       >
-        Comenzar a preparar
-      </button>
-
-      <button
-        *ngIf="order.status === 'preparing'"
-        type="button"
-        class="green"
-        (click)="updateOrderStatus(order.id, 'ready')"
-      >
-        Marcar como listo
-      </button>
-
-      <button
-        *ngIf="order.status === 'ready'"
-        type="button"
-        class="gray"
-        (click)="updateOrderStatus(order.id, 'completed')"
-      >
-        Marcar como completado
+        {{ updatingOrderId === order.id ? 'Actualizando...' : action.label }}
       </button>
     </div>
+
+    <p *ngIf="getActions(order).length === 0" class="no-actions">
+      Sin acciones disponibles
+    </p>
   </article>
-</section>
-
-<section *ngIf="filteredOrders.length === 0" class="empty-state">
-  <div>🛍</div>
-  <h3>No hay pedidos en esta categoría</h3>
-  <p>Cuando existan pedidos reales, aparecerán aquí.</p>
 </section>

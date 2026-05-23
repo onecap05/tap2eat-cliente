@@ -1,0 +1,76 @@
+<main class="confirmation-page">
+  <nav class="confirmation-nav">
+    <a class="brand" routerLink="/customer/restaurants">
+      <span class="brand-mark">T2E</span>
+      <span>Tap2Eat</span>
+    </a>
+
+    <div class="confirmation-actions">
+      <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/orders">Mis pedidos</a>
+    </div>
+  </nav>
+
+  <p class="state-message" *ngIf="isLoading">Cargando confirmacion...</p>
+  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+
+  <section class="confirmation-shell" *ngIf="!isLoading && !errorMessage && order">
+    <article class="ticket-panel">
+      <div class="ticket-header">
+        <span>Pedido confirmado</span>
+        <h1>#{{ shortOrderNumber }}</h1>
+        <p>Tiempo estimado: 15-20 minutos</p>
+      </div>
+
+      <div class="status-line" [class.cancelled]="order.status === 'Cancelled'">
+        <span></span>
+        <strong>{{ statusLabel }}</strong>
+      </div>
+
+      <div class="qr-card" aria-label="QR visual simulado">
+        <div *ngFor="let block of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]"></div>
+      </div>
+
+      <div class="ticket-actions">
+        <a class="home-button" routerLink="/customer/restaurants">Volver al inicio</a>
+        <a class="orders-button" routerLink="/customer/orders">Mis pedidos</a>
+      </div>
+    </article>
+
+    <aside class="details-panel">
+      <section>
+        <h2>Resumen del pedido</h2>
+
+        <article class="order-item" *ngFor="let item of order.items">
+          <div>
+            <h3>{{ item.productNameSnapshot }}</h3>
+            <p>Cantidad: {{ item.quantity }}</p>
+            <span *ngFor="let modifier of item.selectedModifiers">
+              {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
+            </span>
+          </div>
+
+          <strong>{{ formatCurrency(item.subtotal) }}</strong>
+        </article>
+      </section>
+
+      <section class="total-section">
+        <span>Total</span>
+        <strong>{{ formatCurrency(order.total) }}</strong>
+      </section>
+
+      <section class="payment-section">
+        <h2>Pago</h2>
+
+        <ng-container *ngIf="payment; else noPayment">
+          <p>Estado: <strong>{{ payment.status }}</strong></p>
+          <p *ngIf="payment.providerReference">Referencia: {{ payment.providerReference }}</p>
+        </ng-container>
+
+        <ng-template #noPayment>
+          <p>Pago pendiente o en efectivo.</p>
+        </ng-template>
+      </section>
+    </aside>
+  </section>
+</main>

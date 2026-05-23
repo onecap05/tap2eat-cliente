@@ -84,7 +84,9 @@
         />
 
         <app-orders-preview
-          *ngIf="activeSection === 'orders'"
+          *ngIf="activeSection === 'orders' && restaurant"
+          [restaurantId]="restaurant.id"
+          [branches]="branches"
         />
 
         <app-menu-management

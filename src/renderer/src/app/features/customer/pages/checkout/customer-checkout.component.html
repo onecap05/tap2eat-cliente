@@ -1,0 +1,125 @@
+<main class="checkout-page">
+  <nav class="checkout-nav">
+    <a class="brand" routerLink="/customer/restaurants">
+      <span class="brand-mark">T2E</span>
+      <span>Tap2Eat</span>
+    </a>
+
+    <a routerLink="/customer/restaurants">Explorar</a>
+  </nav>
+
+  <section class="checkout-shell" *ngIf="cartState.items.length; else emptyCart">
+    <header class="checkout-header">
+      <span>Pedido seguro</span>
+      <h1>{{ text.title }}</h1>
+      <p>{{ text.subtitle }}</p>
+    </header>
+
+    <section class="checkout-grid">
+      <div class="cart-column">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Tu carrito</h2>
+            <span>{{ cartState.items.length }} producto(s)</span>
+          </div>
+
+          <div class="cart-items">
+            <article class="cart-item" *ngFor="let item of cartState.items">
+              <div class="item-image">
+                <img *ngIf="item.productImageUrl" [src]="item.productImageUrl" [alt]="item.productName" />
+                <span *ngIf="!item.productImageUrl">{{ item.productName[0] }}</span>
+              </div>
+
+              <div class="item-main">
+                <h3>{{ item.productName }}</h3>
+                <p>{{ formatCurrency(item.unitPrice) }} c/u</p>
+                <span *ngFor="let modifier of item.selectedModifiers">
+                  {{ modifier.groupName }}: {{ modifier.optionName }}
+                </span>
+              </div>
+
+              <div class="item-actions">
+                <strong>{{ formatCurrency(item.subtotal) }}</strong>
+
+                <div class="quantity-controls">
+                  <button type="button" (click)="decreaseItem(item)">-</button>
+                  <span>{{ item.quantity }}</span>
+                  <button type="button" (click)="increaseItem(item)">+</button>
+                </div>
+
+                <button class="remove-button" type="button" (click)="removeItem(item)">Eliminar</button>
+              </div>
+            </article>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Notas del pedido</h2>
+          </div>
+
+          <textarea
+            [(ngModel)]="notes"
+            [placeholder]="text.notesPlaceholder"
+            rows="4"
+          ></textarea>
+        </article>
+      </div>
+
+      <aside class="summary-panel">
+        <h2>Resumen</h2>
+
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <strong>{{ formatCurrency(cartState.subtotal) }}</strong>
+        </div>
+
+        <div class="summary-line">
+          <span>{{ text.service }}</span>
+          <strong>{{ formatCurrency(serviceFee) }}</strong>
+        </div>
+
+        <div class="summary-total">
+          <span>{{ text.total }}</span>
+          <strong>{{ formatCurrency(total) }}</strong>
+        </div>
+
+        <div class="payment-methods">
+          <span>{{ text.paymentMethod }}</span>
+
+          <label [class.selected]="paymentMethod === 'online'">
+            <input type="radio" name="paymentMethod" value="online" [(ngModel)]="paymentMethod" />
+            <strong>{{ text.online }}</strong>
+            <small>Aprobacion simulada inmediata</small>
+          </label>
+
+          <label [class.selected]="paymentMethod === 'cash'">
+            <input type="radio" name="paymentMethod" value="cash" [(ngModel)]="paymentMethod" />
+            <strong>{{ text.cash }}</strong>
+            <small>Pagas al recibir</small>
+          </label>
+        </div>
+
+        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+        <button
+          class="submit-button"
+          type="button"
+          [disabled]="isSubmitting"
+          (click)="submitCheckout()"
+        >
+          {{ isSubmitting ? text.processing : text.submit }}
+        </button>
+      </aside>
+    </section>
+  </section>
+
+  <ng-template #emptyCart>
+    <section class="empty-state">
+      <div class="empty-mark">0</div>
+      <h1>{{ text.emptyTitle }}</h1>
+      <p>{{ text.emptyBody }}</p>
+      <a routerLink="/customer/restaurants">{{ text.backToRestaurants }}</a>
+    </section>
+  </ng-template>
+</main>
