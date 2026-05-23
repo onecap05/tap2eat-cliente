@@ -4,10 +4,23 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
-import { OrderResponse, OrderStatus } from '../../../../customer/models/order.models';
+import { OrderResponse } from '../../../../customer/models/order.models';
 import { OrderApiService } from '../../../../customer/services/order-api.service';
 
+type OrderStatus =
+  | 'Created'
+  | 'Accepted'
+  | 'Preparing'
+  | 'Ready'
+  | 'Delivered'
+  | 'Cancelled';
+
 type StatusFilter = OrderStatus | 'all';
+
+interface StatusFilterOption {
+  value: StatusFilter;
+  label: string;
+}
 
 interface OrderAction {
   label: string;
@@ -15,7 +28,12 @@ interface OrderAction {
   variant: 'primary' | 'danger' | 'neutral';
 }
 
-const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
+interface ProgressStep {
+  status: OrderStatus;
+  label: string;
+}
+
+const STATUS_FILTERS: StatusFilterOption[] = [
   { value: 'all', label: 'Todos' },
   { value: 'Created', label: 'Recibidos' },
   { value: 'Accepted', label: 'Aceptados' },
@@ -33,6 +51,14 @@ const STATUS_LABELS: Record<string, string> = {
   Delivered: 'Entregado',
   Cancelled: 'Cancelado'
 };
+
+const STATUS_ORDER: OrderStatus[] = [
+  'Created',
+  'Accepted',
+  'Preparing',
+  'Ready',
+  'Delivered'
+];
 
 const ORDER_ACTIONS: Partial<Record<OrderStatus, OrderAction[]>> = {
   Created: [
@@ -61,13 +87,24 @@ const ORDER_ACTIONS: Partial<Record<OrderStatus, OrderAction[]>> = {
 })
 export class OrdersPreviewComponent implements OnChanges {
   @Input({ required: true }) restaurantId = '';
+  @Input() restaurantName = '';
   @Input() branches: IBranchResponse[] = [];
 
   public readonly statusFilters = STATUS_FILTERS;
+  public readonly progressSteps: ProgressStep[] = [
+    { status: 'Created', label: 'Recibido' },
+    { status: 'Accepted', label: 'Aceptado' },
+    { status: 'Preparing', label: 'Preparando' },
+    { status: 'Ready', label: 'Listo' },
+    { status: 'Delivered', label: 'Entregado' }
+  ];
 
   public orders: OrderResponse[] = [];
+  public selectedOrder: OrderResponse | null = null;
+
   public selectedStatus: StatusFilter = 'all';
   public selectedBranchId = 'all';
+
   public isLoading = false;
   public errorMessage = '';
   public actionErrorMessage = '';
@@ -82,11 +119,12 @@ export class OrdersPreviewComponent implements OnChanges {
   }
 
   public get filteredOrders(): OrderResponse[] {
-    if (this.selectedBranchId === 'all') {
-      return this.orders;
-    }
+    return this.orders.filter(order => {
+      const matchesStatus = this.selectedStatus === 'all' || order.status === this.selectedStatus;
+      const matchesBranch = this.selectedBranchId === 'all' || order.branchId === this.selectedBranchId;
 
-    return this.orders.filter(order => order.branchId === this.selectedBranchId);
+      return matchesStatus && matchesBranch;
+    });
   }
 
   public setStatusFilter(status: StatusFilter): void {
@@ -98,6 +136,16 @@ export class OrdersPreviewComponent implements OnChanges {
     this.selectedBranchId = branchId;
   }
 
+  public openOrderDetail(order: OrderResponse): void {
+    this.selectedOrder = order;
+    this.actionErrorMessage = '';
+  }
+
+  public closeOrderDetail(): void {
+    this.selectedOrder = null;
+    this.actionErrorMessage = '';
+  }
+
   public getActions(order: OrderResponse): OrderAction[] {
     return ORDER_ACTIONS[order.status as OrderStatus] ?? [];
   }
@@ -107,19 +155,41 @@ export class OrdersPreviewComponent implements OnChanges {
     this.actionErrorMessage = '';
 
     this.orderApiService.updateOrderStatus(order.id, status)
-      .pipe(finalize(() => {
-        this.updatingOrderId = null;
-      }))
+      .pipe(
+        finalize(() => {
+          this.updatingOrderId = null;
+        })
+      )
       .subscribe({
         next: updatedOrder => {
           this.orders = this.orders.map(existingOrder =>
             existingOrder.id === updatedOrder.id ? updatedOrder : existingOrder
           );
+
+          if (this.selectedOrder?.id === updatedOrder.id) {
+            this.selectedOrder = updatedOrder;
+          }
         },
-        error: () => {
+        error: error => {
+          console.error('Order status update failed:', error);
           this.actionErrorMessage = 'No pudimos actualizar el pedido.';
         }
       });
+  }
+
+  public isStepActive(currentStatus: string, stepStatus: string): boolean {
+    if (currentStatus === 'Cancelled') {
+      return stepStatus === 'Created';
+    }
+
+    const currentIndex = STATUS_ORDER.indexOf(currentStatus as OrderStatus);
+    const stepIndex = STATUS_ORDER.indexOf(stepStatus as OrderStatus);
+
+    if (currentIndex === -1 || stepIndex === -1) {
+      return false;
+    }
+
+    return stepIndex <= currentIndex;
   }
 
   public getStatusLabel(status: string): string {
@@ -130,8 +200,17 @@ export class OrdersPreviewComponent implements OnChanges {
     return orderId.slice(-8).toUpperCase();
   }
 
+  public getRestaurantName(): string {
+    return this.restaurantName || this.getRestaurantFallback(this.restaurantId);
+  }
+
   public getBranchName(branchId: string): string {
-    return this.branches.find(branch => branch.id === branchId)?.name ?? branchId;
+    return this.branches.find(branch => branch.id === branchId)?.name ?? this.getBranchFallback(branchId);
+  }
+
+  public getCustomerName(customerAccountId: string): string {
+    // TODO: replace customer fallback with identity-service profile lookup when endpoint is available.
+    return this.getCustomerFallback(customerAccountId);
   }
 
   public getItemSummary(order: OrderResponse): string {
@@ -163,20 +242,40 @@ export class OrdersPreviewComponent implements OnChanges {
     this.errorMessage = '';
     this.actionErrorMessage = '';
 
-    const filters = this.selectedStatus === 'all' ? {} : { status: this.selectedStatus };
-
-    this.orderApiService.getRestaurantOrders(this.restaurantId, filters)
-      .pipe(finalize(() => {
-        this.isLoading = false;
-      }))
+    this.orderApiService.getRestaurantOrders(this.restaurantId)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
       .subscribe({
         next: orders => {
-          this.orders = orders;
+          this.orders = [...orders].sort(
+            (first, second) =>
+              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+          );
         },
-        error: () => {
+        error: error => {
+          console.error('Restaurant orders load failed:', error);
           this.errorMessage = 'No pudimos cargar los pedidos del restaurante.';
           this.orders = [];
         }
       });
+  }
+
+  private getRestaurantFallback(restaurantId: string): string {
+    return `Restaurante #${this.getShortId(restaurantId, 6)}`;
+  }
+
+  private getBranchFallback(branchId: string): string {
+    return `Sucursal #${this.getShortId(branchId, 4)}`;
+  }
+
+  private getCustomerFallback(customerAccountId: string): string {
+    return `Cliente #${this.getShortId(customerAccountId, 5)}`;
+  }
+
+  private getShortId(value: string, length: number): string {
+    return (value || '------').slice(-length).toUpperCase();
   }
 }

@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 
 import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
+import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
 import { PickupQrService } from '../../services/pickup-qr.service';
@@ -49,12 +50,36 @@ class FakePickupQrService {
   }
 }
 
+class FakeCustomerCatalogApiService {
+  public restaurantName: string | null = 'Taqueria Centro';
+  public branchName: string | null = 'Sucursal Reforma';
+
+  public getRestaurant(restaurantId: string) {
+    return of(this.restaurantName ? { id: restaurantId, name: this.restaurantName, open: true } : null);
+  }
+
+  public getBranches(restaurantId: string) {
+    return of(this.branchName ? [{
+      id: 'branch-long-8f7a',
+      restaurantId,
+      name: this.branchName,
+      formattedAddress: 'Calle 1',
+      latitude: 0,
+      longitude: 0,
+      isMainBranch: true,
+      active: true,
+      open: true
+    }] : []);
+  }
+}
+
 describe('CustomerOrderDetailComponent', () => {
   let fixture: ComponentFixture<CustomerOrderDetailComponent>;
   let component: CustomerOrderDetailComponent;
   let orderApiService: FakeOrderApiService;
   let paymentApiService: FakePaymentApiService;
   let pickupQrService: FakePickupQrService;
+  let customerCatalogApiService: FakeCustomerCatalogApiService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -73,13 +98,15 @@ describe('CustomerOrderDetailComponent', () => {
         },
         { provide: OrderApiService, useClass: FakeOrderApiService },
         { provide: PaymentApiService, useClass: FakePaymentApiService },
-        { provide: PickupQrService, useClass: FakePickupQrService }
+        { provide: PickupQrService, useClass: FakePickupQrService },
+        { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService }
       ]
     }).compileComponents();
 
     orderApiService = TestBed.inject(OrderApiService) as unknown as FakeOrderApiService;
     paymentApiService = TestBed.inject(PaymentApiService) as unknown as FakePaymentApiService;
     pickupQrService = TestBed.inject(PickupQrService) as unknown as FakePickupQrService;
+    customerCatalogApiService = TestBed.inject(CustomerCatalogApiService) as unknown as FakeCustomerCatalogApiService;
     fixture = TestBed.createComponent(CustomerOrderDetailComponent);
     component = fixture.componentInstance;
   });
@@ -136,7 +163,27 @@ describe('CustomerOrderDetailComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Codigo de pedido: #');
+    expect(fixture.nativeElement.textContent).toContain('Código de pedido: #');
+  });
+
+  it('should show restaurant and branch names when available', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Taqueria Centro');
+    expect(fixture.nativeElement.textContent).toContain('Sucursal Reforma');
+  });
+
+  it('should show short fallbacks and hide long raw ids when names are unavailable', () => {
+    customerCatalogApiService.restaurantName = null;
+    customerCatalogApiService.branchName = null;
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Restaurante #1384D0');
+    expect(text).toContain('Sucursal #8F7A');
+    expect(text).not.toContain('restaurant-long-1384d0');
+    expect(text).not.toContain('branch-long-8f7a');
   });
 });
 
@@ -144,8 +191,8 @@ function order(): OrderResponse {
   return {
     id: 'order-1',
     customerAccountId: 'customer-1',
-    restaurantId: 'restaurant-1',
-    branchId: 'branch-1',
+    restaurantId: 'restaurant-long-1384d0',
+    branchId: 'branch-long-8f7a',
     items: [
       {
         productId: 'product-1',
@@ -178,8 +225,8 @@ function payment(): PaymentResponse {
     id: 'payment-1',
     orderId: 'order-1',
     customerAccountId: 'customer-1',
-    restaurantId: 'restaurant-1',
-    branchId: 'branch-1',
+    restaurantId: 'restaurant-long-1384d0',
+    branchId: 'branch-long-8f7a',
     amount: 100,
     currency: 'MXN',
     status: 'Approved',

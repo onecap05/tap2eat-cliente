@@ -86,6 +86,7 @@
         <app-orders-preview
           *ngIf="activeSection === 'orders' && restaurant"
           [restaurantId]="restaurant.id"
+          [restaurantName]="restaurant.name"
           [branches]="branches"
         />
 

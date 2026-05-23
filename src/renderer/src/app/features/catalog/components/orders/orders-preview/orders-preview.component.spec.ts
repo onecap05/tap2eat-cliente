@@ -11,7 +11,7 @@ class FakeOrderApiService {
   public lastFilters: unknown;
   public lastUpdate: { orderId: string; status: string } | null = null;
   public orders: OrderResponse[] = [
-    order('order-1', 'Created', 'branch-1'),
+    order('order-1', 'Created', 'branch-long-8f7a'),
     order('order-2', 'Delivered', 'branch-2')
   ];
   public updateShouldFail = false;
@@ -54,14 +54,15 @@ describe('OrdersPreviewComponent', () => {
     orderApiService = TestBed.inject(OrderApiService) as unknown as FakeOrderApiService;
     fixture = TestBed.createComponent(OrdersPreviewComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('restaurantId', 'restaurant-1');
+    fixture.componentRef.setInput('restaurantId', 'restaurant-long-1384d0');
+    fixture.componentRef.setInput('restaurantName', 'Tacos Owner');
     fixture.componentRef.setInput('branches', branches());
   });
 
   it('should load real orders by restaurant id', () => {
     fixture.detectChanges();
 
-    expect(orderApiService.lastRestaurantId).toBe('restaurant-1');
+    expect(orderApiService.lastRestaurantId).toBe('restaurant-long-1384d0');
     expect(component.orders.length).toBe(2);
   });
 
@@ -112,13 +113,37 @@ describe('OrdersPreviewComponent', () => {
 
     expect(component.actionErrorMessage).toContain('No pudimos actualizar');
   });
+
+  it('should show branch and restaurant names when available', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Tacos Owner');
+    expect(fixture.nativeElement.textContent).toContain('Centro');
+  });
+
+  it('should show readable customer fallback and hide raw customer id', () => {
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Cliente #E95B7');
+    expect(text).not.toContain('customer-long-e95b7');
+  });
+
+  it('should show branch fallback when branch name is unavailable', () => {
+    fixture.componentRef.setInput('branches', []);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Sucursal #8F7A');
+    expect(fixture.nativeElement.textContent).not.toContain('branch-long-8f7a');
+  });
 });
 
 function order(id: string, status: OrderStatus, branchId: string): OrderResponse {
   return {
     id,
-    customerAccountId: 'customer-1',
-    restaurantId: 'restaurant-1',
+    customerAccountId: 'customer-long-e95b7',
+    restaurantId: 'restaurant-long-1384d0',
     branchId,
     items: [
       {
@@ -141,8 +166,8 @@ function order(id: string, status: OrderStatus, branchId: string): OrderResponse
 function branches(): IBranchResponse[] {
   return [
     {
-      id: 'branch-1',
-      restaurantId: 'restaurant-1',
+      id: 'branch-long-8f7a',
+      restaurantId: 'restaurant-long-1384d0',
       name: 'Centro',
       formattedAddress: 'Calle 1',
       latitude: 0,
@@ -152,7 +177,7 @@ function branches(): IBranchResponse[] {
     },
     {
       id: 'branch-2',
-      restaurantId: 'restaurant-1',
+      restaurantId: 'restaurant-long-1384d0',
       name: 'Norte',
       formattedAddress: 'Calle 2',
       latitude: 0,

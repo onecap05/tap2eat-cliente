@@ -15,9 +15,9 @@
   <ng-container *ngIf="order && !isLoading">
     <header class="detail-hero">
       <div>
-        <p>Pedido #{{ shortOrderId }}</p>
+        <span class="order-kicker">Pedido #{{ shortOrderId }}</span>
         <h1>{{ orderStatusLabel }}</h1>
-        <span>{{ formatDate(order.createdAt) }}</span>
+        <p>{{ formatDate(order.createdAt) }}</p>
       </div>
 
       <div class="payment-pill">
@@ -46,10 +46,11 @@
         <h2>Productos</h2>
 
         <div *ngFor="let item of order.items" class="item-row">
-          <div>
+          <div class="item-info">
             <strong>{{ item.productNameSnapshot }}</strong>
             <p>x{{ item.quantity }} · {{ formatCurrency(item.unitPriceSnapshot) }}</p>
-            <ul *ngIf="item.selectedModifiers.length > 0">
+
+            <ul *ngIf="item.selectedModifiers && item.selectedModifiers.length > 0">
               <li *ngFor="let modifier of item.selectedModifiers">
                 {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
                 <span *ngIf="modifier.priceAdjustment">
@@ -59,7 +60,7 @@
             </ul>
           </div>
 
-          <span>{{ formatCurrency(item.subtotal) }}</span>
+          <span class="item-subtotal">{{ formatCurrency(item.subtotal) }}</span>
         </div>
       </article>
 
@@ -67,15 +68,16 @@
         <h2>Resumen</h2>
 
         <div class="pickup-qr">
-          <span>QR de recoleccion</span>
+          <span>QR de recolección</span>
+
           <img
             *ngIf="pickupQrDataUrl && !pickupQrError; else qrFallback"
             [src]="pickupQrDataUrl"
-            alt="QR de recoleccion"
+            alt="QR de recolección"
           />
 
           <ng-template #qrFallback>
-            <p>Codigo de pedido: #{{ shortOrderId }}</p>
+            <p>Código de pedido: #{{ shortOrderId }}</p>
           </ng-template>
         </div>
 
@@ -84,23 +86,36 @@
             <dt>Subtotal</dt>
             <dd>{{ formatCurrency(order.subtotal) }}</dd>
           </div>
+
           <div>
             <dt>Total</dt>
             <dd>{{ formatCurrency(order.total) }}</dd>
           </div>
+
           <div>
             <dt>Restaurante</dt>
-            <dd>{{ order.restaurantId }}</dd>
+            <dd>{{ formatRestaurantLabel(order.restaurantId) }}</dd>
           </div>
+
           <div>
             <dt>Sucursal</dt>
-            <dd>{{ order.branchId }}</dd>
+            <dd>{{ formatBranchLabel(order.branchId) }}</dd>
           </div>
         </dl>
 
         <div class="notes" *ngIf="order.notes">
           <span>Notas</span>
           <p>{{ order.notes }}</p>
+        </div>
+
+        <div class="summary-actions">
+          <button type="button" routerLink="/customer/orders" class="primary-button">
+            Volver a mis pedidos
+          </button>
+
+          <button type="button" routerLink="/customer/restaurants" class="secondary-button">
+            Ver restaurantes
+          </button>
         </div>
       </aside>
     </section>

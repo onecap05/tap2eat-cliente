@@ -9,15 +9,6 @@ import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
 import { PickupQrService } from '../../services/pickup-qr.service';
 
-const STATUS_LABELS: Record<string, string> = {
-  Created: 'Recibido',
-  Accepted: 'Recibido',
-  Preparing: 'Preparando',
-  Ready: 'Listo',
-  Delivered: 'Entregado',
-  Cancelled: 'Cancelado'
-};
-
 @Component({
   selector: 'app-order-confirmation',
   standalone: true,
@@ -51,19 +42,33 @@ export class OrderConfirmationComponent implements OnInit {
 
     forkJoin({
       order: this.orderApiService.getOrderById(orderId),
-      payment: this.paymentApiService.getPaymentByOrderId(orderId).pipe(catchError(() => of(null)))
+      payment: this.paymentApiService.getPaymentByOrderId(orderId).pipe(
+        catchError(() => of(null))
+      )
     }).subscribe({
       next: response => {
         this.order = response.order;
         this.payment = response.payment;
         this.isLoading = false;
+
         void this.generatePickupQr(response.order);
       },
-      error: () => {
-        this.errorMessage = 'No pudimos cargar la confirmacion del pedido.';
+      error: error => {
+        console.error('Order confirmation load failed:', error);
+        this.errorMessage = 'No pudimos cargar la confirmación del pedido.';
         this.isLoading = false;
       }
     });
+  }
+
+  // Compatibilidad con HTML anterior que usaba qrCodeDataUrl.
+  public get qrCodeDataUrl(): string {
+    return this.pickupQrDataUrl;
+  }
+
+  // Compatibilidad con HTML anterior que usaba qrCodeError.
+  public get qrCodeError(): boolean {
+    return this.pickupQrError;
   }
 
   public get shortOrderNumber(): string {
@@ -71,7 +76,99 @@ export class OrderConfirmationComponent implements OnInit {
   }
 
   public get statusLabel(): string {
-    return this.order ? STATUS_LABELS[this.order.status] ?? this.order.status : '';
+    return this.getOrderStatusLabel(this.order?.status);
+  }
+
+  public get paymentStatusLabel(): string {
+    return this.getPaymentStatusLabel(this.payment?.status);
+  }
+
+  public getShortOrderCode(orderId?: string | null): string {
+    if (!orderId) {
+      return '#------';
+    }
+
+    return `#${orderId.slice(-8).toUpperCase()}`;
+  }
+
+  public getOrderStatusLabel(status?: string | null): string {
+    switch (status) {
+      case 'Created':
+        return 'Recibido';
+      case 'Accepted':
+        return 'Aceptado';
+      case 'Preparing':
+        return 'Preparando';
+      case 'Ready':
+        return 'Listo';
+      case 'Delivered':
+        return 'Entregado';
+      case 'Cancelled':
+        return 'Cancelado';
+      default:
+        return 'Pedido confirmado';
+    }
+  }
+
+  public getOrderStatusClass(status?: string | null): string {
+    switch (status) {
+      case 'Created':
+        return 'status-created';
+      case 'Accepted':
+        return 'status-accepted';
+      case 'Preparing':
+        return 'status-preparing';
+      case 'Ready':
+        return 'status-ready';
+      case 'Delivered':
+        return 'status-delivered';
+      case 'Cancelled':
+        return 'status-cancelled';
+      default:
+        return 'status-created';
+    }
+  }
+
+  public getPaymentStatusLabel(status?: string | null): string {
+    switch (status) {
+      case 'Approved':
+        return 'Pago confirmado';
+      case 'Pending':
+        return 'Pendiente';
+      case 'Rejected':
+        return 'Rechazado';
+      case 'Cancelled':
+        return 'Cancelado';
+      default:
+        return 'Sin información';
+    }
+  }
+
+  public getPaymentStatusClass(status?: string | null): string {
+    switch (status) {
+      case 'Approved':
+        return 'payment-approved';
+      case 'Pending':
+        return 'payment-pending';
+      case 'Rejected':
+        return 'payment-rejected';
+      case 'Cancelled':
+        return 'payment-cancelled';
+      default:
+        return 'payment-pending';
+    }
+  }
+
+  public getPaymentMethodLabel(): string {
+    if (!this.payment) {
+      return 'No disponible';
+    }
+
+    if (this.payment.provider && this.payment.provider.trim().length > 0) {
+      return 'Pago en línea';
+    }
+
+    return 'Pago en efectivo';
   }
 
   public formatCurrency(value: number): string {
@@ -79,6 +176,22 @@ export class OrderConfirmationComponent implements OnInit {
       style: 'currency',
       currency: 'MXN'
     }).format(value);
+  }
+
+  public formatRestaurantLabel(id?: string | null): string {
+    if (!id) {
+      return 'No disponible';
+    }
+
+    return `Restaurante ${id.slice(-6).toUpperCase()}`;
+  }
+
+  public formatBranchLabel(id?: string | null): string {
+    if (!id) {
+      return 'Sin sucursal';
+    }
+
+    return `Sucursal ${id.slice(-4).toUpperCase()}`;
   }
 
   private async generatePickupQr(order: OrderResponse): Promise<void> {
