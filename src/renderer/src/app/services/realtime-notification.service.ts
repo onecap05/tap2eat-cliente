@@ -3,7 +3,10 @@ import { Client, type IMessage, type IStompSocket, type StompSubscription } from
 import { EMPTY, Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
-import { RealtimeOrderEventMessage } from '../models/realtime-notification.models';
+import {
+  RealtimeOrderEventMessage,
+  RealtimePaymentEventMessage
+} from '../models/realtime-notification.models';
 
 export interface RealtimeStompClient {
   connected: boolean;
@@ -75,6 +78,15 @@ export class RealtimeNotificationService {
     return this.listenToOrderTopic(this.getCustomerOrdersTopic(normalizedCustomerAccountId));
   }
 
+  public listenToCustomerPayments(customerAccountId: string): Observable<RealtimePaymentEventMessage> {
+    if (!customerAccountId?.trim()) {
+      return EMPTY;
+    }
+
+    const normalizedCustomerAccountId = customerAccountId.trim();
+    return this.listenToPaymentTopic(this.getCustomerPaymentsTopic(normalizedCustomerAccountId));
+  }
+
   public getRestaurantOrdersTopic(restaurantId: string): string {
     return `/topic/restaurants/${restaurantId}/orders`;
   }
@@ -83,8 +95,23 @@ export class RealtimeNotificationService {
     return `/topic/customers/${customerAccountId}/orders`;
   }
 
+  public getCustomerPaymentsTopic(customerAccountId: string): string {
+    return `/topic/customers/${customerAccountId}/payments`;
+  }
+
   private listenToOrderTopic(topic: string): Observable<RealtimeOrderEventMessage> {
-    return new Observable<RealtimeOrderEventMessage>(observer => {
+    return this.listenToTopic(topic, rawBody => this.parseOrderMessage(rawBody));
+  }
+
+  private listenToPaymentTopic(topic: string): Observable<RealtimePaymentEventMessage> {
+    return this.listenToTopic(topic, rawBody => this.parsePaymentMessage(rawBody));
+  }
+
+  private listenToTopic<TMessage>(
+    topic: string,
+    parseMessage: (rawBody: string) => TMessage | null
+  ): Observable<TMessage> {
+    return new Observable<TMessage>(observer => {
       let stompSubscription: StompSubscription | null = null;
       let isClosed = false;
       let resolvedClient: RealtimeStompClient | null = null;
@@ -114,7 +141,7 @@ export class RealtimeNotificationService {
             }
 
             stompSubscription = client.subscribe(topic, message => {
-              const parsedMessage = this.parseOrderMessage(message.body);
+              const parsedMessage = parseMessage(message.body);
 
               if (parsedMessage) {
                 observer.next(parsedMessage);
@@ -192,6 +219,15 @@ export class RealtimeNotificationService {
       return JSON.parse(rawBody) as RealtimeOrderEventMessage;
     } catch (error) {
       console.warn('Ignoring invalid realtime order message:', error);
+      return null;
+    }
+  }
+
+  private parsePaymentMessage(rawBody: string): RealtimePaymentEventMessage | null {
+    try {
+      return JSON.parse(rawBody) as RealtimePaymentEventMessage;
+    } catch (error) {
+      console.warn('Ignoring invalid realtime payment message:', error);
       return null;
     }
   }

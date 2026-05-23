@@ -3,7 +3,10 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
-import { RealtimeOrderEventMessage } from '../../../../models/realtime-notification.models';
+import {
+  RealtimeOrderEventMessage,
+  RealtimePaymentEventMessage
+} from '../../../../models/realtime-notification.models';
 import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
 import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
@@ -27,9 +30,11 @@ class FakeOrderApiService {
 class FakePaymentApiService {
   public shouldFail = false;
   public lastOrderId = '';
+  public getPaymentByOrderIdCalls = 0;
 
   public getPaymentByOrderId(orderId: string) {
     this.lastOrderId = orderId;
+    this.getPaymentByOrderIdCalls++;
 
     if (this.shouldFail) {
       return throwError(() => new Error('payment missing'));
@@ -79,7 +84,9 @@ class FakeCustomerCatalogApiService {
 
 class FakeRealtimeNotificationService {
   public customerOrdersSubject = new Subject<RealtimeOrderEventMessage>();
+  public customerPaymentsSubject = new Subject<RealtimePaymentEventMessage>();
   public lastCustomerAccountId = '';
+  public lastPaymentCustomerAccountId = '';
   public unsubscribeCount = 0;
 
   public listenToCustomerOrders(customerAccountId: string): Observable<RealtimeOrderEventMessage> {
@@ -87,6 +94,19 @@ class FakeRealtimeNotificationService {
 
     return new Observable(observer => {
       const subscription = this.customerOrdersSubject.subscribe(observer);
+
+      return () => {
+        this.unsubscribeCount++;
+        subscription.unsubscribe();
+      };
+    });
+  }
+
+  public listenToCustomerPayments(customerAccountId: string): Observable<RealtimePaymentEventMessage> {
+    this.lastPaymentCustomerAccountId = customerAccountId;
+
+    return new Observable(observer => {
+      const subscription = this.customerPaymentsSubject.subscribe(observer);
 
       return () => {
         this.unsubscribeCount++;
@@ -177,6 +197,12 @@ describe('CustomerOrderDetailComponent', () => {
     expect(realtimeNotificationService.lastCustomerAccountId).toBe('customer-1');
   });
 
+  it('should subscribe to realtime payments for the loaded customer', () => {
+    fixture.detectChanges();
+
+    expect(realtimeNotificationService.lastPaymentCustomerAccountId).toBe('customer-1');
+  });
+
   it('should reload detail when realtime event belongs to the current order', () => {
     fixture.detectChanges();
     const initialCalls = orderApiService.getOrderByIdCalls;
@@ -203,12 +229,40 @@ describe('CustomerOrderDetailComponent', () => {
     expect(orderApiService.getOrderByIdCalls).toBe(initialCalls);
   });
 
-  it('should unsubscribe from realtime orders when destroyed', () => {
+  it('should reload detail when payment event belongs to the current order', () => {
+    fixture.detectChanges();
+    const initialOrderCalls = orderApiService.getOrderByIdCalls;
+    const initialPaymentCalls = paymentApiService.getPaymentByOrderIdCalls;
+
+    realtimeNotificationService.customerPaymentsSubject.next({
+      eventType: 'payment.approved',
+      orderId: 'order-1',
+      customerAccountId: 'customer-1'
+    });
+
+    expect(orderApiService.getOrderByIdCalls).toBe(initialOrderCalls + 1);
+    expect(paymentApiService.getPaymentByOrderIdCalls).toBe(initialPaymentCalls + 1);
+  });
+
+  it('should ignore payment events for another order', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.getOrderByIdCalls;
+
+    realtimeNotificationService.customerPaymentsSubject.next({
+      eventType: 'payment.cancelled',
+      orderId: 'order-2',
+      customerAccountId: 'customer-1'
+    });
+
+    expect(orderApiService.getOrderByIdCalls).toBe(initialCalls);
+  });
+
+  it('should unsubscribe from realtime orders and payments when destroyed', () => {
     fixture.detectChanges();
 
     fixture.destroy();
 
-    expect(realtimeNotificationService.unsubscribeCount).toBe(1);
+    expect(realtimeNotificationService.unsubscribeCount).toBe(2);
   });
 
   it('should show pickup QR when it is generated', async () => {
