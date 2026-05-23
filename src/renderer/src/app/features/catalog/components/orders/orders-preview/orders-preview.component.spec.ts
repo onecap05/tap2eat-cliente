@@ -1,15 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Observable, of, Subject, throwError } from 'rxjs';
 
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { OrderResponse, OrderStatus } from '../../../../customer/models/order.models';
 import { OrderApiService } from '../../../../customer/services/order-api.service';
+import { RealtimeOrderEventMessage } from '../../../../../models/realtime-notification.models';
+import { RealtimeNotificationService } from '../../../../../services/realtime-notification.service';
 import { OrdersPreviewComponent } from './orders-preview.component';
 
 class FakeOrderApiService {
   public lastRestaurantId = '';
   public lastFilters: unknown;
   public lastUpdate: { orderId: string; status: string } | null = null;
+  public getRestaurantOrdersCalls = 0;
   public orders: OrderResponse[] = [
     order('order-1', 'Created', 'branch-long-8f7a'),
     order('order-2', 'Delivered', 'branch-2')
@@ -17,6 +20,7 @@ class FakeOrderApiService {
   public updateShouldFail = false;
 
   public getRestaurantOrders(restaurantId: string, filters?: unknown) {
+    this.getRestaurantOrdersCalls++;
     this.lastRestaurantId = restaurantId;
     this.lastFilters = filters;
     return of(this.orders);
@@ -38,20 +42,49 @@ class FakeOrderApiService {
   }
 }
 
+class FakeRealtimeNotificationService {
+  public lastRestaurantId = '';
+  public listenCalls = 0;
+  public activeSubscriptions = 0;
+  private readonly restaurantOrdersSubject = new Subject<RealtimeOrderEventMessage>();
+
+  public listenToRestaurantOrders(restaurantId: string): Observable<RealtimeOrderEventMessage> {
+    this.listenCalls++;
+    this.lastRestaurantId = restaurantId;
+
+    return new Observable(observer => {
+      this.activeSubscriptions++;
+      const subscription = this.restaurantOrdersSubject.subscribe(observer);
+
+      return () => {
+        this.activeSubscriptions--;
+        subscription.unsubscribe();
+      };
+    });
+  }
+
+  public emitRestaurantOrderEvent(event: RealtimeOrderEventMessage): void {
+    this.restaurantOrdersSubject.next(event);
+  }
+}
+
 describe('OrdersPreviewComponent', () => {
   let fixture: ComponentFixture<OrdersPreviewComponent>;
   let component: OrdersPreviewComponent;
   let orderApiService: FakeOrderApiService;
+  let realtimeNotificationService: FakeRealtimeNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [OrdersPreviewComponent],
       providers: [
-        { provide: OrderApiService, useClass: FakeOrderApiService }
+        { provide: OrderApiService, useClass: FakeOrderApiService },
+        { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService }
       ]
     }).compileComponents();
 
     orderApiService = TestBed.inject(OrderApiService) as unknown as FakeOrderApiService;
+    realtimeNotificationService = TestBed.inject(RealtimeNotificationService) as unknown as FakeRealtimeNotificationService;
     fixture = TestBed.createComponent(OrdersPreviewComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('restaurantId', 'restaurant-long-1384d0');
@@ -64,6 +97,59 @@ describe('OrdersPreviewComponent', () => {
 
     expect(orderApiService.lastRestaurantId).toBe('restaurant-long-1384d0');
     expect(component.orders.length).toBe(2);
+  });
+
+  it('should subscribe to realtime orders for restaurant id', () => {
+    fixture.detectChanges();
+
+    expect(realtimeNotificationService.listenCalls).toBe(1);
+    expect(realtimeNotificationService.lastRestaurantId).toBe('restaurant-long-1384d0');
+  });
+
+  it('should reload orders when realtime order event matches restaurant id', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.getRestaurantOrdersCalls;
+
+    realtimeNotificationService.emitRestaurantOrderEvent(realtimeOrderEvent('order.created', 'restaurant-long-1384d0'));
+
+    expect(orderApiService.getRestaurantOrdersCalls).toBe(initialCalls + 1);
+  });
+
+  it('should reload orders when realtime order status event matches restaurant id', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.getRestaurantOrdersCalls;
+
+    realtimeNotificationService.emitRestaurantOrderEvent(realtimeOrderEvent('order.status.changed', 'restaurant-long-1384d0'));
+
+    expect(orderApiService.getRestaurantOrdersCalls).toBe(initialCalls + 1);
+  });
+
+  it('should ignore realtime order event from another restaurant', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.getRestaurantOrdersCalls;
+
+    realtimeNotificationService.emitRestaurantOrderEvent(realtimeOrderEvent('order.created', 'another-restaurant'));
+
+    expect(orderApiService.getRestaurantOrdersCalls).toBe(initialCalls);
+  });
+
+  it('should reload with selected status filter when realtime event arrives', () => {
+    fixture.detectChanges();
+    component.setStatusFilter('Created');
+
+    realtimeNotificationService.emitRestaurantOrderEvent(realtimeOrderEvent('order.created', 'restaurant-long-1384d0'));
+
+    expect(orderApiService.lastFilters).toEqual({ status: 'Created' });
+  });
+
+  it('should unsubscribe from realtime orders on destroy', () => {
+    fixture.detectChanges();
+
+    expect(realtimeNotificationService.activeSubscriptions).toBe(1);
+
+    fixture.destroy();
+
+    expect(realtimeNotificationService.activeSubscriptions).toBe(0);
   });
 
   it('should load initial orders without filters when status is all', () => {
@@ -204,4 +290,16 @@ function branches(): IBranchResponse[] {
       active: true
     }
   ];
+}
+
+function realtimeOrderEvent(eventType: string, restaurantId: string): RealtimeOrderEventMessage {
+  return {
+    eventType,
+    orderId: 'order-realtime-1',
+    customerAccountId: 'customer-long-e95b7',
+    restaurantId,
+    branchId: 'branch-long-8f7a',
+    status: 'Created',
+    occurredAt: '2026-05-23T12:00:00Z'
+  };
 }
