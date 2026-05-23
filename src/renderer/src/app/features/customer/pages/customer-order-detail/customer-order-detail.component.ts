@@ -49,7 +49,8 @@ export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
   public branchName = '';
   private currentOrderId = '';
   private realtimeCustomerAccountId = '';
-  private realtimeSubscription: Subscription | null = null;
+  private realtimeOrdersSubscription: Subscription | null = null;
+  private realtimePaymentsSubscription: Subscription | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -74,7 +75,8 @@ export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy(): void {
-    this.realtimeSubscription?.unsubscribe();
+    this.realtimeOrdersSubscription?.unsubscribe();
+    this.realtimePaymentsSubscription?.unsubscribe();
   }
 
   private loadOrderDetail(orderId: string): void {
@@ -91,7 +93,7 @@ export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         void this.generatePickupQr(response.order);
         this.resolveCatalogNames(response.order);
-        this.subscribeToRealtimeOrderUpdates(response.order);
+        this.subscribeToRealtimeUpdates(response.order);
       },
       error: () => {
         this.errorMessage = 'No pudimos cargar el detalle del pedido.';
@@ -100,15 +102,23 @@ export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private subscribeToRealtimeOrderUpdates(order: OrderResponse): void {
+  private subscribeToRealtimeUpdates(order: OrderResponse): void {
     if (!order.customerAccountId || order.customerAccountId === this.realtimeCustomerAccountId) {
       return;
     }
 
-    this.realtimeSubscription?.unsubscribe();
+    this.realtimeOrdersSubscription?.unsubscribe();
+    this.realtimePaymentsSubscription?.unsubscribe();
     this.realtimeCustomerAccountId = order.customerAccountId;
-    this.realtimeSubscription = this.realtimeNotificationService
+    this.realtimeOrdersSubscription = this.realtimeNotificationService
       .listenToCustomerOrders(order.customerAccountId)
+      .subscribe(event => {
+        if (event.orderId === this.currentOrderId) {
+          this.loadOrderDetail(this.currentOrderId);
+        }
+      });
+    this.realtimePaymentsSubscription = this.realtimeNotificationService
+      .listenToCustomerPayments(order.customerAccountId)
       .subscribe(event => {
         if (event.orderId === this.currentOrderId) {
           this.loadOrderDetail(this.currentOrderId);

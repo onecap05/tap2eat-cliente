@@ -4,7 +4,10 @@ import { Observable, of, Subject } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
-import { RealtimeOrderEventMessage } from '../../../../models/realtime-notification.models';
+import {
+  RealtimeOrderEventMessage,
+  RealtimePaymentEventMessage
+} from '../../../../models/realtime-notification.models';
 import { OrderResponse, OrderStatus } from '../../models/order.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { OrderApiService } from '../../services/order-api.service';
@@ -32,7 +35,9 @@ class FakeOrderApiService {
 
 class FakeRealtimeNotificationService {
   public customerOrdersSubject = new Subject<RealtimeOrderEventMessage>();
+  public customerPaymentsSubject = new Subject<RealtimePaymentEventMessage>();
   public lastCustomerAccountId = '';
+  public lastPaymentCustomerAccountId = '';
   public unsubscribeCount = 0;
 
   public listenToCustomerOrders(customerAccountId: string): Observable<RealtimeOrderEventMessage> {
@@ -40,6 +45,19 @@ class FakeRealtimeNotificationService {
 
     return new Observable(observer => {
       const subscription = this.customerOrdersSubject.subscribe(observer);
+
+      return () => {
+        this.unsubscribeCount++;
+        subscription.unsubscribe();
+      };
+    });
+  }
+
+  public listenToCustomerPayments(customerAccountId: string): Observable<RealtimePaymentEventMessage> {
+    this.lastPaymentCustomerAccountId = customerAccountId;
+
+    return new Observable(observer => {
+      const subscription = this.customerPaymentsSubject.subscribe(observer);
 
       return () => {
         this.unsubscribeCount++;
@@ -204,6 +222,12 @@ describe('CustomerOrdersComponent', () => {
     expect(realtimeNotificationService.lastCustomerAccountId).toBe('customer-1');
   });
 
+  it('should subscribe to realtime payments for the current customer', () => {
+    fixture.detectChanges();
+
+    expect(realtimeNotificationService.lastPaymentCustomerAccountId).toBe('customer-1');
+  });
+
   it('should reload orders when a realtime event belongs to the current customer', () => {
     fixture.detectChanges();
     const initialCalls = orderApiService.customerOrdersCalls;
@@ -230,12 +254,38 @@ describe('CustomerOrdersComponent', () => {
     expect(orderApiService.customerOrdersCalls).toBe(initialCalls);
   });
 
-  it('should unsubscribe from realtime orders when destroyed', () => {
+  it('should reload orders when a realtime payment event belongs to the current customer', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.customerOrdersCalls;
+
+    realtimeNotificationService.customerPaymentsSubject.next({
+      eventType: 'payment.approved',
+      orderId: 'order-1',
+      customerAccountId: 'customer-1'
+    });
+
+    expect(orderApiService.customerOrdersCalls).toBe(initialCalls + 1);
+  });
+
+  it('should ignore realtime payment events for another customer', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.customerOrdersCalls;
+
+    realtimeNotificationService.customerPaymentsSubject.next({
+      eventType: 'payment.rejected',
+      orderId: 'order-1',
+      customerAccountId: 'customer-2'
+    });
+
+    expect(orderApiService.customerOrdersCalls).toBe(initialCalls);
+  });
+
+  it('should unsubscribe from realtime orders and payments when destroyed', () => {
     fixture.detectChanges();
 
     fixture.destroy();
 
-    expect(realtimeNotificationService.unsubscribeCount).toBe(1);
+    expect(realtimeNotificationService.unsubscribeCount).toBe(2);
   });
 
   it('should show restaurant and branch names when available', () => {

@@ -27,7 +27,8 @@ export class CustomerOrdersComponent implements OnInit, OnDestroy {
   public restaurantNames = new Map<string, string>();
   public branchNames = new Map<string, string>();
   private customerAccountId: string | null = null;
-  private realtimeSubscription: Subscription | null = null;
+  private realtimeOrdersSubscription: Subscription | null = null;
+  private realtimePaymentsSubscription: Subscription | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -41,8 +42,16 @@ export class CustomerOrdersComponent implements OnInit, OnDestroy {
     this.loadOrders();
 
     if (this.customerAccountId) {
-      this.realtimeSubscription = this.realtimeNotificationService
+      this.realtimeOrdersSubscription = this.realtimeNotificationService
         .listenToCustomerOrders(this.customerAccountId)
+        .subscribe(event => {
+          if (event.customerAccountId === this.customerAccountId) {
+            this.loadOrders();
+          }
+        });
+
+      this.realtimePaymentsSubscription = this.realtimeNotificationService
+        .listenToCustomerPayments(this.customerAccountId)
         .subscribe(event => {
           if (event.customerAccountId === this.customerAccountId) {
             this.loadOrders();
@@ -52,7 +61,8 @@ export class CustomerOrdersComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy(): void {
-    this.realtimeSubscription?.unsubscribe();
+    this.realtimeOrdersSubscription?.unsubscribe();
+    this.realtimePaymentsSubscription?.unsubscribe();
   }
 
   public get filteredOrders(): OrderResponse[] {
