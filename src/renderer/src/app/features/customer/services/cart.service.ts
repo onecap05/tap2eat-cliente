@@ -133,13 +133,15 @@ export class CartService {
     return selections.flatMap(selection => {
       const groupId = selection.group.id ?? selection.group.name;
 
-      return selection.options.map(option => ({
-        groupId,
-        groupName: selection.group.name,
-        optionId: option.id ?? option.name,
-        optionName: option.name,
-        additionalPrice: option.additionalPrice ?? 0
-      }));
+      return selection.options
+        .filter(option => !!option.id?.trim())
+        .map(option => ({
+          groupId,
+          groupName: selection.group.name,
+          optionId: option.id!.trim(),
+          optionName: option.name,
+          additionalPrice: option.additionalPrice ?? 0
+        }));
     });
   }
 
