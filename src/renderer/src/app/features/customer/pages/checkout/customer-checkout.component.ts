@@ -32,6 +32,7 @@ const CHECKOUT_TEXT = {
   missingRestaurant: 'El carrito no tiene restaurante asociado.',
   missingBranch: 'Selecciona una sucursal antes de continuar.',
   invalidItems: 'Revisa los productos del carrito antes de continuar.',
+  invalidModifierOptions: 'Algunas opciones del producto no tienen un identificador valido. Vuelve a seleccionar el producto.',
   genericError: 'No pudimos completar el checkout. Intenta de nuevo.',
   paymentPendingError: 'El pedido fue creado, pero no pudimos confirmar el pago. Consulta tus pedidos.'
 };
@@ -199,6 +200,11 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
       return null;
     }
 
+    if (this.cartState.items.some(item => this.hasInvalidModifierOptionIds(item))) {
+      this.errorMessage = this.text.invalidModifierOptions;
+      return null;
+    }
+
     return {
       customerAccountId,
       restaurantId: this.cartState.restaurantId,
@@ -210,6 +216,15 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
         selectedModifierOptionIds: item.selectedModifiers.map(modifier => modifier.optionId)
       }))
     };
+  }
+
+  private hasInvalidModifierOptionIds(item: ICartItem): boolean {
+    return item.selectedModifiers.some(modifier => {
+      const optionId = modifier.optionId?.trim();
+      const optionName = modifier.optionName?.trim();
+
+      return !optionId || (!!optionName && optionId === optionName);
+    });
   }
 
   private handleSubmitError(error: unknown, orderWasCreated = false): void {

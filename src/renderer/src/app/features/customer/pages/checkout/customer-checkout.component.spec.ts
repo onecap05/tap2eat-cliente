@@ -204,12 +204,28 @@ describe('CustomerCheckoutComponent', () => {
     await fixture.whenStable();
 
     expect(orderApiService.createOrderCalls).toBe(1);
+    expect((orderApiService.lastRequest as any).items[0].selectedModifierOptionIds).toEqual([]);
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(0);
     expect(paymentApiService.approvePaymentCalls).toBe(0);
     expect(navigateSpy).toHaveBeenCalledWith(
       ['/customer/orders', 'order-1', 'confirmation'],
       { replaceUrl: true }
     );
+  });
+
+  it('should send real modifier option ids in order request', async () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    component.paymentMethod = 'cash';
+    seedCartWithModifier();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+
+    expect(orderApiService.createOrderCalls).toBe(1);
+    expect((orderApiService.lastRequest as any).items[0].selectedModifierOptionIds)
+      .toEqual(['modifier-option-real-1']);
   });
 
   it('should show error and release submit button when create order fails', () => {
@@ -239,6 +255,33 @@ describe('CustomerCheckoutComponent', () => {
     expect(component.errorMessage).toContain('Selecciona una sucursal');
   });
 
+  it('should not submit when selected modifier does not have a real option id', () => {
+    seedCart();
+    fixture.detectChanges();
+    component.cartState = {
+      ...component.cartState,
+      items: [
+        {
+          ...component.cartState.items[0],
+          selectedModifiers: [
+            {
+              groupId: 'group-1',
+              groupName: 'Pan',
+              optionId: 'Pan brioche',
+              optionName: 'Pan brioche',
+              additionalPrice: 0
+            }
+          ]
+        }
+      ]
+    };
+
+    component.submitCheckout();
+
+    expect(orderApiService.createOrderCalls).toBe(0);
+    expect(component.errorMessage).toContain('identificador valido');
+  });
+
   it('should not submit when customer account id is missing', () => {
     authService.accountId = null;
     seedCart();
@@ -256,6 +299,36 @@ describe('CustomerCheckoutComponent', () => {
       branchId: 'branch-1',
       quantity: 2,
       modifierSelections: []
+    });
+  }
+
+  function seedCartWithModifier(): void {
+    cartService.addItem({
+      product: product(),
+      branchId: 'branch-1',
+      quantity: 1,
+      modifierSelections: [
+        {
+          group: {
+            id: 'modifier-group-1',
+            name: 'Pan',
+            selectionType: 'SINGLE',
+            required: true,
+            minSelections: 1,
+            maxSelections: 1,
+            active: true,
+            options: []
+          },
+          options: [
+            {
+              id: 'modifier-option-real-1',
+              name: 'Pan brioche',
+              additionalPrice: 10,
+              active: true
+            }
+          ]
+        }
+      ]
     });
   }
 

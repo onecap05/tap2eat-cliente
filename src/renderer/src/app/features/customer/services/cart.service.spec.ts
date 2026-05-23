@@ -37,6 +37,42 @@ describe('CartService', () => {
     expect(state.subtotal).toBe(250);
   });
 
+  it('should store real modifier option id when option has id', () => {
+    service.addItem({
+      product: product('product-1', 'restaurant-1', 100),
+      quantity: 1,
+      modifierSelections: [
+        {
+          group: modifierGroup('group-1'),
+          options: [modifierOption('option-real-1', 15, 'Pan brioche')]
+        }
+      ]
+    });
+
+    const state = service.getSnapshot();
+
+    expect(state.items[0].selectedModifiers[0].optionId).toBe('option-real-1');
+    expect(state.items[0].selectedModifiers[0].optionName).toBe('Pan brioche');
+  });
+
+  it('should not use option name as option id when option id is missing', () => {
+    service.addItem({
+      product: product('product-1', 'restaurant-1', 100),
+      quantity: 1,
+      modifierSelections: [
+        {
+          group: modifierGroup('group-1'),
+          options: [modifierOptionWithoutId('Pan brioche', 15)]
+        }
+      ]
+    });
+
+    const state = service.getSnapshot();
+
+    expect(state.items[0].selectedModifiers).toHaveLength(0);
+    expect(state.items[0].id).not.toContain('Pan brioche');
+  });
+
   it('should merge equal products with equal modifiers', () => {
     const request = {
       product: product('product-1', 'restaurant-1', 90),
@@ -141,10 +177,23 @@ describe('CartService', () => {
     };
   }
 
-  function modifierOption(id: string, additionalPrice: number): IModifierOptionResponse {
+  function modifierOption(
+    id: string,
+    additionalPrice: number,
+    name = 'Extra'
+  ): IModifierOptionResponse {
     return {
       id,
-      name: 'Extra',
+      name,
+      additionalPrice,
+      active: true
+    };
+  }
+
+  function modifierOptionWithoutId(name: string, additionalPrice: number): IModifierOptionResponse {
+    return {
+      id: null,
+      name,
       additionalPrice,
       active: true
     };
