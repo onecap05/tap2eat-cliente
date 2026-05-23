@@ -102,8 +102,26 @@ describe('RealtimeNotificationService', () => {
     subscription.unsubscribe();
   });
 
+  it('should use customer orders topic', async () => {
+    const subscription = service.listenToCustomerOrders('customer-1').subscribe();
+    await flushPromises();
+
+    client.connect();
+
+    expect(client.subscribedDestination).toBe('/topic/customers/customer-1/orders');
+
+    subscription.unsubscribe();
+  });
+
   it('should not create a websocket subscription when restaurant id is empty', () => {
     service.listenToRestaurantOrders('').subscribe();
+
+    expect(factoryCalls).toBe(0);
+    expect(client.activateCalls).toBe(0);
+  });
+
+  it('should not create a websocket subscription when customer account id is empty', () => {
+    service.listenToCustomerOrders('').subscribe();
 
     expect(factoryCalls).toBe(0);
     expect(client.activateCalls).toBe(0);
@@ -113,6 +131,24 @@ describe('RealtimeNotificationService', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const nextSpy = vi.fn();
     const subscription = service.listenToRestaurantOrders('restaurant-1').subscribe(nextSpy);
+    await flushPromises();
+    client.connect();
+
+    expect(() => client.receive('{invalid-json')).not.toThrow();
+
+    expect(nextSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Ignoring invalid realtime order message:',
+      expect.any(SyntaxError)
+    );
+
+    subscription.unsubscribe();
+  });
+
+  it('should ignore invalid customer order JSON without throwing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const nextSpy = vi.fn();
+    const subscription = service.listenToCustomerOrders('customer-1').subscribe(nextSpy);
     await flushPromises();
     client.connect();
 
