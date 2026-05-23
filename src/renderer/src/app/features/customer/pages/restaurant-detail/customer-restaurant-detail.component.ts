@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, Subscription } from 'rxjs';
 
 import { IModifierGroupResponse } from '../../../catalog/models/commons/IModifierGroupResponse';
@@ -24,7 +24,9 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   addToCart: 'Agregar al carrito',
   cart: 'Carrito',
   checkoutPending: 'Checkout proximamente',
+  checkout: 'Ir a pagar',
   emptyCart: 'Tu carrito esta vacio.',
+  selectBranch: 'Selecciona una sucursal antes de continuar.',
   mixedCart: 'Tu carrito tiene productos de otro restaurante. Puedes vaciarlo y empezar uno nuevo.',
   replaceCart: 'Vaciar carrito y agregar',
   cancel: 'Cancelar',
@@ -58,6 +60,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   public categories: CustomerCategoryResponse[] = [];
   public products: CustomerProductResponse[] = [];
   public selectedCategoryId = 'all';
+  public selectedBranchId: string | null = null;
   public selectedProduct: CustomerProductResponse | null = null;
   public selectedOptionsByGroup = new Map<string, IModifierOptionResponse[]>();
   public groupErrors = new Map<string, string>();
@@ -76,6 +79,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly customerCatalogApiService: CustomerCatalogApiService,
     private readonly cartService: CartService
   ) {
@@ -151,6 +155,15 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     this.selectedCategoryId = categoryId;
   }
 
+  public selectBranch(branch: CustomerBranchResponse): void {
+    if (!branch.open) {
+      return;
+    }
+
+    this.selectedBranchId = branch.id;
+    this.availabilityMessage = '';
+  }
+
   public increaseProductQuantity(): void {
     this.productQuantity += 1;
   }
@@ -201,6 +214,11 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.selectedBranchId) {
+      this.availabilityMessage = this.text.selectBranch;
+      return;
+    }
+
     const selections = this.getModifierSelections();
 
     this.customerCatalogApiService.getProduct(this.selectedProduct.id).subscribe({
@@ -231,7 +249,16 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   }
 
   public canCheckout(): boolean {
-    return Boolean(this.restaurant?.open && this.cartState.items.length);
+    return Boolean(this.restaurant?.open && this.cartState.items.length && this.cartState.branchId);
+  }
+
+  public goToCheckout(): void {
+    if (!this.cartState.branchId) {
+      this.availabilityMessage = this.text.selectBranch;
+      return;
+    }
+
+    void this.router.navigate(['/customer/checkout']);
   }
 
   public increaseCartItem(item: ICartItem): void {
@@ -297,6 +324,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
       next: response => {
         this.restaurant = response.restaurant;
         this.branches = response.branches;
+        this.selectedBranchId = this.getDefaultBranchId(response.branches);
         this.categories = response.categories;
         this.products = response.products.filter(product => product.available);
         this.isLoading = false;
@@ -327,6 +355,7 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     const request = { product, selections, quantity };
     const wasAdded = this.cartService.addItem({
       product: request.product,
+      branchId: this.selectedBranchId,
       quantity: request.quantity,
       modifierSelections: request.selections
     }, replaceRestaurantCart);
@@ -370,5 +399,11 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
 
   private getOptionId(option: IModifierOptionResponse): string {
     return option.id ?? option.name;
+  }
+
+  private getDefaultBranchId(branches: CustomerBranchResponse[]): string | null {
+    return branches.find(branch => branch.open && branch.isMainBranch)?.id
+      ?? branches.find(branch => branch.open)?.id
+      ?? null;
   }
 }

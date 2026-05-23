@@ -1,0 +1,77 @@
+<main class="orders-page">
+  <header class="orders-hero">
+    <div>
+      <p>Historial</p>
+      <h1>Mis pedidos</h1>
+    </div>
+
+    <a routerLink="/customer/restaurants" class="secondary-link">Ver restaurantes</a>
+  </header>
+
+  <section *ngIf="authMessage" class="state-panel">
+    <h2>{{ authMessage }}</h2>
+    <a routerLink="/login">Ir a iniciar sesion</a>
+  </section>
+
+  <ng-container *ngIf="!authMessage">
+    <nav class="status-tabs" aria-label="Filtros de estado">
+      <button
+        *ngFor="let option of statusOptions"
+        type="button"
+        [class.active]="selectedStatus === option.value"
+        (click)="setStatusFilter(option.value)"
+      >
+        {{ option.label }}
+      </button>
+    </nav>
+
+    <section *ngIf="isLoading" class="state-panel">
+      Cargando pedidos...
+    </section>
+
+    <section *ngIf="errorMessage && !isLoading" class="state-panel error">
+      {{ errorMessage }}
+    </section>
+
+    <section *ngIf="!isLoading && !errorMessage && orders.length === 0" class="state-panel">
+      <h2>Aun no tienes pedidos.</h2>
+      <a routerLink="/customer/restaurants">Explorar restaurantes</a>
+    </section>
+
+    <section *ngIf="!isLoading && orders.length > 0" class="orders-grid">
+      <article *ngFor="let order of orders" class="order-card">
+        <header>
+          <div>
+            <span>Pedido #{{ getShortOrderId(order.id) }}</span>
+            <h2>{{ getStatusLabel(order.status) }}</h2>
+          </div>
+
+          <strong>{{ formatCurrency(order.total) }}</strong>
+        </header>
+
+        <dl class="order-meta">
+          <div>
+            <dt>Fecha</dt>
+            <dd>{{ formatDate(order.createdAt) }}</dd>
+          </div>
+          <div>
+            <dt>Productos</dt>
+            <dd>{{ getItemCount(order) }}</dd>
+          </div>
+          <div>
+            <dt>Restaurante</dt>
+            <dd>{{ order.restaurantId }}</dd>
+          </div>
+          <div>
+            <dt>Sucursal</dt>
+            <dd>{{ order.branchId }}</dd>
+          </div>
+        </dl>
+
+        <a [routerLink]="['/customer/orders', order.id]" class="detail-button">
+          Ver detalle
+        </a>
+      </article>
+    </section>
+  </ng-container>
+</main>

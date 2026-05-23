@@ -1,0 +1,36 @@
+.confirmation-page{min-height:100vh;background:#f6f8fb;color:#172033;font-family:Arial,sans-serif}
+.confirmation-nav{height:72px;max-width:1120px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;background:#fff}
+.brand{display:flex;align-items:center;gap:10px;color:#267f53;font-size:24px;font-weight:900;text-decoration:none}
+.brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#267f53;color:#fff;font-size:17px}
+.confirmation-actions{display:flex;align-items:center;gap:18px}
+.confirmation-actions a{color:#334155;font-size:16px;font-weight:800;text-decoration:none}
+.confirmation-shell{max-width:1120px;margin:0 auto;padding:36px 28px 56px;display:grid;grid-template-columns:360px minmax(0,1fr);gap:24px;align-items:start}
+.ticket-panel,.details-panel,.state-message{background:#fff;border:1px solid #e2e8f0;border-radius:20px;box-shadow:0 18px 42px rgba(15,23,42,.08)}
+.ticket-panel{padding:28px;text-align:center}
+.ticket-header span{display:inline-flex;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:#dcfce7;color:#166534;font-size:13px;font-weight:900}
+.ticket-header h1{margin:0;font-size:44px;font-weight:900}
+.ticket-header p{margin:8px 0 24px;color:#64748b;font-size:17px}
+.status-line{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;padding:14px;border-radius:14px;background:#ecfdf5;color:#166534}
+.status-line.cancelled{background:#fef2f2;color:#991b1b}
+.status-line span{width:12px;height:12px;border-radius:50%;background:currentColor}
+.qr-card{width:172px;height:172px;margin:0 auto 26px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px;border:10px solid #172033;border-radius:14px;background:#fff}
+.qr-card div{border-radius:4px;background:#172033}
+.qr-card div:nth-child(2n),.qr-card div:nth-child(7),.qr-card div:nth-child(12){background:#fff}
+.ticket-actions{display:grid;gap:10px}
+.home-button,.orders-button{display:block;border-radius:14px;padding:15px;color:#fff;font-weight:900;text-decoration:none}
+.home-button{background:#ff7733;box-shadow:0 14px 28px rgba(255,119,51,.22)}
+.orders-button{background:#267f53;box-shadow:0 14px 28px rgba(38,127,83,.18)}
+.details-panel{padding:24px;display:grid;gap:24px}
+.details-panel h2{margin:0 0 16px;font-size:22px;font-weight:900}
+.order-item{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px;border:1px solid #e2e8f0;border-radius:16px}
+.order-item+ .order-item{margin-top:12px}
+.order-item h3{margin:0 0 5px;font-size:18px}
+.order-item p,.order-item span,.payment-section p{display:block;margin:0 0 5px;color:#64748b}
+.order-item strong,.total-section strong{color:#267f53}
+.total-section{display:flex;align-items:center;justify-content:space-between;padding-top:18px;border-top:1px solid #e2e8f0}
+.total-section span,.total-section strong{font-size:24px;font-weight:900}
+.payment-section{padding:18px;border-radius:16px;background:#f8fafc}
+.state-message{max-width:680px;margin:70px auto;padding:20px;color:#64748b;text-align:center}
+.state-message.error{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+@media (max-width:860px){.confirmation-shell{grid-template-columns:1fr}.ticket-panel{order:-1}}
+@media (max-width:560px){.confirmation-nav{height:auto;align-items:flex-start;flex-direction:column;gap:12px;padding-block:16px}.confirmation-actions{gap:14px}}

@@ -1,0 +1,95 @@
+<main class="order-detail-page">
+  <nav class="detail-nav">
+    <a routerLink="/customer/orders">Mis pedidos</a>
+    <a routerLink="/customer/restaurants">Restaurantes</a>
+  </nav>
+
+  <section *ngIf="isLoading" class="state-panel">
+    Cargando pedido...
+  </section>
+
+  <section *ngIf="errorMessage && !isLoading" class="state-panel error">
+    {{ errorMessage }}
+  </section>
+
+  <ng-container *ngIf="order && !isLoading">
+    <header class="detail-hero">
+      <div>
+        <p>Pedido #{{ shortOrderId }}</p>
+        <h1>{{ orderStatusLabel }}</h1>
+        <span>{{ formatDate(order.createdAt) }}</span>
+      </div>
+
+      <div class="payment-pill">
+        <small>Pago</small>
+        <strong>{{ paymentStatusLabel }}</strong>
+      </div>
+    </header>
+
+    <section class="progress-panel" [class.cancelled]="order.status === 'Cancelled'">
+      <div
+        *ngFor="let step of progressSteps"
+        class="progress-step"
+        [class.active]="isStepActive(step.status)"
+      >
+        <span></span>
+        <p>{{ step.label }}</p>
+      </div>
+
+      <p *ngIf="order.status === 'Cancelled'" class="cancelled-note">
+        Este pedido fue cancelado.
+      </p>
+    </section>
+
+    <section class="detail-grid">
+      <article class="items-panel">
+        <h2>Productos</h2>
+
+        <div *ngFor="let item of order.items" class="item-row">
+          <div>
+            <strong>{{ item.productNameSnapshot }}</strong>
+            <p>x{{ item.quantity }} · {{ formatCurrency(item.unitPriceSnapshot) }}</p>
+            <ul *ngIf="item.selectedModifiers.length > 0">
+              <li *ngFor="let modifier of item.selectedModifiers">
+                {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
+                <span *ngIf="modifier.priceAdjustment">
+                  +{{ formatCurrency(modifier.priceAdjustment) }}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <span>{{ formatCurrency(item.subtotal) }}</span>
+        </div>
+      </article>
+
+      <aside class="summary-panel">
+        <h2>Resumen</h2>
+
+        <dl>
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{{ formatCurrency(order.subtotal) }}</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd>{{ formatCurrency(order.total) }}</dd>
+          </div>
+          <div>
+            <dt>Restaurante</dt>
+            <dd>{{ order.restaurantId }}</dd>
+          </div>
+          <div>
+            <dt>Sucursal</dt>
+            <dd>{{ order.branchId }}</dd>
+          </div>
+        </dl>
+
+        <div class="notes" *ngIf="order.notes">
+          <span>Notas</span>
+          <p>{{ order.notes }}</p>
+        </div>
+      </aside>
+    </section>
+  </ng-container>
+</main>

@@ -7,7 +7,8 @@
 
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
-      <button type="button" class="icon-button" aria-label="Carrito">Carrito</button>
+      <a routerLink="/customer/orders">Mis pedidos</a>
+      <button type="button" class="icon-button" aria-label="Carrito" (click)="goToCheckout()">Carrito</button>
       <button type="button" class="icon-button" aria-label="Perfil">Perfil</button>
     </div>
   </nav>
@@ -83,7 +84,15 @@
           </div>
 
           <div class="branch-list">
-            <article class="branch-item" *ngFor="let branch of branches" [class.closed]="!branch.open">
+            <button
+              class="branch-item"
+              type="button"
+              *ngFor="let branch of branches"
+              [class.closed]="!branch.open"
+              [class.selected]="selectedBranchId === branch.id"
+              [disabled]="!branch.open"
+              (click)="selectBranch(branch)"
+            >
               <div class="branch-icon">Sucursal</div>
 
               <div>
@@ -93,7 +102,7 @@
                 <strong>{{ branch.name }}</strong>
                 <span>{{ branch.formattedAddress }}</span>
               </div>
-            </article>
+            </button>
           </div>
         </section>
 
@@ -196,8 +205,8 @@
           </article>
         </div>
 
-        <button class="checkout-button" type="button" [disabled]="!canCheckout()">
-          {{ text.checkoutPending }}
+        <button class="checkout-button" type="button" [disabled]="!canCheckout()" (click)="goToCheckout()">
+          {{ text.checkout }}
         </button>
       </aside>
     </section>
