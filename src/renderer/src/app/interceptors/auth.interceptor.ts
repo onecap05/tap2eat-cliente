@@ -1,6 +1,9 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 
+import { AuthService } from '../services/auth.service';
 import { TokenStorageService } from '../services/token-storage.service';
 
 const PUBLIC_AUTH_PATHS = [
@@ -19,11 +22,23 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     return next(request);
   }
 
+  const authService = inject(AuthService);
+  const router = inject(Router);
   const tokenStorageService = inject(TokenStorageService);
   const accessToken = tokenStorageService.getAccessToken();
 
   if (!accessToken) {
     return next(request);
+  }
+
+  if (authService.isTokenExpired()) {
+    redirectToLogin(authService, router);
+
+    return throwError(() => new HttpErrorResponse({
+      status: 401,
+      statusText: 'Token expired',
+      url: request.url
+    }));
   }
 
   const authenticatedRequest = request.clone({
@@ -32,8 +47,24 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     }
   });
 
-  return next(authenticatedRequest);
+  return next(authenticatedRequest).pipe(
+    catchError(error => {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        redirectToLogin(authService, router);
+      }
+
+      return throwError(() => error);
+    })
+  );
 };
+
+function redirectToLogin(authService: AuthService, router: Router): void {
+  authService.logout();
+
+  if (router.url !== '/login') {
+    void router.navigate(['/login'], { replaceUrl: true });
+  }
+}
 
 function isPublicAuthRequest(url: string): boolean {
   const requestPath = getRequestPath(url);

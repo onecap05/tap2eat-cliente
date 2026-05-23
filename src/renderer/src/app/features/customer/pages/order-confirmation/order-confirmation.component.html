@@ -1,80 +1,99 @@
-<main class="confirmation-page">
-  <nav class="confirmation-nav">
-    <a class="brand" routerLink="/customer/restaurants">
-      <span class="brand-mark">T2E</span>
-      <span>Tap2Eat</span>
-    </a>
+<section *ngIf="isLoading" class="state-panel">
+  Cargando confirmación...
+</section>
 
-    <div class="confirmation-actions">
+<section *ngIf="errorMessage && !isLoading" class="state-panel error">
+  {{ errorMessage }}
+</section>
+
+<div class="order-confirmation-page" *ngIf="order as currentOrder">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">T2E</div>
+      <span class="brand-name">Tap2Eat</span>
+    </div>
+
+    <nav class="topbar-nav">
       <a routerLink="/customer/restaurants">Explorar</a>
       <a routerLink="/customer/orders">Mis pedidos</a>
-    </div>
-  </nav>
+    </nav>
+  </header>
 
-  <p class="state-message" *ngIf="isLoading">Cargando confirmacion...</p>
-  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+  <section class="confirmation-layout">
+    <aside class="confirmation-card">
+      <span class="confirmation-pill">Pedido confirmado</span>
 
-  <section class="confirmation-shell" *ngIf="!isLoading && !errorMessage && order">
-    <article class="ticket-panel">
-      <div class="ticket-header">
-        <span>Pedido confirmado</span>
-        <h1>#{{ shortOrderNumber }}</h1>
-        <p>Tiempo estimado: 15-20 minutos</p>
+      <h1 class="order-code">{{ getShortOrderCode(currentOrder.id) }}</h1>
+
+      <div class="order-status-box" [ngClass]="getOrderStatusClass(currentOrder.status)">
+        <span class="status-dot"></span>
+        <span>{{ getOrderStatusLabel(currentOrder.status) }}</span>
       </div>
 
-      <div class="status-line" [class.cancelled]="order.status === 'Cancelled'">
-        <span></span>
-        <strong>{{ statusLabel }}</strong>
-      </div>
-
-      <div class="qr-card" aria-label="QR de recoleccion del pedido">
-        <img *ngIf="pickupQrDataUrl && !pickupQrError; else qrFallback" [src]="pickupQrDataUrl" alt="QR de recoleccion" />
+      <div class="pickup-qr-card" *ngIf="pickupQrDataUrl && !pickupQrError; else qrFallback">
+        <img [src]="pickupQrDataUrl" alt="QR del pedido" class="pickup-qr-image" />
       </div>
 
       <ng-template #qrFallback>
-        <p class="qr-fallback">Codigo de pedido: #{{ shortOrderNumber }}</p>
+        <div class="pickup-qr-card qr-fallback">
+          <div class="fallback-code">{{ getShortOrderCode(currentOrder.id) }}</div>
+          <p>Código de pedido</p>
+        </div>
       </ng-template>
 
-      <div class="ticket-actions">
-        <a class="home-button" routerLink="/customer/restaurants">Volver al inicio</a>
-        <a class="orders-button" routerLink="/customer/orders">Mis pedidos</a>
+      <p class="pickup-help-text">
+        Muestra este código o QR al momento de recoger tu pedido.
+      </p>
+
+      <div class="confirmation-actions">
+        <button class="primary-button" type="button" routerLink="/customer/restaurants">
+          Volver al inicio
+        </button>
+
+        <button class="secondary-button" type="button" routerLink="/customer/orders">
+          Mis pedidos
+        </button>
       </div>
-    </article>
+    </aside>
 
-    <aside class="details-panel">
-      <section>
-        <h2>Resumen del pedido</h2>
+    <section class="order-summary-card">
+      <h2>Resumen del pedido</h2>
 
-        <article class="order-item" *ngFor="let item of order.items">
-          <div>
+      <div class="summary-items">
+        <div class="summary-item" *ngFor="let item of currentOrder.items">
+          <div class="summary-item-info">
             <h3>{{ item.productNameSnapshot }}</h3>
             <p>Cantidad: {{ item.quantity }}</p>
-            <span *ngFor="let modifier of item.selectedModifiers">
-              {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
-            </span>
           </div>
 
-          <strong>{{ formatCurrency(item.subtotal) }}</strong>
-        </article>
-      </section>
+          <strong class="summary-item-price">
+            {{ formatCurrency(item.subtotal) }}
+          </strong>
+        </div>
+      </div>
 
-      <section class="total-section">
+      <div class="summary-divider"></div>
+
+      <div class="summary-total-row">
         <span>Total</span>
-        <strong>{{ formatCurrency(order.total) }}</strong>
-      </section>
+        <strong>{{ formatCurrency(currentOrder.total) }}</strong>
+      </div>
 
-      <section class="payment-section">
-        <h2>Pago</h2>
+      <div class="payment-card" *ngIf="payment">
+        <h3>Pago</h3>
 
-        <ng-container *ngIf="payment; else noPayment">
-          <p>Estado: <strong>{{ payment.status }}</strong></p>
-          <p *ngIf="payment.providerReference">Referencia: {{ payment.providerReference }}</p>
-        </ng-container>
+        <div class="payment-row">
+          <span>Estado</span>
+          <strong [ngClass]="getPaymentStatusClass(payment.status)">
+            {{ getPaymentStatusLabel(payment.status) }}
+          </strong>
+        </div>
 
-        <ng-template #noPayment>
-          <p>Pago pendiente o en efectivo.</p>
-        </ng-template>
-      </section>
-    </aside>
+        <div class="payment-row">
+          <span>Método</span>
+          <strong>{{ getPaymentMethodLabel() }}</strong>
+        </div>
+      </div>
+    </section>
   </section>
-</main>
+</div>

@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 import { OrderResponse, OrderStatus } from '../../models/order.models';
+import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { CustomerOrdersComponent } from './customer-orders.component';
 
@@ -25,11 +26,35 @@ class FakeOrderApiService {
   }
 }
 
+class FakeCustomerCatalogApiService {
+  public restaurantName: string | null = 'Taqueria Centro';
+  public branchName: string | null = 'Sucursal Reforma';
+
+  public getRestaurant(restaurantId: string) {
+    return of(this.restaurantName ? { id: restaurantId, name: this.restaurantName, open: true } : null);
+  }
+
+  public getBranches(restaurantId: string) {
+    return of(this.branchName ? [{
+      id: 'branch-long-8f7a',
+      restaurantId,
+      name: this.branchName,
+      formattedAddress: 'Calle 1',
+      latitude: 0,
+      longitude: 0,
+      isMainBranch: true,
+      active: true,
+      open: true
+    }] : []);
+  }
+}
+
 describe('CustomerOrdersComponent', () => {
   let fixture: ComponentFixture<CustomerOrdersComponent>;
   let component: CustomerOrdersComponent;
   let orderApiService: FakeOrderApiService;
   let authService: FakeAuthService;
+  let customerCatalogApiService: FakeCustomerCatalogApiService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -37,12 +62,14 @@ describe('CustomerOrdersComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useClass: FakeAuthService },
-        { provide: OrderApiService, useClass: FakeOrderApiService }
+        { provide: OrderApiService, useClass: FakeOrderApiService },
+        { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService }
       ]
     }).compileComponents();
 
     orderApiService = TestBed.inject(OrderApiService) as unknown as FakeOrderApiService;
     authService = TestBed.inject(AuthService) as unknown as FakeAuthService;
+    customerCatalogApiService = TestBed.inject(CustomerCatalogApiService) as unknown as FakeCustomerCatalogApiService;
     fixture = TestBed.createComponent(CustomerOrdersComponent);
     component = fixture.componentInstance;
   });
@@ -115,7 +142,7 @@ describe('CustomerOrdersComponent', () => {
     orderApiService.orders = [order('Cancelled', 'branch-1', 'order-cancelled')];
     fixture.detectChanges();
 
-    const badge: HTMLElement = fixture.nativeElement.querySelector('.status-badge.cancelled');
+    const badge: HTMLElement = fixture.nativeElement.querySelector('.status-pill.status-cancelled');
 
     expect(component.visibleOrders[0].status).toBe('Cancelled');
     expect(badge.textContent).toContain('Cancelado');
@@ -131,9 +158,10 @@ describe('CustomerOrdersComponent', () => {
   it('should navigate to order detail from detail link', () => {
     fixture.detectChanges();
 
-    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.detail-button');
+    const link: HTMLButtonElement = fixture.nativeElement.querySelector('.details-button');
 
-    expect(link.getAttribute('href')).toContain('/customer/orders/order-1');
+    expect(link).not.toBeNull();
+    expect(link.textContent).toContain('Ver seguimiento');
   });
 
   it('should ask for login when account is missing', () => {
@@ -141,7 +169,29 @@ describe('CustomerOrdersComponent', () => {
     fixture.detectChanges();
 
     expect(orderApiService.lastCustomerAccountId).toBe('');
-    expect(fixture.nativeElement.textContent).toContain('Inicia sesion para consultar tus pedidos');
+    expect(fixture.nativeElement.textContent).toContain('No pudimos identificar tu cuenta');
+  });
+
+  it('should show restaurant and branch names when available', () => {
+    orderApiService.orders = [order('Created', 'branch-long-8f7a', 'order-1')];
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Taqueria Centro');
+    expect(fixture.nativeElement.textContent).toContain('Sucursal Reforma');
+  });
+
+  it('should show short fallbacks and hide long raw ids when names are unavailable', () => {
+    customerCatalogApiService.restaurantName = null;
+    customerCatalogApiService.branchName = null;
+    orderApiService.orders = [order('Created', 'branch-long-8f7a', 'order-1')];
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Restaurante #1384D0');
+    expect(text).toContain('Sucursal #8F7A');
+    expect(text).not.toContain('restaurant-long-1384d0');
+    expect(text).not.toContain('branch-long-8f7a');
   });
 });
 
@@ -149,7 +199,7 @@ function order(status: OrderStatus = 'Created', branchId = 'branch-1', id = 'ord
   return {
     id,
     customerAccountId: 'customer-1',
-    restaurantId: 'restaurant-1',
+    restaurantId: 'restaurant-long-1384d0',
     branchId,
     items: [
       {

@@ -1,79 +1,114 @@
-<main class="orders-page">
-  <header class="orders-hero">
+<main class="customer-orders-page">
+  <header class="orders-header">
     <div>
-      <p>Historial</p>
       <h1>Mis pedidos</h1>
+      <p>Consulta tus pedidos activos y los pedidos entregados.</p>
     </div>
 
-    <a routerLink="/customer/restaurants" class="secondary-link">Ver restaurantes</a>
+    <button class="outline-button" type="button" routerLink="/customer/restaurants">
+      Ver restaurantes
+    </button>
   </header>
 
-  <section *ngIf="authMessage" class="state-panel">
-    <h2>{{ authMessage }}</h2>
-    <a routerLink="/login">Ir a iniciar sesion</a>
+  <section class="orders-tabs">
+    <button
+      type="button"
+      class="tab-button"
+      [class.active]="selectedTab === 'active'"
+      (click)="setTab('active')">
+      No entregados
+    </button>
+
+    <button
+      type="button"
+      class="tab-button"
+      [class.active]="selectedTab === 'delivered'"
+      (click)="setTab('delivered')">
+      Entregados
+    </button>
   </section>
 
-  <ng-container *ngIf="!authMessage">
-    <nav class="status-tabs" aria-label="Filtros de estado">
-      <button
-        *ngFor="let option of orderTabs"
-        type="button"
-        [class.active]="selectedTab === option.value"
-        (click)="setOrderTab(option.value)"
-      >
-        {{ option.label }}
-      </button>
-    </nav>
+  <section *ngIf="isLoading" class="state-card">
+    Cargando pedidos...
+  </section>
 
-    <section *ngIf="isLoading" class="state-panel">
-      Cargando pedidos...
-    </section>
+  <section *ngIf="errorMessage && !isLoading" class="state-card error">
+    {{ errorMessage }}
+  </section>
 
-    <section *ngIf="errorMessage && !isLoading" class="state-panel error">
-      {{ errorMessage }}
-    </section>
+  <section *ngIf="!isLoading && !errorMessage && filteredOrders.length === 0" class="state-card">
+    <span *ngIf="selectedTab === 'active'">No tienes pedidos activos.</span>
+    <span *ngIf="selectedTab === 'delivered'">Aún no tienes pedidos entregados.</span>
+  </section>
 
-    <section *ngIf="!isLoading && !errorMessage && visibleOrders.length === 0" class="state-panel">
-      <h2>{{ emptyMessage }}</h2>
-      <a routerLink="/customer/restaurants">Explorar restaurantes</a>
-    </section>
+  <section *ngIf="!isLoading && !errorMessage && filteredOrders.length > 0" class="orders-grid">
+    <article class="order-card" *ngFor="let order of filteredOrders">
+      <div class="order-card-top">
+        <div>
+          <h2>Pedido {{ getShortOrderCode(order.id) }}</h2>
 
-    <section *ngIf="!isLoading && visibleOrders.length > 0" class="orders-grid">
-      <article *ngFor="let order of visibleOrders" class="order-card">
-        <header>
+          <div class="order-meta">
+            <span class="meta-item">🕒 {{ getOrderTime(order) }}</span>
+            <span class="meta-item">{{ formatDate(order.createdAt) }}</span>
+          </div>
+        </div>
+
+        <strong class="order-total">
+          {{ formatCurrency(order.total) }}
+        </strong>
+      </div>
+
+      <div class="order-products">
+        <div class="product-row" *ngFor="let item of order.items">
+          <span class="product-icon">▧</span>
+
           <div>
-            <span>Pedido #{{ getShortOrderId(order.id) }}</span>
-            <h2 class="status-badge" [class.cancelled]="order.status === 'Cancelled'">
-              {{ getStatusLabel(order.status) }}
-            </h2>
+            <strong>{{ item.productNameSnapshot }}</strong>
+            <small>x{{ item.quantity }} · {{ formatCurrency(item.unitPriceSnapshot) }}</small>
           </div>
 
-          <strong>{{ formatCurrency(order.total) }}</strong>
-        </header>
+          <span class="product-subtotal">
+            {{ formatCurrency(item.subtotal) }}
+          </span>
+        </div>
+      </div>
 
-        <dl class="order-meta">
-          <div>
-            <dt>Fecha</dt>
-            <dd>{{ formatDate(order.createdAt) }}</dd>
-          </div>
-          <div>
-            <dt>Productos</dt>
-            <dd>{{ getItemCount(order) }}</dd>
-          </div>
-          <div>
-            <dt>Restaurante</dt>
-            <dd>{{ order.restaurantId }}</dd>
-          </div>
-          <div>
-            <dt>Sucursal</dt>
-            <dd>{{ order.branchId }}</dd>
-          </div>
-        </dl>
+      <div class="order-divider"></div>
 
-        <a [routerLink]="['/customer/orders', order.id]" class="detail-button">
-          Ver detalle
-        </a>
-      </article>
-    </section>
-  </ng-container>
+      <div class="order-summary">
+        <div>
+          <span>Productos</span>
+          <strong>{{ getProductCount(order) }}</strong>
+        </div>
+
+        <div>
+          <span>Resumen</span>
+          <strong>{{ getProductPreview(order) }}</strong>
+        </div>
+
+        <div>
+          <span>Restaurante</span>
+          <strong>{{ getRestaurantLabel(order.restaurantId) }}</strong>
+        </div>
+
+        <div>
+          <span>Sucursal</span>
+          <strong>{{ getBranchLabel(order.branchId) }}</strong>
+        </div>
+      </div>
+
+      <div class="order-footer">
+        <span class="status-pill" [ngClass]="getStatusClass(order.status)">
+          {{ getStatusLabel(order.status) }}
+        </span>
+
+        <button
+          type="button"
+          class="details-button"
+          [routerLink]="['/customer/orders', order.id]">
+          {{ getMainActionLabel(order) }}
+        </button>
+      </div>
+    </article>
+  </section>
 </main>

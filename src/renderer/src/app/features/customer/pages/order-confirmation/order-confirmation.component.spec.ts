@@ -75,7 +75,7 @@ describe('OrderConfirmationComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const image: HTMLImageElement = fixture.nativeElement.querySelector('.qr-card img');
+    const image: HTMLImageElement = fixture.nativeElement.querySelector('.pickup-qr-image');
 
     expect(pickupQrService.lastOrder?.id).toBe('order-1');
     expect(image.getAttribute('src')).toContain('data:image/png;base64,qr');
@@ -89,7 +89,7 @@ describe('OrderConfirmationComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Codigo de pedido: #');
+    expect(fixture.nativeElement.textContent).toContain('Código de pedido');
   });
 });
 

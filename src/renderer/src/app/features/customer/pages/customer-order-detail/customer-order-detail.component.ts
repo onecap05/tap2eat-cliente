@@ -3,8 +3,10 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
+import { CustomerBranchResponse } from '../../models/customer-catalog.models';
 import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
+import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
 import { PickupQrService } from '../../services/pickup-qr.service';
@@ -42,12 +44,15 @@ export class CustomerOrderDetailComponent implements OnInit {
   public errorMessage = '';
   public pickupQrDataUrl = '';
   public pickupQrError = false;
+  public restaurantName = '';
+  public branchName = '';
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly orderApiService: OrderApiService,
     private readonly paymentApiService: PaymentApiService,
-    private readonly pickupQrService: PickupQrService
+    private readonly pickupQrService: PickupQrService,
+    private readonly customerCatalogApiService: CustomerCatalogApiService
   ) {}
 
   public ngOnInit(): void {
@@ -68,6 +73,7 @@ export class CustomerOrderDetailComponent implements OnInit {
         this.payment = response.payment;
         this.isLoading = false;
         void this.generatePickupQr(response.order);
+        this.resolveCatalogNames(response.order);
       },
       error: () => {
         this.errorMessage = 'No pudimos cargar el detalle del pedido.';
@@ -123,4 +129,52 @@ export class CustomerOrderDetailComponent implements OnInit {
       this.pickupQrError = true;
     }
   }
+
+  private resolveCatalogNames(order: OrderResponse): void {
+    forkJoin({
+      restaurant: this.customerCatalogApiService.getRestaurant(order.restaurantId).pipe(catchError(() => of(null))),
+      branches: this.customerCatalogApiService.getBranches(order.restaurantId)
+        .pipe(catchError(() => of([] as CustomerBranchResponse[])))
+    }).subscribe(result => {
+      this.restaurantName = result.restaurant?.name ?? '';
+      this.branchName = result.branches.find(branch => branch.id === order.branchId)?.name ?? '';
+    });
+  }
+
+  getShortOrderCode(orderId?: string | null): string {
+  if (!orderId) return '#------';
+  return `#${orderId.slice(-8).toUpperCase()}`;
+}
+
+getStatusLabel(status?: string | null): string {
+  switch (status) {
+    case 'Created': return 'Recibido';
+    case 'Accepted': return 'Aceptado';
+    case 'Preparing': return 'Preparando';
+    case 'Ready': return 'Listo';
+    case 'Delivered': return 'Entregado';
+    case 'Cancelled': return 'Cancelado';
+    default: return 'Pedido';
+  }
+}
+
+getPaymentStatusLabel(status?: string | null): string {
+  switch (status) {
+    case 'Approved': return 'Pago confirmado';
+    case 'Pending': return 'Pendiente';
+    case 'Rejected': return 'Rechazado';
+    case 'Cancelled': return 'Cancelado';
+    default: return 'Sin información';
+  }
+}
+
+formatRestaurantLabel(id?: string | null): string {
+  if (!id) return 'No disponible';
+  return this.restaurantName || `Restaurante #${id.slice(-6).toUpperCase()}`;
+}
+
+formatBranchLabel(id?: string | null): string {
+  if (!id) return 'Sin sucursal';
+  return this.branchName || `Sucursal #${id.slice(-4).toUpperCase()}`;
+}
 }

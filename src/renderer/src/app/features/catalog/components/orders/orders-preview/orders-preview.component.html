@@ -4,7 +4,11 @@
     <p>Gestiona pedidos reales recibidos desde order-service.</p>
   </div>
 
-  <button type="button" class="refresh-button" [disabled]="isLoading" (click)="setStatusFilter(selectedStatus)">
+  <button
+    type="button"
+    class="refresh-button"
+    [disabled]="isLoading"
+    (click)="setStatusFilter(selectedStatus)">
     Actualizar
   </button>
 </section>
@@ -15,8 +19,7 @@
       *ngFor="let filter of statusFilters"
       type="button"
       [class.active]="selectedStatus === filter.value"
-      (click)="setStatusFilter(filter.value)"
-    >
+      (click)="setStatusFilter(filter.value)">
       {{ filter.label }}
     </button>
   </div>
@@ -46,7 +49,7 @@
 
 <section *ngIf="!isLoading && !errorMessage && filteredOrders.length === 0" class="state-card">
   <h3>No hay pedidos para estos filtros</h3>
-  <p>Cuando lleguen pedidos reales, apareceran aqui.</p>
+  <p>Cuando lleguen pedidos reales, aparecerán aquí.</p>
 </section>
 
 <section *ngIf="!isLoading && filteredOrders.length > 0" class="orders-grid">
@@ -65,10 +68,17 @@
         <dt>Fecha</dt>
         <dd>{{ formatDate(order.createdAt) }}</dd>
       </div>
+
       <div>
         <dt>Cliente</dt>
-        <dd>{{ order.customerAccountId }}</dd>
+        <dd>{{ getCustomerName(order.customerAccountId) }}</dd>
       </div>
+
+      <div>
+        <dt>Restaurante</dt>
+        <dd>{{ getRestaurantName() }}</dd>
+      </div>
+
       <div>
         <dt>Sucursal</dt>
         <dd>{{ getBranchName(order.branchId) }}</dd>
@@ -76,29 +86,132 @@
     </dl>
 
     <div class="items-list">
-      <div *ngFor="let item of order.items" class="item-row">
+      <div *ngFor="let item of order.items.slice(0, 2)" class="item-row">
         <span>{{ item.productNameSnapshot }}</span>
         <strong>x{{ item.quantity }}</strong>
       </div>
+
+      <p *ngIf="order.items.length > 2" class="more-items">
+        +{{ order.items.length - 2 }} producto(s) más
+      </p>
     </div>
 
     <p *ngIf="order.notes" class="order-notes">
       {{ order.notes }}
     </p>
 
-    <div class="actions" *ngIf="getActions(order).length > 0">
+    <div class="order-card-actions">
       <button
-        *ngFor="let action of getActions(order)"
         type="button"
-        [class]="action.variant"
-        [disabled]="updatingOrderId === order.id"
-        (click)="updateOrderStatus(order, action.status)"
-      >
-        {{ updatingOrderId === order.id ? 'Actualizando...' : action.label }}
+        class="details-button"
+        (click)="openOrderDetail(order)">
+        Ver detalle
       </button>
     </div>
+  </article>
+</section>
 
-    <p *ngIf="getActions(order).length === 0" class="no-actions">
+<section *ngIf="selectedOrder as detailOrder" class="order-detail-overlay">
+  <article class="order-detail-panel">
+    <header class="detail-panel-header">
+      <div>
+        <span>Pedido #{{ getShortOrderId(detailOrder.id) }}</span>
+        <h3>{{ getStatusLabel(detailOrder.status) }}</h3>
+        <p>{{ formatDate(detailOrder.createdAt) }}</p>
+      </div>
+
+      <button type="button" class="close-detail-button" (click)="closeOrderDetail()">
+        ×
+      </button>
+    </header>
+
+    <section class="detail-info-grid">
+      <div>
+        <span>Cliente</span>
+        <strong>{{ getCustomerName(detailOrder.customerAccountId) }}</strong>
+      </div>
+
+      <div>
+        <span>Restaurante</span>
+        <strong>{{ getRestaurantName() }}</strong>
+      </div>
+
+      <div>
+        <span>Sucursal</span>
+        <strong>{{ getBranchName(detailOrder.branchId) }}</strong>
+      </div>
+
+      <div>
+        <span>Total</span>
+        <strong>{{ formatCurrency(detailOrder.total) }}</strong>
+      </div>
+    </section>
+
+    <section class="detail-progress" [class.cancelled]="detailOrder.status === 'Cancelled'">
+      <div
+        *ngFor="let step of progressSteps"
+        class="detail-progress-step"
+        [class.active]="isStepActive(detailOrder.status, step.status)">
+        <span></span>
+        <p>{{ step.label }}</p>
+      </div>
+    </section>
+
+    <p *ngIf="detailOrder.status === 'Cancelled'" class="cancelled-detail-note">
+      Este pedido fue cancelado.
+    </p>
+
+    <section class="detail-products">
+      <h4>Productos</h4>
+
+      <div *ngFor="let item of detailOrder.items" class="detail-product-row">
+        <div>
+          <strong>{{ item.productNameSnapshot }}</strong>
+          <p>x{{ item.quantity }} · {{ formatCurrency(item.unitPriceSnapshot) }}</p>
+
+          <ul *ngIf="item.selectedModifiers && item.selectedModifiers.length > 0">
+            <li *ngFor="let modifier of item.selectedModifiers">
+              {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
+              <span *ngIf="modifier.priceAdjustment">
+                +{{ formatCurrency(modifier.priceAdjustment) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <span>{{ formatCurrency(item.subtotal) }}</span>
+      </div>
+    </section>
+
+    <section *ngIf="detailOrder.notes" class="detail-notes">
+      <span>Notas del pedido</span>
+      <p>{{ detailOrder.notes }}</p>
+    </section>
+
+    <section class="detail-totals">
+      <div>
+        <span>Subtotal</span>
+        <strong>{{ formatCurrency(detailOrder.subtotal) }}</strong>
+      </div>
+
+      <div>
+        <span>Total</span>
+        <strong>{{ formatCurrency(detailOrder.total) }}</strong>
+      </div>
+    </section>
+
+    <section class="detail-actions" *ngIf="getActions(detailOrder).length > 0">
+      <button
+        *ngFor="let action of getActions(detailOrder)"
+        type="button"
+        [class]="action.variant"
+        [disabled]="updatingOrderId === detailOrder.id"
+        (click)="updateOrderStatus(detailOrder, action.status)">
+        {{ updatingOrderId === detailOrder.id ? 'Actualizando...' : action.label }}
+      </button>
+    </section>
+
+    <p *ngIf="getActions(detailOrder).length === 0" class="no-actions">
       Sin acciones disponibles
     </p>
   </article>

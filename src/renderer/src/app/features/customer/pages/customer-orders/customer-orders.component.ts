@@ -1,27 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { catchError, forkJoin, map, of } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
+import { CustomerBranchResponse, CustomerRestaurantResponse } from '../../models/customer-catalog.models';
 import { OrderResponse } from '../../models/order.models';
+import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { OrderApiService } from '../../services/order-api.service';
 
-type CustomerOrderTab = 'active' | 'delivered';
-
-const ORDER_TABS: Array<{ value: CustomerOrderTab; label: string }> = [
-  { value: 'active', label: 'No entregados' },
-  { value: 'delivered', label: 'Entregados' }
-];
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  Created: 'Recibido',
-  Accepted: 'Aceptado',
-  Preparing: 'Preparando',
-  Ready: 'Listo',
-  Delivered: 'Entregado',
-  Cancelled: 'Cancelado'
-};
+type CustomerOrdersTab = 'active' | 'delivered';
 
 @Component({
   selector: 'app-customer-orders',
@@ -31,33 +19,24 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   styleUrl: './customer-orders.component.css'
 })
 export class CustomerOrdersComponent implements OnInit {
-  public readonly orderTabs = ORDER_TABS;
-
+  public selectedTab: CustomerOrdersTab = 'active';
   public orders: OrderResponse[] = [];
-  public selectedTab: CustomerOrderTab = 'active';
   public isLoading = false;
   public errorMessage = '';
-  public authMessage = '';
-
-  private customerAccountId: string | null = null;
+  public restaurantNames = new Map<string, string>();
+  public branchNames = new Map<string, string>();
 
   constructor(
     private readonly authService: AuthService,
-    private readonly orderApiService: OrderApiService
+    private readonly orderApiService: OrderApiService,
+    private readonly customerCatalogApiService: CustomerCatalogApiService
   ) {}
 
   public ngOnInit(): void {
-    this.customerAccountId = this.authService.getAccountId();
-
-    if (!this.customerAccountId) {
-      this.authMessage = 'Inicia sesion para consultar tus pedidos.';
-      return;
-    }
-
     this.loadOrders();
   }
 
-  public get visibleOrders(): OrderResponse[] {
+  public get filteredOrders(): OrderResponse[] {
     if (this.selectedTab === 'delivered') {
       return this.orders.filter(order => order.status === 'Delivered');
     }
@@ -65,26 +44,139 @@ export class CustomerOrdersComponent implements OnInit {
     return this.orders.filter(order => order.status !== 'Delivered');
   }
 
-  public get emptyMessage(): string {
-    return this.selectedTab === 'delivered'
-      ? 'Aun no tienes pedidos entregados.'
-      : 'No tienes pedidos activos.';
+  public get visibleOrders(): OrderResponse[] {
+    return this.filteredOrders;
   }
 
-  public setOrderTab(tab: CustomerOrderTab): void {
+  public loadOrders(): void {
+    const customerAccountId = this.authService.getAccountId();
+
+    if (!customerAccountId) {
+      this.errorMessage = 'No pudimos identificar tu cuenta. Inicia sesión de nuevo.';
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.orderApiService.getCustomerOrders(customerAccountId).subscribe({
+      next: orders => {
+        this.orders = [...orders].sort(
+          (first, second) =>
+            new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+        );
+        this.resolveCatalogNames(this.orders);
+      },
+      error: error => {
+        console.error('Customer orders load failed:', error);
+        this.errorMessage = 'No pudimos cargar tus pedidos.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  public setTab(tab: CustomerOrdersTab): void {
     this.selectedTab = tab;
   }
 
-  public getStatusLabel(status: string): string {
-    return ORDER_STATUS_LABELS[status] ?? status;
+  public setOrderTab(tab: CustomerOrdersTab): void {
+    this.setTab(tab);
   }
 
-  public getShortOrderId(orderId: string): string {
-    return orderId.slice(-8).toUpperCase();
+  public getShortOrderCode(orderId?: string | null): string {
+    if (!orderId) {
+      return '#------';
+    }
+
+    return `#${orderId.slice(-8).toUpperCase()}`;
   }
 
-  public getItemCount(order: OrderResponse): number {
+  public getStatusLabel(status?: string | null): string {
+    switch (status) {
+      case 'Created':
+        return 'Recibido';
+      case 'Accepted':
+        return 'Aceptado';
+      case 'Preparing':
+        return 'Preparando';
+      case 'Ready':
+        return 'Listo';
+      case 'Delivered':
+        return 'Entregado';
+      case 'Cancelled':
+        return 'Cancelado';
+      default:
+        return 'Pedido';
+    }
+  }
+
+  public getStatusClass(status?: string | null): string {
+    switch (status) {
+      case 'Created':
+        return 'status-received';
+      case 'Accepted':
+        return 'status-accepted';
+      case 'Preparing':
+        return 'status-preparing';
+      case 'Ready':
+        return 'status-ready';
+      case 'Delivered':
+        return 'status-delivered';
+      case 'Cancelled':
+        return 'status-cancelled';
+      default:
+        return 'status-received';
+    }
+  }
+
+  public getMainActionLabel(order: OrderResponse): string {
+    if (order.status === 'Delivered') {
+      return 'Ver comprobante';
+    }
+
+    if (order.status === 'Cancelled') {
+      return 'Ver pedido';
+    }
+
+    return 'Ver seguimiento';
+  }
+
+  public getProductCount(order: OrderResponse): number {
     return order.items.reduce((total, item) => total + item.quantity, 0);
+  }
+
+  public getProductPreview(order: OrderResponse): string {
+    if (!order.items.length) {
+      return 'Sin productos';
+    }
+
+    return order.items
+      .slice(0, 2)
+      .map(item => item.productNameSnapshot)
+      .join(' · ');
+  }
+
+  public getRestaurantLabel(restaurantId?: string | null): string {
+    if (!restaurantId) {
+      return 'Restaurante no disponible';
+    }
+
+    return this.restaurantNames.get(restaurantId) ?? this.getRestaurantFallback(restaurantId);
+  }
+
+  public getBranchLabel(branchId?: string | null): string {
+    if (!branchId) {
+      return 'Sucursal no disponible';
+    }
+
+    return this.branchNames.get(branchId) ?? this.getBranchFallback(branchId);
+  }
+
+  public getOrderTime(order: OrderResponse): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(order.createdAt));
   }
 
   public formatCurrency(value: number): string {
@@ -96,31 +188,58 @@ export class CustomerOrdersComponent implements OnInit {
 
   public formatDate(value: string): string {
     return new Intl.DateTimeFormat('es-MX', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
     }).format(new Date(value));
   }
 
-  private loadOrders(): void {
-    if (!this.customerAccountId) {
+  private resolveCatalogNames(orders: OrderResponse[]): void {
+    const restaurantIds = [...new Set(orders.map(order => order.restaurantId).filter(Boolean))];
+
+    if (!restaurantIds.length) {
+      this.isLoading = false;
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    forkJoin(restaurantIds.map(restaurantId =>
+      forkJoin({
+        restaurant: this.customerCatalogApiService.getRestaurant(restaurantId)
+          .pipe(catchError(() => of(null as CustomerRestaurantResponse | null))),
+        branches: this.customerCatalogApiService.getBranches(restaurantId)
+          .pipe(catchError(() => of([] as CustomerBranchResponse[])))
+      }).pipe(map(result => ({ restaurantId, ...result })))
+    )).subscribe({
+      next: results => {
+        results.forEach(result => {
+          if (result.restaurant?.name) {
+            this.restaurantNames.set(result.restaurantId, result.restaurant.name);
+          }
 
-    this.orderApiService.getCustomerOrders(this.customerAccountId)
-      .pipe(finalize(() => {
+          result.branches.forEach(branch => {
+            if (branch.name) {
+              this.branchNames.set(branch.id, branch.name);
+            }
+          });
+        });
+
         this.isLoading = false;
-      }))
-      .subscribe({
-        next: orders => {
-          this.orders = orders;
-        },
-        error: () => {
-          this.errorMessage = 'No pudimos cargar tus pedidos.';
-          this.orders = [];
-        }
-      });
+      },
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private getRestaurantFallback(restaurantId: string): string {
+    return `Restaurante #${this.getShortId(restaurantId, 6)}`;
+  }
+
+  private getBranchFallback(branchId: string): string {
+    return `Sucursal #${this.getShortId(branchId, 4)}`;
+  }
+
+  private getShortId(value: string, length: number): string {
+    return value.slice(-length).toUpperCase();
   }
 }

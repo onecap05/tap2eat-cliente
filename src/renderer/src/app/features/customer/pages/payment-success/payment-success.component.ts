@@ -22,8 +22,16 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   public ngOnInit(): void {
     this.orderId = this.route.snapshot.paramMap.get('orderId') ?? '';
 
+    if (!this.orderId) {
+      void this.router.navigate(['/customer/orders'], { replaceUrl: true });
+      return;
+    }
+
     this.navigationSubscription = timer(2400).subscribe(() => {
-      void this.router.navigate(['/customer/orders', this.orderId, 'confirmation']);
+      void this.router.navigate(
+        ['/customer/orders', this.orderId, 'confirmation'],
+        { replaceUrl: true }
+      );
     });
   }
 
