@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { OrderResponse } from '../../../../customer/models/order.models';
 import { OrderApiService } from '../../../../customer/services/order-api.service';
+import { RealtimeNotificationService } from '../../../../../services/realtime-notification.service';
 
 type OrderStatus =
   | 'Created'
@@ -85,7 +86,7 @@ const ORDER_ACTIONS: Partial<Record<OrderStatus, OrderAction[]>> = {
   templateUrl: './orders-preview.component.html',
   styleUrl: './orders-preview.component.css'
 })
-export class OrdersPreviewComponent implements OnChanges {
+export class OrdersPreviewComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) restaurantId = '';
   @Input() restaurantName = '';
   @Input() branches: IBranchResponse[] = [];
@@ -110,12 +111,22 @@ export class OrdersPreviewComponent implements OnChanges {
   public actionErrorMessage = '';
   public updatingOrderId: string | null = null;
 
-  constructor(private readonly orderApiService: OrderApiService) {}
+  private realtimeOrdersSubscription?: Subscription;
+
+  constructor(
+    private readonly orderApiService: OrderApiService,
+    private readonly realtimeNotificationService: RealtimeNotificationService
+  ) {}
 
   public ngOnChanges(changes: SimpleChanges): void {
     if (changes['restaurantId'] && this.restaurantId) {
       this.loadOrders();
+      this.subscribeToRealtimeOrders();
     }
+  }
+
+  public ngOnDestroy(): void {
+    this.realtimeOrdersSubscription?.unsubscribe();
   }
 
   public get filteredOrders(): OrderResponse[] {
@@ -262,6 +273,18 @@ export class OrdersPreviewComponent implements OnChanges {
           console.error('Restaurant orders load failed:', error);
           this.errorMessage = 'No pudimos cargar los pedidos del restaurante.';
           this.orders = [];
+        }
+      });
+  }
+
+  private subscribeToRealtimeOrders(): void {
+    this.realtimeOrdersSubscription?.unsubscribe();
+
+    this.realtimeOrdersSubscription = this.realtimeNotificationService
+      .listenToRestaurantOrders(this.restaurantId)
+      .subscribe(event => {
+        if (event.restaurantId === this.restaurantId) {
+          this.loadOrders();
         }
       });
   }
