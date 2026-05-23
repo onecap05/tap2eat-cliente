@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of, Subscription } from 'rxjs';
 
+import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
 import { CustomerBranchResponse } from '../../models/customer-catalog.models';
 import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
@@ -35,7 +36,7 @@ const ORDER_PROGRESS = [
   templateUrl: './customer-order-detail.component.html',
   styleUrl: './customer-order-detail.component.css'
 })
-export class CustomerOrderDetailComponent implements OnInit {
+export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
   public readonly progressSteps = ORDER_PROGRESS;
 
   public order: OrderResponse | null = null;
@@ -46,13 +47,17 @@ export class CustomerOrderDetailComponent implements OnInit {
   public pickupQrError = false;
   public restaurantName = '';
   public branchName = '';
+  private currentOrderId = '';
+  private realtimeCustomerAccountId = '';
+  private realtimeSubscription: Subscription | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly orderApiService: OrderApiService,
     private readonly paymentApiService: PaymentApiService,
     private readonly pickupQrService: PickupQrService,
-    private readonly customerCatalogApiService: CustomerCatalogApiService
+    private readonly customerCatalogApiService: CustomerCatalogApiService,
+    private readonly realtimeNotificationService: RealtimeNotificationService
   ) {}
 
   public ngOnInit(): void {
@@ -64,6 +69,18 @@ export class CustomerOrderDetailComponent implements OnInit {
       return;
     }
 
+    this.currentOrderId = orderId;
+    this.loadOrderDetail(orderId);
+  }
+
+  public ngOnDestroy(): void {
+    this.realtimeSubscription?.unsubscribe();
+  }
+
+  private loadOrderDetail(orderId: string): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
     forkJoin({
       order: this.orderApiService.getOrderById(orderId),
       payment: this.paymentApiService.getPaymentByOrderId(orderId).pipe(catchError(() => of(null)))
@@ -74,12 +91,29 @@ export class CustomerOrderDetailComponent implements OnInit {
         this.isLoading = false;
         void this.generatePickupQr(response.order);
         this.resolveCatalogNames(response.order);
+        this.subscribeToRealtimeOrderUpdates(response.order);
       },
       error: () => {
         this.errorMessage = 'No pudimos cargar el detalle del pedido.';
         this.isLoading = false;
       }
     });
+  }
+
+  private subscribeToRealtimeOrderUpdates(order: OrderResponse): void {
+    if (!order.customerAccountId || order.customerAccountId === this.realtimeCustomerAccountId) {
+      return;
+    }
+
+    this.realtimeSubscription?.unsubscribe();
+    this.realtimeCustomerAccountId = order.customerAccountId;
+    this.realtimeSubscription = this.realtimeNotificationService
+      .listenToCustomerOrders(order.customerAccountId)
+      .subscribe(event => {
+        if (event.orderId === this.currentOrderId) {
+          this.loadOrderDetail(this.currentOrderId);
+        }
+      });
   }
 
   public get shortOrderId(): string {

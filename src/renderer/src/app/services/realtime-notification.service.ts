@@ -63,12 +63,32 @@ export class RealtimeNotificationService {
     }
 
     const normalizedRestaurantId = restaurantId.trim();
-    const topic = this.getRestaurantOrdersTopic(normalizedRestaurantId);
+    return this.listenToOrderTopic(this.getRestaurantOrdersTopic(normalizedRestaurantId));
+  }
 
+  public listenToCustomerOrders(customerAccountId: string): Observable<RealtimeOrderEventMessage> {
+    if (!customerAccountId?.trim()) {
+      return EMPTY;
+    }
+
+    const normalizedCustomerAccountId = customerAccountId.trim();
+    return this.listenToOrderTopic(this.getCustomerOrdersTopic(normalizedCustomerAccountId));
+  }
+
+  public getRestaurantOrdersTopic(restaurantId: string): string {
+    return `/topic/restaurants/${restaurantId}/orders`;
+  }
+
+  public getCustomerOrdersTopic(customerAccountId: string): string {
+    return `/topic/customers/${customerAccountId}/orders`;
+  }
+
+  private listenToOrderTopic(topic: string): Observable<RealtimeOrderEventMessage> {
     return new Observable<RealtimeOrderEventMessage>(observer => {
       let stompSubscription: StompSubscription | null = null;
       let isClosed = false;
       let resolvedClient: RealtimeStompClient | null = null;
+      let subscribeToTopic: (() => void) | null = null;
 
       this.activeSubscriptionCount++;
 
@@ -88,7 +108,7 @@ export class RealtimeNotificationService {
 
           resolvedClient = client;
 
-          const subscribeToTopic = () => {
+          subscribeToTopic = () => {
             if (isClosed || stompSubscription) {
               return;
             }
@@ -119,6 +139,9 @@ export class RealtimeNotificationService {
 
       return () => {
         isClosed = true;
+        if (subscribeToTopic) {
+          this.pendingSubscriptions = this.pendingSubscriptions.filter(callback => callback !== subscribeToTopic);
+        }
         stompSubscription?.unsubscribe();
         this.activeSubscriptionCount = Math.max(0, this.activeSubscriptionCount - 1);
 
@@ -132,10 +155,6 @@ export class RealtimeNotificationService {
         }
       };
     });
-  }
-
-  public getRestaurantOrdersTopic(restaurantId: string): string {
-    return `/topic/restaurants/${restaurantId}/orders`;
   }
 
   private getClient(): Promise<RealtimeStompClient> {

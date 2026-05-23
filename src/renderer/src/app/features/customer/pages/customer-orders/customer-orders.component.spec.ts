@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
+import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
+import { RealtimeOrderEventMessage } from '../../../../models/realtime-notification.models';
 import { OrderResponse, OrderStatus } from '../../models/order.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { OrderApiService } from '../../services/order-api.service';
@@ -19,10 +21,31 @@ class FakeAuthService {
 class FakeOrderApiService {
   public lastCustomerAccountId = '';
   public orders: OrderResponse[] = [order()];
+  public customerOrdersCalls = 0;
 
   public getCustomerOrders(customerAccountId: string) {
     this.lastCustomerAccountId = customerAccountId;
+    this.customerOrdersCalls++;
     return of(this.orders);
+  }
+}
+
+class FakeRealtimeNotificationService {
+  public customerOrdersSubject = new Subject<RealtimeOrderEventMessage>();
+  public lastCustomerAccountId = '';
+  public unsubscribeCount = 0;
+
+  public listenToCustomerOrders(customerAccountId: string): Observable<RealtimeOrderEventMessage> {
+    this.lastCustomerAccountId = customerAccountId;
+
+    return new Observable(observer => {
+      const subscription = this.customerOrdersSubject.subscribe(observer);
+
+      return () => {
+        this.unsubscribeCount++;
+        subscription.unsubscribe();
+      };
+    });
   }
 }
 
@@ -55,6 +78,7 @@ describe('CustomerOrdersComponent', () => {
   let orderApiService: FakeOrderApiService;
   let authService: FakeAuthService;
   let customerCatalogApiService: FakeCustomerCatalogApiService;
+  let realtimeNotificationService: FakeRealtimeNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -63,13 +87,15 @@ describe('CustomerOrdersComponent', () => {
         provideRouter([]),
         { provide: AuthService, useClass: FakeAuthService },
         { provide: OrderApiService, useClass: FakeOrderApiService },
-        { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService }
+        { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
+        { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService }
       ]
     }).compileComponents();
 
     orderApiService = TestBed.inject(OrderApiService) as unknown as FakeOrderApiService;
     authService = TestBed.inject(AuthService) as unknown as FakeAuthService;
     customerCatalogApiService = TestBed.inject(CustomerCatalogApiService) as unknown as FakeCustomerCatalogApiService;
+    realtimeNotificationService = TestBed.inject(RealtimeNotificationService) as unknown as FakeRealtimeNotificationService;
     fixture = TestBed.createComponent(CustomerOrdersComponent);
     component = fixture.componentInstance;
   });
@@ -170,6 +196,46 @@ describe('CustomerOrdersComponent', () => {
 
     expect(orderApiService.lastCustomerAccountId).toBe('');
     expect(fixture.nativeElement.textContent).toContain('No pudimos identificar tu cuenta');
+  });
+
+  it('should subscribe to realtime orders for the current customer', () => {
+    fixture.detectChanges();
+
+    expect(realtimeNotificationService.lastCustomerAccountId).toBe('customer-1');
+  });
+
+  it('should reload orders when a realtime event belongs to the current customer', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.customerOrdersCalls;
+
+    realtimeNotificationService.customerOrdersSubject.next({
+      eventType: 'order.status.changed',
+      orderId: 'order-1',
+      customerAccountId: 'customer-1'
+    });
+
+    expect(orderApiService.customerOrdersCalls).toBe(initialCalls + 1);
+  });
+
+  it('should ignore realtime events for another customer', () => {
+    fixture.detectChanges();
+    const initialCalls = orderApiService.customerOrdersCalls;
+
+    realtimeNotificationService.customerOrdersSubject.next({
+      eventType: 'order.status.changed',
+      orderId: 'order-1',
+      customerAccountId: 'customer-2'
+    });
+
+    expect(orderApiService.customerOrdersCalls).toBe(initialCalls);
+  });
+
+  it('should unsubscribe from realtime orders when destroyed', () => {
+    fixture.detectChanges();
+
+    fixture.destroy();
+
+    expect(realtimeNotificationService.unsubscribeCount).toBe(1);
   });
 
   it('should show restaurant and branch names when available', () => {

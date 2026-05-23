@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { catchError, forkJoin, map, of } from 'rxjs';
+import { catchError, forkJoin, map, of, Subscription } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
+import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
 import { CustomerBranchResponse, CustomerRestaurantResponse } from '../../models/customer-catalog.models';
 import { OrderResponse } from '../../models/order.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
@@ -18,22 +19,40 @@ type CustomerOrdersTab = 'active' | 'delivered';
   templateUrl: './customer-orders.component.html',
   styleUrl: './customer-orders.component.css'
 })
-export class CustomerOrdersComponent implements OnInit {
+export class CustomerOrdersComponent implements OnInit, OnDestroy {
   public selectedTab: CustomerOrdersTab = 'active';
   public orders: OrderResponse[] = [];
   public isLoading = false;
   public errorMessage = '';
   public restaurantNames = new Map<string, string>();
   public branchNames = new Map<string, string>();
+  private customerAccountId: string | null = null;
+  private realtimeSubscription: Subscription | null = null;
 
   constructor(
     private readonly authService: AuthService,
     private readonly orderApiService: OrderApiService,
-    private readonly customerCatalogApiService: CustomerCatalogApiService
+    private readonly customerCatalogApiService: CustomerCatalogApiService,
+    private readonly realtimeNotificationService: RealtimeNotificationService
   ) {}
 
   public ngOnInit(): void {
+    this.customerAccountId = this.authService.getAccountId();
     this.loadOrders();
+
+    if (this.customerAccountId) {
+      this.realtimeSubscription = this.realtimeNotificationService
+        .listenToCustomerOrders(this.customerAccountId)
+        .subscribe(event => {
+          if (event.customerAccountId === this.customerAccountId) {
+            this.loadOrders();
+          }
+        });
+    }
+  }
+
+  public ngOnDestroy(): void {
+    this.realtimeSubscription?.unsubscribe();
   }
 
   public get filteredOrders(): OrderResponse[] {
@@ -49,7 +68,7 @@ export class CustomerOrdersComponent implements OnInit {
   }
 
   public loadOrders(): void {
-    const customerAccountId = this.authService.getAccountId();
+    const customerAccountId = this.customerAccountId ?? this.authService.getAccountId();
 
     if (!customerAccountId) {
       this.errorMessage = 'No pudimos identificar tu cuenta. Inicia sesión de nuevo.';
