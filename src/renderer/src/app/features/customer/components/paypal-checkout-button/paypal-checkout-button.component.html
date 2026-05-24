@@ -1,0 +1,6 @@
+<section class="paypal-box">
+  <p class="paypal-message" *ngIf="message">{{ message }}</p>
+  <div #paypalContainer class="paypal-container"></div>
+  <p class="paypal-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="paypal-message" *ngIf="isLoading">{{ text.loading }}</p>
+</section>

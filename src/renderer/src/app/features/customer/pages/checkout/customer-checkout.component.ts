@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription, of, retry, switchMap } from 'rxjs';
+import { map, retry, Subscription, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
+import { PayPalCheckoutButtonComponent } from '../../components/paypal-checkout-button/paypal-checkout-button.component';
 import { ICartItem, ICartState } from '../../models/cart.models';
 import { CreateOrderRequest } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
@@ -22,6 +23,7 @@ const CHECKOUT_TEXT = {
   backToRestaurants: 'Volver a restaurantes',
   paymentMethod: 'Metodo de pago',
   online: 'Pago online',
+  paypalReady: 'Orden creada. Completa el pago con PayPal Sandbox para confirmar tu pedido.',
   cash: 'Pago en efectivo',
   notesPlaceholder: 'Ej. Sin mayonesa, entregar todo junto...',
   service: 'Servicio',
@@ -43,7 +45,7 @@ const PAYMENT_LOOKUP_RETRY_DELAY_MS = 700;
 @Component({
   selector: 'app-customer-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, PayPalCheckoutButtonComponent],
   templateUrl: './customer-checkout.component.html',
   styleUrl: './customer-checkout.component.css'
 })
@@ -54,6 +56,8 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
   public notes = '';
   public isSubmitting = false;
   public errorMessage = '';
+  public pendingOrderId: string | null = null;
+  public pendingPaymentId: string | null = null;
 
   private cartSubscription?: Subscription;
 
@@ -110,6 +114,8 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
+    this.pendingOrderId = null;
+    this.pendingPaymentId = null;
     let orderWasCreated = false;
 
     if (this.paymentMethod === 'cash') {
@@ -133,41 +139,57 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
     this.orderApiService.createOrder(request).pipe(
       switchMap(order => {
         orderWasCreated = true;
-        this.cartService.clear();
 
         return this.paymentApiService.getPaymentByOrderId(order.id).pipe(
           retry({
             count: PAYMENT_LOOKUP_RETRY_COUNT,
             delay: PAYMENT_LOOKUP_RETRY_DELAY_MS
           }),
-          switchMap(payment => this.approvePendingPayment(payment, order.id)),
-          switchMap(() => this.router.navigate(
-            ['/customer/payment-success', order.id],
-            { replaceUrl: true }
-          ))
+          map(payment => ({ orderId: order.id, payment }))
         );
       })
     ).subscribe({
-      next: () => {
+      next: ({ orderId, payment }) => {
         this.isSubmitting = false;
+        this.preparePayPalPayment(orderId, payment);
       },
       error: error => this.handleSubmitError(error, orderWasCreated)
     });
   }
 
-  private approvePendingPayment(payment: PaymentResponse, orderId: string) {
+  public handlePayPalCaptured(): void {
+    if (!this.pendingOrderId) {
+      return;
+    }
+
+    const orderId = this.pendingOrderId;
+    this.cartService.clear();
+    void this.router.navigate(
+      ['/customer/payment-success', orderId],
+      { replaceUrl: true }
+    );
+  }
+
+  public handlePayPalFailed(message: string): void {
+    this.errorMessage = message;
+    this.isSubmitting = false;
+  }
+
+  private preparePayPalPayment(orderId: string, payment: PaymentResponse): void {
     if (payment.status === 'Approved') {
-      return of(payment);
+      this.pendingOrderId = orderId;
+      this.pendingPaymentId = payment.id;
+      this.handlePayPalCaptured();
+      return;
     }
 
     if (payment.status !== 'Pending') {
-      return of(payment);
+      this.errorMessage = this.text.paymentPendingError;
+      return;
     }
 
-    return this.paymentApiService.approvePayment(
-      payment.id,
-      { providerReference: `WEB-${orderId.slice(-8)}` }
-    );
+    this.pendingOrderId = orderId;
+    this.pendingPaymentId = payment.id;
   }
 
   public formatCurrency(value: number): string {

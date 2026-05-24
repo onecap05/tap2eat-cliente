@@ -82,4 +82,46 @@ describe('PaymentApiService', () => {
       .toBe(environment.paymentSimulationToken);
     httpRequest.flush({ id: 'payment-1', status: 'Cancelled' });
   });
+
+  it('should create PayPal order with POST /payments/{id}/paypal/create-order without simulation token', () => {
+    service.createPayPalOrder('payment-1').subscribe(response => {
+      expect(response.paypalOrderId).toBe('paypal-order-1');
+    });
+
+    const httpRequest = httpTestingController.expectOne(
+      `${environment.apiBaseUrl}/payments/payment-1/paypal/create-order`
+    );
+
+    expect(httpRequest.request.method).toBe('POST');
+    expect(httpRequest.request.body).toEqual({});
+    expect(httpRequest.request.headers.has('X-Simulated-Payment-Token')).toBe(false);
+    httpRequest.flush({
+      paymentId: 'payment-1',
+      paypalOrderId: 'paypal-order-1',
+      status: 'CREATED',
+      amount: 100,
+      currency: 'MXN'
+    });
+  });
+
+  it('should capture PayPal order with POST /payments/{id}/paypal/capture without simulation token', () => {
+    service.capturePayPalOrder('payment-1', 'paypal-order-1').subscribe(response => {
+      expect(response.paymentStatus).toBe('Approved');
+    });
+
+    const httpRequest = httpTestingController.expectOne(
+      `${environment.apiBaseUrl}/payments/payment-1/paypal/capture`
+    );
+
+    expect(httpRequest.request.method).toBe('POST');
+    expect(httpRequest.request.body).toEqual({ paypalOrderId: 'paypal-order-1' });
+    expect(httpRequest.request.headers.has('X-Simulated-Payment-Token')).toBe(false);
+    httpRequest.flush({
+      paymentId: 'payment-1',
+      paypalOrderId: 'paypal-order-1',
+      captureId: 'capture-1',
+      paymentStatus: 'Approved',
+      providerReference: 'capture-1'
+    });
+  });
 });

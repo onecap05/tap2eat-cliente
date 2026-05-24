@@ -142,7 +142,7 @@ describe('CustomerCheckoutComponent', () => {
     expect(component.total).toBe(120);
   });
 
-  it('should create order, get payment and approve payment for online checkout', async () => {
+  it('should create order, get payment and prepare PayPal checkout for online payment', async () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     seedCart();
@@ -153,11 +153,10 @@ describe('CustomerCheckoutComponent', () => {
 
     expect(orderApiService.createOrderCalls).toBe(1);
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(1);
-    expect(paymentApiService.approvePaymentCalls).toBe(1);
-    expect(navigateSpy).toHaveBeenCalledWith(
-      ['/customer/payment-success', 'order-1'],
-      { replaceUrl: true }
-    );
+    expect(paymentApiService.approvePaymentCalls).toBe(0);
+    expect(component.pendingOrderId).toBe('order-1');
+    expect(component.pendingPaymentId).toBe('payment-1');
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   it('should retry online checkout when payment is not available immediately', async () => {
@@ -173,10 +172,11 @@ describe('CustomerCheckoutComponent', () => {
     await fixture.whenStable();
 
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(2);
-    expect(paymentApiService.approvePaymentCalls).toBe(1);
+    expect(paymentApiService.approvePaymentCalls).toBe(0);
+    expect(component.pendingPaymentId).toBe('payment-1');
   });
 
-  it('should not approve payment again when it is already approved', async () => {
+  it('should navigate to success when online payment is already approved', async () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     paymentApiService.paymentStatus = 'Approved';
@@ -191,6 +191,46 @@ describe('CustomerCheckoutComponent', () => {
       ['/customer/payment-success', 'order-1'],
       { replaceUrl: true }
     );
+  });
+
+  it('should show PayPal button component when online payment is pending', async () => {
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-paypal-checkout-button')).not.toBeNull();
+  });
+
+  it('should clear cart and navigate when PayPal capture succeeds', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+    component.handlePayPalCaptured();
+
+    expect(cartService.getSnapshot().items).toEqual([]);
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/customer/payment-success', 'order-1'],
+      { replaceUrl: true }
+    );
+  });
+
+  it('should keep cart when PayPal payment fails', async () => {
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+    component.handlePayPalFailed('PayPal cancelado');
+
+    expect(cartService.getSnapshot().items.length).toBe(1);
+    expect(component.errorMessage).toBe('PayPal cancelado');
   });
 
   it('should create cash order without approving payment', async () => {

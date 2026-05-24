@@ -1,0 +1,4 @@
+.paypal-box{display:grid;gap:10px}
+.paypal-container{min-height:44px}
+.paypal-message{margin:0;color:#475569;font-size:13px;font-weight:800}
+.paypal-error{margin:0;padding:10px;border-radius:10px;background:#fef2f2;color:#991b1b;font-size:13px;font-weight:800}
