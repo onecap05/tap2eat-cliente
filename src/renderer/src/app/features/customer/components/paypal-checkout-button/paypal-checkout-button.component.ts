@@ -44,6 +44,7 @@ export class PayPalCheckoutButtonComponent implements OnInit, AfterViewInit, OnC
   public isLoading = false;
   public message = '';
   public errorMessage = '';
+  public loadPayPalScript = loadScript;
 
   private hasRendered = false;
 
@@ -56,14 +57,14 @@ export class PayPalCheckoutButtonComponent implements OnInit, AfterViewInit, OnC
   }
 
   public ngAfterViewInit(): void {
-    void this.renderPayPalButton();
+    this.schedulePayPalRender();
   }
 
   public ngOnChanges(changes: SimpleChanges): void {
     if ((changes['paymentId'] || changes['orderId']) && this.paypalContainer) {
       this.hasRendered = false;
       this.paypalContainer.nativeElement.replaceChildren();
-      void this.renderPayPalButton();
+      this.schedulePayPalRender();
     }
   }
 
@@ -100,6 +101,12 @@ export class PayPalCheckoutButtonComponent implements OnInit, AfterViewInit, OnC
     this.fail(this.text.failed);
   }
 
+  private schedulePayPalRender(): void {
+    queueMicrotask(() => {
+      void this.renderPayPalButton();
+    });
+  }
+
   private async renderPayPalButton(): Promise<void> {
     if (this.hasRendered || !this.paypalContainer) {
       return;
@@ -116,7 +123,7 @@ export class PayPalCheckoutButtonComponent implements OnInit, AfterViewInit, OnC
     try {
       this.isLoading = true;
       this.message = this.text.loading;
-      const paypal = await loadScript({
+      const paypal = await this.loadPayPalScript({
         clientId: environment.paypalClientId,
         currency: 'MXN',
         intent: 'capture'
