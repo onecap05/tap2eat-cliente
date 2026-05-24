@@ -1,7 +1,7 @@
 <section class="recent-card">
   <h3>Pedidos Recientes</h3>
 
-  <div class="orders-list">
+  <div *ngIf="orders.length > 0; else emptyOrders" class="orders-list">
     <article *ngFor="let order of orders" class="order-row">
       <div class="order-avatar">🛍</div>
 
@@ -11,11 +11,17 @@
       </div>
 
       <div class="order-total">
-        <strong>${{ order.total }}</strong>
+        <strong>{{ order.total | currency:'MXN':'symbol':'1.2-2' }}</strong>
         <span>{{ order.time }}</span>
       </div>
 
       <span class="status">{{ order.status }}</span>
     </article>
   </div>
+
+  <ng-template #emptyOrders>
+    <p class="empty-orders">
+      No hay pedidos recientes disponibles para mostrar.
+    </p>
+  </ng-template>
 </section>

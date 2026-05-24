@@ -17,6 +17,10 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/resend-verification-code'
 ];
 
+const NON_SESSION_401_PATHS = [
+  '/api/reports/'
+];
+
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if (isPublicAuthRequest(request.url)) {
     return next(request);
@@ -49,7 +53,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
   return next(authenticatedRequest).pipe(
     catchError(error => {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
+      if (
+        error instanceof HttpErrorResponse &&
+        error.status === 401 &&
+        !isNonSession401Request(request.url)
+      ) {
         redirectToLogin(authService, router);
       }
 
@@ -70,6 +78,12 @@ function isPublicAuthRequest(url: string): boolean {
   const requestPath = getRequestPath(url);
 
   return PUBLIC_AUTH_PATHS.some(publicPath => requestPath.endsWith(publicPath));
+}
+
+function isNonSession401Request(url: string): boolean {
+  const requestPath = getRequestPath(url);
+
+  return NON_SESSION_401_PATHS.some(path => requestPath.includes(path));
 }
 
 function getRequestPath(url: string): string {

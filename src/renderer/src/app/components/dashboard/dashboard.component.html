@@ -9,6 +9,73 @@
     <h2 class="dashboard-title">Dashboard</h2>
     <p class="dashboard-subtitle">Inicio de sesión exitoso</p>
 
+    <section class="reports-section">
+      <div class="reports-header">
+        <div>
+          <h3 class="reports-title">Resumen del restaurante</h3>
+          <p class="reports-subtitle">Métricas calculadas desde órdenes y catálogo</p>
+        </div>
+
+        <button type="button" class="refresh-button" (click)="loadDashboardReport()">
+          Actualizar
+        </button>
+      </div>
+
+      <div *ngIf="loadingReport" class="dashboard-loading">
+        Cargando métricas del dashboard...
+      </div>
+
+      <div *ngIf="reportError" class="dashboard-error">
+        {{ reportError }}
+      </div>
+
+      <div *ngIf="report" class="report-grid">
+        <article class="report-card">
+          <span class="report-label">Órdenes totales</span>
+          <strong class="report-value">{{ report.orders.totalOrders }}</strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Ventas totales</span>
+          <strong class="report-value">
+            {{ report.orders.totalSales | currency:'MXN':'symbol':'1.2-2' }}
+          </strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Ticket promedio</span>
+          <strong class="report-value">
+            {{ report.orders.averageTicket | currency:'MXN':'symbol':'1.2-2' }}
+          </strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Productos totales</span>
+          <strong class="report-value">{{ report.catalog.totalProducts }}</strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Productos disponibles</span>
+          <strong class="report-value">{{ report.catalog.availableProducts }}</strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Productos pausados</span>
+          <strong class="report-value">{{ report.catalog.pausedProducts }}</strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Categorías totales</span>
+          <strong class="report-value">{{ report.catalog.totalCategories }}</strong>
+        </article>
+
+        <article class="report-card">
+          <span class="report-label">Órdenes entregadas</span>
+          <strong class="report-value">{{ report.orders.deliveredOrders }}</strong>
+        </article>
+      </div>
+    </section>
+
     <div class="status-box">
       <p>
         <strong>Access Token:</strong>
