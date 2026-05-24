@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 import { IRegisterRequest } from '../models/IRegisterRequest';
@@ -11,6 +11,8 @@ import { IResendVerificationCodeRequest } from '../models/IResendVerificationCod
 import { IResendVerificationCodeResponse } from '../models/IResendVerificationCodeResponse';
 import { ILoginRequest } from '../models/ILoginRequest';
 import { ILoginResponse } from '../models/ILoginResponse';
+import { IRefreshTokenRequest } from '../models/IRefreshTokenRequest';
+import { IRefreshTokenResponse } from '../models/IRefreshTokenResponse';
 import { IForgotPasswordRequest } from '../models/IForgotPasswordRequest';
 import { IForgotPasswordResponse } from '../models/IForgotPasswordResponse';
 import { IResetPasswordRequest } from '../models/IResetPasswordRequest';
@@ -49,6 +51,20 @@ export class AuthService {
     return this.http.post<ILoginResponse>(`${this.API_URL}/login`, request);
   }
 
+  public refreshAccessToken(): Observable<IRefreshTokenResponse> {
+    const refreshToken = this.tokenStorageService.getRefreshToken();
+
+    if (!refreshToken) {
+      return throwError(() => new Error('Refresh token is missing.'));
+    }
+
+    const request: IRefreshTokenRequest = { refreshToken };
+
+    return this.http.post<IRefreshTokenResponse>(`${this.API_URL}/refresh`, request).pipe(
+      tap(response => this.saveSession(response))
+    );
+  }
+
   public forgotPassword(request: IForgotPasswordRequest): Observable<IForgotPasswordResponse> {
     return this.http.post<IForgotPasswordResponse>(`${this.API_URL}/forgot-password`, request);
   }
@@ -57,10 +73,16 @@ export class AuthService {
     return this.http.post<IResetPasswordResponse>(`${this.API_URL}/reset-password`, request);
   }
 
-  public saveSession(response: ILoginResponse): void {
+  public saveSession(response: ILoginResponse | IRefreshTokenResponse): void {
     this.tokenStorageService.saveAccessToken(response.accessToken);
-    this.tokenStorageService.saveRefreshToken(response.refreshToken);
-    this.tokenStorageService.saveTokenType(response.tokenType || 'Bearer');
+
+    if (response.refreshToken) {
+      this.tokenStorageService.saveRefreshToken(response.refreshToken);
+    }
+
+    if (response.tokenType !== undefined) {
+      this.tokenStorageService.saveTokenType(response.tokenType || 'Bearer');
+    }
   }
 
   public getAccessToken(): string | null {
