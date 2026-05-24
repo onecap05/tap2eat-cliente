@@ -14,5 +14,5 @@ export const environment = {
 
   paypalClientId: '',
 
-  notificationWsUrl: 'http://localhost:8084/ws'
+  notificationWsUrl: 'http://localhost:8080/ws'
 };
