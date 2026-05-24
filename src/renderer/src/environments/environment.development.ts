@@ -12,5 +12,7 @@ export const environment = {
 
   paymentSimulationToken: 'tap2eat-payment-dev-token',
 
+  paypalClientId: '',
+
   notificationWsUrl: 'http://localhost:8084/ws'
 };

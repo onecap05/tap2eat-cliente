@@ -90,7 +90,7 @@
           <label [class.selected]="paymentMethod === 'online'">
             <input type="radio" name="paymentMethod" value="online" [(ngModel)]="paymentMethod" />
             <strong>{{ text.online }}</strong>
-            <small>Aprobacion simulada inmediata</small>
+            <small>PayPal Sandbox</small>
           </label>
 
           <label [class.selected]="paymentMethod === 'cash'">
@@ -102,7 +102,18 @@
 
         <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
 
+        <section class="paypal-checkout" *ngIf="pendingPaymentId && pendingOrderId && paymentMethod === 'online'">
+          <p>{{ text.paypalReady }}</p>
+          <app-paypal-checkout-button
+            [paymentId]="pendingPaymentId"
+            [orderId]="pendingOrderId"
+            (paymentCaptured)="handlePayPalCaptured()"
+            (paymentFailed)="handlePayPalFailed($event)"
+          ></app-paypal-checkout-button>
+        </section>
+
         <button
+          *ngIf="!pendingPaymentId"
           class="submit-button"
           type="button"
           [disabled]="isSubmitting"

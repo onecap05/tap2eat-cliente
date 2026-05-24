@@ -8,6 +8,10 @@ import {
   PaymentResponse,
   RejectPaymentRequest
 } from '../models/payment.models';
+import {
+  PayPalCaptureResponse,
+  PayPalOrderResponse
+} from '../models/paypal-payment.models';
 
 @Injectable({
   providedIn: 'root'
@@ -45,6 +49,23 @@ export class PaymentApiService {
       `${this.baseUrl}/${paymentId}/cancel`,
       null,
       this.getSimulationHeaders()
+    );
+  }
+
+  public createPayPalOrder(paymentId: string): Observable<PayPalOrderResponse> {
+    return this.http.post<PayPalOrderResponse>(
+      `${this.baseUrl}/${paymentId}/paypal/create-order`,
+      {}
+    );
+  }
+
+  public capturePayPalOrder(
+    paymentId: string,
+    paypalOrderId: string
+  ): Observable<PayPalCaptureResponse> {
+    return this.http.post<PayPalCaptureResponse>(
+      `${this.baseUrl}/${paymentId}/paypal/capture`,
+      { paypalOrderId }
     );
   }
 
