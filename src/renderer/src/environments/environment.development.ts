@@ -14,5 +14,5 @@ export const environment = {
 
   paypalClientId: 'AbjxAbMVy1MFSQdHEFGkgDixLMEU-4nf96vbpDSxQzbVYEr3K8bBaE2u5aw9Wen6O5cT_diTxx5rF7uy',
 
-  notificationWsUrl: 'http://localhost:8084/ws'
+  notificationWsUrl: 'http://localhost:8080/ws'
 };
