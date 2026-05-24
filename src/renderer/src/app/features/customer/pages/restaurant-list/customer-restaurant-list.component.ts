@@ -2,9 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { catchError, of, switchMap } from 'rxjs';
 
+import { AuthService } from '../../../../services/auth.service';
 import { CustomerRestaurantResponse } from '../../models/customer-catalog.models';
+import { RecommendationBranchResponse } from '../../models/recommendation.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerLocationService } from '../../services/customer-location.service';
+import { RecommendationApiService } from '../../services/recommendation-api.service';
 
 const CUSTOMER_RESTAURANT_LIST_TEXT = {
   empty: 'Todavia no hay restaurantes disponibles.',
@@ -31,11 +36,19 @@ export class CustomerRestaurantListComponent implements OnInit {
   public errorMessage = '';
   public searchTerm = '';
   public showOpenOnly = false;
+  public recommendations: RecommendationBranchResponse[] = [];
+  public isLoadingRecommendations = false;
 
-  constructor(private readonly customerCatalogApiService: CustomerCatalogApiService) {}
+  constructor(
+    private readonly customerCatalogApiService: CustomerCatalogApiService,
+    private readonly recommendationApiService: RecommendationApiService,
+    private readonly customerLocationService: CustomerLocationService,
+    private readonly authService: AuthService
+  ) {}
 
   public ngOnInit(): void {
     this.loadRestaurants();
+    this.loadRecommendations();
   }
 
   public get filteredRestaurants(): CustomerRestaurantResponse[] {
@@ -68,6 +81,12 @@ export class CustomerRestaurantListComponent implements OnInit {
     this.showOpenOnly = !this.showOpenOnly;
   }
 
+  public formatDistance(distanceKm?: number | null): string {
+    return distanceKm === null || distanceKm === undefined
+      ? ''
+      : `A ${distanceKm.toFixed(2)} km`;
+  }
+
   private loadRestaurants(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -82,5 +101,27 @@ export class CustomerRestaurantListComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private loadRecommendations(): void {
+    this.isLoadingRecommendations = true;
+
+    this.customerLocationService.getCurrentLocation()
+      .pipe(
+        switchMap(location => {
+          const accountId = this.authService.getAccountId();
+          const lat = location?.latitude;
+          const lng = location?.longitude;
+
+          return accountId
+            ? this.recommendationApiService.getCustomerRecommendations(accountId, lat, lng, 5)
+            : this.recommendationApiService.getNearbyRecommendations(lat, lng, 5);
+        }),
+        catchError(() => of([] as RecommendationBranchResponse[]))
+      )
+      .subscribe(recommendations => {
+        this.recommendations = recommendations;
+        this.isLoadingRecommendations = false;
+      });
   }
 }
