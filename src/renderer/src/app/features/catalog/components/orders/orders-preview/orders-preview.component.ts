@@ -79,6 +79,9 @@ const ORDER_ACTIONS: Partial<Record<OrderStatus, OrderAction[]>> = {
   ]
 };
 
+const CANCEL_ORDER_CONFIRMATION_MESSAGE =
+  '¿Seguro que deseas cancelar este pedido? El cliente será notificado del cambio.';
+
 @Component({
   selector: 'app-orders-preview',
   standalone: true,
@@ -164,6 +167,10 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
   }
 
   public updateOrderStatus(order: OrderResponse, status: OrderStatus): void {
+    if (status === 'Cancelled' && !window.confirm(CANCEL_ORDER_CONFIRMATION_MESSAGE)) {
+      return;
+    }
+
     this.updatingOrderId = order.id;
     this.actionErrorMessage = '';
 
