@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { catchError, forkJoin, of, Subscription, switchMap } from 'rxjs';
 
 import { IModifierGroupResponse } from '../../../catalog/models/commons/IModifierGroupResponse';
 import { IModifierOptionResponse } from '../../../catalog/models/commons/IModifierOptionResponse';
@@ -13,8 +13,11 @@ import {
   CustomerProductResponse,
   CustomerRestaurantResponse
 } from '../../models/customer-catalog.models';
+import { RecommendationBranchResponse } from '../../models/recommendation.models';
 import { CartService } from '../../services/cart.service';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerLocationService } from '../../services/customer-location.service';
+import { RecommendationApiService } from '../../services/recommendation-api.service';
 
 const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   back: 'Restaurantes',
@@ -36,6 +39,10 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   closed: 'Cerrado',
   branchOpen: 'Abierta',
   branchClosed: 'Cerrada',
+  recommendedBranch: 'Sucursal sugerida',
+  changeBranch: 'Cambiar sucursal',
+  distancePrefix: 'A',
+  distanceSuffix: 'km de ti',
   closedRestaurant: 'Este restaurante esta cerrado ahora. Puedes consultar el menu, pero no agregar productos.',
   unavailableProduct: 'Este producto no esta disponible ahora.',
   unavailableCart: 'El carrito queda bloqueado mientras el restaurante este cerrado.',
@@ -69,6 +76,9 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   public errorMessage = '';
   public availabilityMessage = '';
   public cartState: ICartState;
+  public recommendedBranch: RecommendationBranchResponse | null = null;
+  public recommendationWarning = '';
+  public showBranchList = false;
   public pendingAddRequest: {
     product: CustomerProductResponse;
     selections: IProductModifierSelection[];
@@ -81,6 +91,8 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly customerCatalogApiService: CustomerCatalogApiService,
+    private readonly recommendationApiService: RecommendationApiService,
+    private readonly customerLocationService: CustomerLocationService,
     private readonly cartService: CartService
   ) {
     this.cartState = this.cartService.getSnapshot();
@@ -162,6 +174,13 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
 
     this.selectedBranchId = branch.id;
     this.availabilityMessage = '';
+    this.recommendedBranch = this.toRecommendationBranch(branch);
+    this.recommendationWarning = '';
+    this.showBranchList = false;
+  }
+
+  public showBranchesForChange(): void {
+    this.showBranchList = true;
   }
 
   public increaseProductQuantity(): void {
@@ -280,6 +299,12 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     }).format(value);
   }
 
+  public formatDistance(distanceKm?: number | null): string {
+    return distanceKm === null || distanceKm === undefined
+      ? ''
+      : `${this.text.distancePrefix} ${distanceKm.toFixed(2)} ${this.text.distanceSuffix}`;
+  }
+
   public getGroupId(group: IModifierGroupResponse): string {
     return group.id ?? group.name;
   }
@@ -325,9 +350,12 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
         this.restaurant = response.restaurant;
         this.branches = response.branches;
         this.selectedBranchId = this.getDefaultBranchId(response.branches);
+        this.recommendedBranch = this.getSelectedBranchRecommendation();
+        this.showBranchList = !this.recommendedBranch;
         this.categories = response.categories;
         this.products = response.products.filter(product => product.available);
         this.isLoading = false;
+        this.loadNearestBranchRecommendation(restaurantId);
       },
       error: () => {
         this.errorMessage = this.text.error;
@@ -399,6 +427,63 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
 
   private getOptionId(option: IModifierOptionResponse): string {
     return option.id ?? option.name;
+  }
+
+  private loadNearestBranchRecommendation(restaurantId: string): void {
+    this.customerLocationService.getCurrentLocation()
+      .pipe(
+        switchMap(location => this.recommendationApiService.getNearestBranch(
+          restaurantId,
+          location?.latitude,
+          location?.longitude
+        )),
+        catchError(() => of(null))
+      )
+      .subscribe(recommendation => {
+        if (!recommendation?.branchId) {
+          this.selectedBranchId = this.selectedBranchId ?? this.getDefaultBranchId(this.branches);
+          this.recommendedBranch = this.getSelectedBranchRecommendation();
+          this.showBranchList = !this.recommendedBranch;
+          return;
+        }
+
+        const matchingBranch = this.branches.find(branch => branch.id === recommendation.branchId && branch.open);
+
+        if (!matchingBranch) {
+          this.selectedBranchId = this.selectedBranchId ?? this.getDefaultBranchId(this.branches);
+          this.recommendedBranch = this.getSelectedBranchRecommendation();
+          this.showBranchList = !this.recommendedBranch;
+          return;
+        }
+
+        this.selectedBranchId = matchingBranch.id;
+        this.recommendedBranch = recommendation;
+        this.recommendationWarning = recommendation.warning ?? '';
+        this.showBranchList = false;
+      });
+  }
+
+  private getSelectedBranchRecommendation(): RecommendationBranchResponse | null {
+    const branch = this.branches.find(item => item.id === this.selectedBranchId);
+
+    return branch ? this.toRecommendationBranch(branch) : null;
+  }
+
+  private toRecommendationBranch(branch: CustomerBranchResponse): RecommendationBranchResponse {
+    return {
+      restaurantId: branch.restaurantId,
+      restaurantName: this.restaurant?.name ?? '',
+      restaurantImageUrl: this.restaurant?.logo?.url ?? null,
+      branchId: branch.id,
+      branchName: branch.name,
+      branchAddress: branch.formattedAddress,
+      latitude: branch.latitude,
+      longitude: branch.longitude,
+      distanceKm: null,
+      reason: 'Sucursal disponible seleccionada automáticamente',
+      score: 1,
+      warning: null
+    };
   }
 
   private getDefaultBranchId(branches: CustomerBranchResponse[]): string | null {

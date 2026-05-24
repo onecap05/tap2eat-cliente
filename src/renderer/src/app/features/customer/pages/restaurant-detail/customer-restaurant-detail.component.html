@@ -79,11 +79,25 @@
           <div class="section-heading">
             <div>
               <h2>{{ text.branches }}</h2>
-              <p>Las sucursales sin horario configurado se consideran cerradas.</p>
+              <p>Te sugerimos una sucursal disponible, pero puedes cambiarla antes de ordenar.</p>
             </div>
           </div>
 
-          <div class="branch-list">
+          <article class="suggested-branch" *ngIf="recommendedBranch">
+            <span class="status-badge small">{{ text.recommendedBranch }}</span>
+            <h3>{{ recommendedBranch.branchName }}</h3>
+            <p>{{ recommendedBranch.branchAddress || 'Direccion no disponible.' }}</p>
+            <strong *ngIf="recommendedBranch.distanceKm !== null && recommendedBranch.distanceKm !== undefined">
+              {{ formatDistance(recommendedBranch.distanceKm) }}
+            </strong>
+            <em *ngIf="recommendationWarning">{{ recommendationWarning }}</em>
+
+            <button type="button" (click)="showBranchesForChange()">
+              {{ text.changeBranch }}
+            </button>
+          </article>
+
+          <div class="branch-list" *ngIf="showBranchList || !recommendedBranch">
             <button
               class="branch-item"
               type="button"

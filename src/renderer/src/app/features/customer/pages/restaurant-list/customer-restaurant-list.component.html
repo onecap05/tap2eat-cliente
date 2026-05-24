@@ -55,6 +55,50 @@
     </div>
   </section>
 
+  <section
+    class="recommendation-section"
+    *ngIf="!isLoadingRecommendations && recommendations.length"
+  >
+    <div class="section-heading">
+      <div>
+        <h2>Recomendado para ti</h2>
+        <p>Sucursales sugeridas según tu ubicación y gustos.</p>
+      </div>
+    </div>
+
+    <div class="recommendation-grid">
+      <a
+        class="recommendation-card"
+        *ngFor="let recommendation of recommendations"
+        [routerLink]="['/customer/restaurants', recommendation.restaurantId]"
+      >
+        <div class="recommendation-image">
+          <img
+            *ngIf="recommendation.restaurantImageUrl; else recommendationInitial"
+            [src]="recommendation.restaurantImageUrl"
+            [alt]="recommendation.restaurantName"
+          />
+
+          <ng-template #recommendationInitial>
+            <div class="logo-placeholder small">
+              {{ getInitials(recommendation.restaurantName) }}
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="recommendation-content">
+          <span>{{ recommendation.reason || 'Cerca de ti' }}</span>
+          <h3>{{ recommendation.restaurantName }}</h3>
+          <p>{{ recommendation.branchName }}</p>
+          <strong *ngIf="recommendation.distanceKm !== null && recommendation.distanceKm !== undefined">
+            {{ formatDistance(recommendation.distanceKm) }}
+          </strong>
+          <em>Ver menú</em>
+        </div>
+      </a>
+    </div>
+  </section>
+
   <section class="restaurant-section">
     <div class="section-heading">
       <div>

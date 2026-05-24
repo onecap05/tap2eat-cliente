@@ -30,6 +30,8 @@
 .section-heading h2{margin:0 0 6px;font-size:28px;font-weight:900}
 .section-heading p{margin:0;color:#64748b;font-size:16px}
 .branch-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.suggested-branch{display:grid;gap:8px;margin-bottom:16px;padding:18px;border:1px solid #bbf7d0;border-radius:20px;background:#ecfdf5}
+.suggested-branch h3,.suggested-branch p,.suggested-branch em{margin:0}
 .branch-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;width:100%;padding:16px;border:1px solid #e2e8f0;border-radius:18px;background:#f8fafc;text-align:left;cursor:pointer}
 .branch-item.selected{border-color:#267f53;background:#ecfdf5;box-shadow:0 12px 26px rgba(38,127,83,.12)}
 .branch-item:disabled{cursor:not-allowed}
