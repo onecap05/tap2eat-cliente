@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Observable, of, Subject, throwError } from 'rxjs';
+import { vi } from 'vitest';
 
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { OrderResponse, OrderStatus } from '../../../../customer/models/order.models';
@@ -115,6 +116,10 @@ describe('OrdersPreviewComponent', () => {
     fixture.componentRef.setInput('restaurantId', 'restaurant-long-1384d0');
     fixture.componentRef.setInput('restaurantName', 'Tacos Owner');
     fixture.componentRef.setInput('branches', branches());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should load real orders by restaurant id', () => {
@@ -256,10 +261,80 @@ describe('OrdersPreviewComponent', () => {
 
   it('should update order status to Accepted', () => {
     fixture.detectChanges();
+    const confirmSpy = vi.spyOn(window, 'confirm');
 
     component.updateOrderStatus(component.orders[0], 'Accepted');
 
     expect(orderApiService.lastUpdate).toEqual({ orderId: 'order-1', status: 'Accepted' });
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not ask for confirmation when updating to non-cancelled statuses', () => {
+    fixture.detectChanges();
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    (['Accepted', 'Preparing', 'Ready', 'Delivered'] as OrderStatus[]).forEach(status => {
+      component.updateOrderStatus(component.orders[0], status);
+      expect(orderApiService.lastUpdate).toEqual({ orderId: 'order-1', status });
+    });
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not update order status to Cancelled when confirmation is rejected', () => {
+    fixture.detectChanges();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    component.updateOrderStatus(component.orders[0], 'Cancelled');
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      '¿Seguro que deseas cancelar este pedido? El cliente será notificado del cambio.'
+    );
+    expect(orderApiService.lastUpdate).toBeNull();
+    expect(component.updatingOrderId).toBeNull();
+  });
+
+  it('should update order status to Cancelled when confirmation is accepted', () => {
+    fixture.detectChanges();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    component.updateOrderStatus(component.orders[0], 'Cancelled');
+
+    expect(orderApiService.lastUpdate).toEqual({ orderId: 'order-1', status: 'Cancelled' });
+  });
+
+  it('should update local orders and selected order when cancellation succeeds', () => {
+    fixture.detectChanges();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    component.openOrderDetail(component.orders[0]);
+
+    component.updateOrderStatus(component.orders[0], 'Cancelled');
+
+    expect(component.orders.find(existingOrder => existingOrder.id === 'order-1')?.status).toBe('Cancelled');
+    expect(component.selectedOrder?.status).toBe('Cancelled');
+    expect(component.actionErrorMessage).toBe('');
+    expect(component.updatingOrderId).toBeNull();
+  });
+
+  it('should show friendly error when cancellation update fails', () => {
+    orderApiService.updateShouldFail = true;
+    fixture.detectChanges();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    component.updateOrderStatus(component.orders[0], 'Cancelled');
+
+    expect(component.actionErrorMessage).toContain('No pudimos actualizar');
+    expect(component.updatingOrderId).toBeNull();
+  });
+
+  it('should keep selected status filter when cancelling an order', () => {
+    fixture.detectChanges();
+    component.setStatusFilter('Created');
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    component.updateOrderStatus(component.orders[0], 'Cancelled');
+
+    expect(component.selectedStatus).toBe('Created');
   });
 
   it('should not show actions for Delivered orders', () => {
