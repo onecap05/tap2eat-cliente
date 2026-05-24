@@ -1,7 +1,13 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpEvent,
+  HttpHandlerFn,
+  HttpInterceptorFn,
+  HttpRequest
+} from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { Observable, catchError, finalize, map, shareReplay, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 import { TokenStorageService } from '../services/token-storage.service';
@@ -21,6 +27,8 @@ const NON_SESSION_401_PATHS = [
   '/api/reports/'
 ];
 
+let refreshInProgress$: Observable<string> | null = null;
+
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if (isPublicAuthRequest(request.url)) {
     return next(request);
@@ -30,41 +38,123 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const router = inject(Router);
   const tokenStorageService = inject(TokenStorageService);
   const accessToken = tokenStorageService.getAccessToken();
+  const refreshToken = tokenStorageService.getRefreshToken();
 
   if (!accessToken) {
-    return next(request);
+    if (refreshToken) {
+      return refreshAndRetryRequest(request, next, authService, tokenStorageService, router, true);
+    }
+
+    return redirectToLoginWithError(authService, router, request.url, 'Session token missing');
   }
 
   if (authService.isTokenExpired()) {
-    redirectToLogin(authService, router);
+    if (refreshToken) {
+      return refreshAndRetryRequest(request, next, authService, tokenStorageService, router, true);
+    }
 
-    return throwError(() => new HttpErrorResponse({
-      status: 401,
-      statusText: 'Token expired',
-      url: request.url
-    }));
+    return redirectToLoginWithError(authService, router, request.url, 'Token expired');
   }
 
-  const authenticatedRequest = request.clone({
+  const authenticatedRequest = cloneWithAuthorization(request, tokenStorageService, accessToken);
+
+  return next(authenticatedRequest).pipe(
+    catchError(error => handleAuthError(
+      error,
+      request,
+      next,
+      authService,
+      tokenStorageService,
+      router,
+      false
+    ))
+  );
+};
+
+function refreshAndRetryRequest(
+  request: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  authService: AuthService,
+  tokenStorageService: TokenStorageService,
+  router: Router,
+  refreshAlreadyAttempted: boolean
+): Observable<HttpEvent<unknown>> {
+  return getSharedRefreshAccessToken(authService).pipe(
+    catchError(error => {
+      redirectToLogin(authService, router);
+
+      return throwError(() => error);
+    }),
+    switchMap(accessToken => next(cloneWithAuthorization(request, tokenStorageService, accessToken)).pipe(
+      catchError(error => handleAuthError(
+        error,
+        request,
+        next,
+        authService,
+        tokenStorageService,
+        router,
+        refreshAlreadyAttempted
+      ))
+    ))
+  );
+}
+
+function handleAuthError(
+  error: unknown,
+  request: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  authService: AuthService,
+  tokenStorageService: TokenStorageService,
+  router: Router,
+  refreshAlreadyAttempted: boolean
+): Observable<HttpEvent<unknown>> {
+  if (
+    !(error instanceof HttpErrorResponse) ||
+    error.status !== 401 ||
+    isNonSession401Request(request.url)
+  ) {
+    return throwError(() => error);
+  }
+
+  if (!refreshAlreadyAttempted && tokenStorageService.getRefreshToken()) {
+    return refreshAndRetryRequest(
+      request,
+      next,
+      authService,
+      tokenStorageService,
+      router,
+      true
+    );
+  }
+
+  redirectToLogin(authService, router);
+
+  return throwError(() => error);
+}
+
+function getSharedRefreshAccessToken(authService: AuthService): Observable<string> {
+  refreshInProgress$ ??= authService.refreshAccessToken().pipe(
+    map(response => response.accessToken),
+    finalize(() => {
+      refreshInProgress$ = null;
+    }),
+    shareReplay(1)
+  );
+
+  return refreshInProgress$;
+}
+
+function cloneWithAuthorization(
+  request: HttpRequest<unknown>,
+  tokenStorageService: TokenStorageService,
+  accessToken: string
+): HttpRequest<unknown> {
+  return request.clone({
     setHeaders: {
       Authorization: `${tokenStorageService.getTokenType()} ${accessToken}`
     }
   });
-
-  return next(authenticatedRequest).pipe(
-    catchError(error => {
-      if (
-        error instanceof HttpErrorResponse &&
-        error.status === 401 &&
-        !isNonSession401Request(request.url)
-      ) {
-        redirectToLogin(authService, router);
-      }
-
-      return throwError(() => error);
-    })
-  );
-};
+}
 
 function redirectToLogin(authService: AuthService, router: Router): void {
   authService.logout();
@@ -72,6 +162,21 @@ function redirectToLogin(authService: AuthService, router: Router): void {
   if (router.url !== '/login') {
     void router.navigate(['/login'], { replaceUrl: true });
   }
+}
+
+function redirectToLoginWithError(
+  authService: AuthService,
+  router: Router,
+  url: string,
+  statusText: string
+): Observable<never> {
+  redirectToLogin(authService, router);
+
+  return throwError(() => new HttpErrorResponse({
+    status: 401,
+    statusText,
+    url
+  }));
 }
 
 function isPublicAuthRequest(url: string): boolean {
