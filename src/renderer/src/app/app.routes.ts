@@ -65,6 +65,12 @@ export const routes: Routes = [
     canActivate: [customerGuard]
   },
   {
+    path: 'customer/profile',
+    loadComponent: () => import('./features/customer/pages/customer-profile/customer-profile.component')
+      .then(component => component.CustomerProfileComponent),
+    canActivate: [customerGuard]
+  },
+  {
     path: 'customer/payment-success/:orderId',
     loadComponent: () => import('./features/customer/pages/payment-success/payment-success.component')
       .then(component => component.PaymentSuccessComponent),

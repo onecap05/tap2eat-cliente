@@ -72,6 +72,35 @@ describe('AuthService', () => {
     expect(tokenStorageService.getTokenType()).toBe('Bearer');
   });
 
+  it('should get current account from auth me endpoint', () => {
+    service.getCurrentAccount().subscribe(response => {
+      expect(response).toEqual({
+        id: 'account-1',
+        email: 'cliente1@ejemplo.com',
+        role: 'CUSTOMER',
+        isActive: true,
+        emailVerified: true,
+        firstName: 'Nombre',
+        lastName: 'Apellido',
+        phone: '2281234567'
+      });
+    });
+
+    const request = httpTestingController.expectOne(`${environment.authApiUrl}/me`);
+
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      id: 'account-1',
+      email: 'cliente1@ejemplo.com',
+      role: 'CUSTOMER',
+      isActive: true,
+      emailVerified: true,
+      firstName: 'Nombre',
+      lastName: 'Apellido',
+      phone: '2281234567'
+    });
+  });
+
   it('should keep existing refresh token when refresh response omits it', () => {
     tokenStorageService.saveRefreshToken('existing-refresh-token');
 

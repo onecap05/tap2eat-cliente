@@ -260,6 +260,17 @@ describe('CustomerRestaurantListComponent', () => {
     expect(recommendationLink.getAttribute('href')).toContain('/customer/restaurants/restaurant-1');
   });
 
+  it('connects navbar cart and profile actions to protected customer routes', () => {
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+    const cartButton = nativeElement.querySelector('[aria-label="Carrito"]');
+    const profileButton = nativeElement.querySelector('[aria-label="Perfil"]');
+
+    expect(cartButton?.getAttribute('routerLink') ?? cartButton?.getAttribute('routerlink')).toBe('/customer/checkout');
+    expect(profileButton?.getAttribute('routerLink') ?? profileButton?.getAttribute('routerlink')).toBe('/customer/profile');
+  });
+
   function restaurant(id: string, name: string, open: boolean): CustomerRestaurantResponse {
     return {
       id,
