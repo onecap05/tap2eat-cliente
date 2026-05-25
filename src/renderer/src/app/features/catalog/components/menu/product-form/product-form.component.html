@@ -343,6 +343,89 @@
     </div>
 
     <div class="option-group">
+      <span class="field-title">Tags para recomendaciones</span>
+      <small class="hint">
+        Estos tags ayudan a recomendar productos y restaurantes según los gustos del cliente.
+      </small>
+
+      <div class="chips">
+        <button
+          *ngFor="let tag of recommendationTagOptions"
+          type="button"
+          class="chip"
+          [class.selected]="isRecommendationTagSelected(tag)"
+          (click)="toggleRecommendationTag(tag)"
+        >
+          {{ tag }}
+        </button>
+      </div>
+
+      <div *ngIf="form.tags.length > 0" class="selected-tags">
+        <span
+          *ngFor="let tag of form.tags"
+          class="selected-tag"
+        >
+          {{ tag }}
+          <button
+            type="button"
+            aria-label="Quitar tag"
+            (click)="removeRecommendationTag(tag)"
+          >
+            ×
+          </button>
+        </span>
+      </div>
+
+      <div class="tag-input-row">
+        <label>
+          Tag personalizado
+          <input
+            type="text"
+            name="customRecommendationTag"
+            [(ngModel)]="form.customTagInput"
+            placeholder="Ej. pastor, malteada, hawaiana"
+            maxlength="60"
+            (keydown.enter)="$event.preventDefault(); addCustomTag()"
+          />
+        </label>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="addCustomTag()"
+        >
+          Agregar tag
+        </button>
+      </div>
+
+      <p *ngIf="tagMessage" class="tag-message">
+        {{ tagMessage }}
+      </p>
+
+      <div *ngIf="pendingTagSuggestion" class="tag-suggestion">
+        <span>¿Quisiste decir "{{ pendingTagSuggestion.suggestedTag }}"?</span>
+
+        <div class="tag-suggestion-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="acceptTagSuggestion()"
+          >
+            Usar sugerencia
+          </button>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="addPendingTagAnyway()"
+          >
+            Agregar de todos modos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="option-group">
       <span class="field-title">Características alimentarias</span>
 
       <div class="chips">

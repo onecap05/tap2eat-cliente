@@ -65,6 +65,11 @@ type ModifierGroupForm = {
   options: ModifierOptionForm[];
 };
 
+type TagSuggestion = {
+  originalTag: string;
+  suggestedTag: string;
+};
+
 const DEFAULT_SCHEDULE_START_TIME = '08:00';
 const DEFAULT_SCHEDULE_END_TIME = '12:00';
 const DEFAULT_MODIFIER_OPTION_PRICE = '0';
@@ -75,6 +80,57 @@ const DEFAULT_TEMPORARY_REASON = 'OPERATIONAL_PAUSE';
 const DEFAULT_TEMPORARY_REASON_DETAIL = 'Producto pausado temporalmente.';
 const MAX_IMAGE_SIZE_IN_MB = 5;
 const BYTES_PER_MB = 1024 * 1024;
+const MAX_RECOMMENDATION_TAG_LENGTH = 30;
+
+const CANONICAL_RECOMMENDATION_TAGS = [
+  'hamburguesa',
+  'pizza',
+  'tacos',
+  'sushi',
+  'ramen',
+  'ensalada',
+  'bowl',
+  'pollo',
+  'carne',
+  'pasta',
+  'postre',
+  'cafe',
+  'desayuno',
+  'comida-rapida',
+  'mexicano',
+  'italiano',
+  'japones',
+  'saludable',
+  'dulce',
+  'picante',
+  'bbq',
+  'queso',
+  'mariscos',
+  'vegetariano'
+] as const;
+
+const RECOMMENDATION_TAG_ALIASES: Record<string, string> = {
+  taco: 'tacos',
+  taquito: 'tacos',
+  taquitos: 'tacos',
+  hamburguesas: 'hamburguesa',
+  'hamburguesa-artesanal': 'hamburguesa',
+  burger: 'hamburguesa',
+  burgers: 'hamburguesa',
+  pizza: 'pizza',
+  pizzas: 'pizza',
+  cafe: 'cafe',
+  cafes: 'cafe',
+  'sushi-roll': 'sushi',
+  roll: 'sushi',
+  rolls: 'sushi',
+  ensaladas: 'ensalada',
+  veggie: 'vegetariano',
+  vegetales: 'vegetariano',
+  'pollo-crispy': 'pollo',
+  carnes: 'carne',
+  postres: 'postre'
+};
 
 const PRODUCT_FORM_MESSAGES = {
   requiredProductFields: 'Selecciona una categoría y escribe el nombre del producto.',
@@ -89,7 +145,9 @@ const PRODUCT_FORM_MESSAGES = {
   requiredModifierOption: 'Cada grupo activo debe tener al menos una opción activa.',
   invalidModifierOptionName: 'Cada opción de modificador debe tener nombre.',
   invalidModifierOptionPrice: 'El precio adicional de cada opción debe ser mayor o igual a 0.',
-  invalidModifierSelections: 'Revisa el mínimo y máximo de selecciones de los modificadores.'
+  invalidModifierSelections: 'Revisa el mínimo y máximo de selecciones de los modificadores.',
+  duplicatedTag: 'Este tag ya está agregado.',
+  tagTooLong: `El tag no puede superar ${MAX_RECOMMENDATION_TAG_LENGTH} caracteres.`
 };
 
 @Component({
@@ -128,6 +186,8 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     { label: 'Ajonjolí', value: 'SESAME' }
   ];
 
+  readonly recommendationTagOptions = [...CANONICAL_RECOMMENDATION_TAGS];
+
   readonly dayOptions: { label: string; value: DayOfWeekRequest }[] = [
     { label: 'Lunes', value: 'MONDAY' },
     { label: 'Martes', value: 'TUESDAY' },
@@ -147,6 +207,8 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     featured: false,
     available: true,
     useSpecificSchedule: false,
+    tags: [] as string[],
+    customTagInput: '',
     dietaryFlags: [] as string[],
     allergens: [] as string[]
   };
@@ -159,6 +221,8 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
 
   uploadingImage = false;
   errorMessage = '';
+  tagMessage = '';
+  pendingTagSuggestion: TagSuggestion | null = null;
 
   private imagePreviewObjectUrl: string | null = null;
   private currentImageMetadata: IImageMetadataRequest | null = null;
@@ -226,7 +290,7 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
         active: this.productToEdit?.active ?? true,
         displayOrder: this.productToEdit?.displayOrder ?? null,
         featured: this.form.featured,
-        tags: this.productToEdit?.tags ?? [],
+        tags: this.form.tags,
         dietaryFlags: this.form.dietaryFlags,
         allergens: this.form.allergens
       };
@@ -415,6 +479,78 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     return this.form.allergens.includes(value);
   }
 
+  toggleRecommendationTag(tag: string): void {
+    this.clearTagFeedback();
+
+    if (this.isRecommendationTagSelected(tag)) {
+      this.removeRecommendationTag(tag);
+      return;
+    }
+
+    this.addNormalizedTag(tag);
+  }
+
+  isRecommendationTagSelected(tag: string): boolean {
+    return this.form.tags.includes(tag);
+  }
+
+  addCustomTag(): void {
+    this.clearTagFeedback();
+
+    const normalizedTag = this.normalizeRecommendationTag(this.form.customTagInput);
+
+    if (!normalizedTag) {
+      return;
+    }
+
+    if (!this.isValidTagLength(normalizedTag)) {
+      this.tagMessage = PRODUCT_FORM_MESSAGES.tagTooLong;
+      return;
+    }
+
+    if (this.isRecommendationTagSelected(normalizedTag)) {
+      this.tagMessage = PRODUCT_FORM_MESSAGES.duplicatedTag;
+      return;
+    }
+
+    const suggestedTag = this.findTagSuggestion(normalizedTag);
+
+    if (suggestedTag && suggestedTag !== normalizedTag) {
+      if (this.isRecommendationTagSelected(suggestedTag)) {
+        this.tagMessage = PRODUCT_FORM_MESSAGES.duplicatedTag;
+        return;
+      }
+
+      this.pendingTagSuggestion = {
+        originalTag: normalizedTag,
+        suggestedTag
+      };
+      return;
+    }
+
+    this.addNormalizedTag(normalizedTag);
+  }
+
+  acceptTagSuggestion(): void {
+    if (!this.pendingTagSuggestion) {
+      return;
+    }
+
+    this.addNormalizedTag(this.pendingTagSuggestion.suggestedTag);
+  }
+
+  addPendingTagAnyway(): void {
+    if (!this.pendingTagSuggestion) {
+      return;
+    }
+
+    this.addNormalizedTag(this.pendingTagSuggestion.originalTag);
+  }
+
+  removeRecommendationTag(tag: string): void {
+    this.form.tags = this.form.tags.filter(currentTag => currentTag !== tag);
+  }
+
   toggleScheduleDay(dayOfWeek: DayOfWeekRequest): void {
     const day = this.scheduleForm.find(item => item.dayOfWeek === dayOfWeek);
 
@@ -597,6 +733,8 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
       featured: this.productToEdit.featured,
       available: this.productToEdit.availability?.status !== 'TEMPORARILY_UNAVAILABLE',
       useSpecificSchedule: false,
+      tags: this.normalizeRecommendationTagList(this.productToEdit.tags ?? []),
+      customTagInput: '',
       dietaryFlags: this.productToEdit.dietaryFlags ?? [],
       allergens: this.productToEdit.allergens ?? []
     };
@@ -724,6 +862,107 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
       : [...values, value];
   }
 
+  private addNormalizedTag(tag: string): void {
+    if (!this.isValidTagLength(tag)) {
+      this.tagMessage = PRODUCT_FORM_MESSAGES.tagTooLong;
+      return;
+    }
+
+    if (this.isRecommendationTagSelected(tag)) {
+      this.tagMessage = PRODUCT_FORM_MESSAGES.duplicatedTag;
+      this.pendingTagSuggestion = null;
+      return;
+    }
+
+    this.form.tags = [...this.form.tags, tag];
+    this.form.customTagInput = '';
+    this.pendingTagSuggestion = null;
+    this.tagMessage = '';
+  }
+
+  private normalizeRecommendationTagList(tags: string[]): string[] {
+    return tags.reduce<string[]>((result, tag) => {
+      const normalizedTag = this.normalizeRecommendationTag(tag);
+
+      if (
+        normalizedTag &&
+        this.isValidTagLength(normalizedTag) &&
+        !result.includes(normalizedTag)
+      ) {
+        result.push(normalizedTag);
+      }
+
+      return result;
+    }, []);
+  }
+
+  private normalizeRecommendationTag(tag: string): string {
+    return tag
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  private findTagSuggestion(normalizedTag: string): string | null {
+    const aliasedTag = RECOMMENDATION_TAG_ALIASES[normalizedTag];
+
+    if (aliasedTag && aliasedTag !== normalizedTag) {
+      return aliasedTag;
+    }
+
+    let closestTag: string | null = null;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    for (const canonicalTag of CANONICAL_RECOMMENDATION_TAGS) {
+      if (canonicalTag === normalizedTag) {
+        return null;
+      }
+
+      const distance = this.calculateLevenshteinDistance(normalizedTag, canonicalTag);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestTag = canonicalTag;
+      }
+    }
+
+    return closestDistance <= 2 ? closestTag : null;
+  }
+
+  private calculateLevenshteinDistance(left: string, right: string): number {
+    const distances = Array.from({ length: left.length + 1 }, (_, rowIndex) =>
+      Array.from({ length: right.length + 1 }, (_, columnIndex) =>
+        rowIndex === 0 ? columnIndex : columnIndex === 0 ? rowIndex : 0
+      )
+    );
+
+    for (let row = 1; row <= left.length; row++) {
+      for (let column = 1; column <= right.length; column++) {
+        const substitutionCost = left[row - 1] === right[column - 1] ? 0 : 1;
+
+        distances[row][column] = Math.min(
+          distances[row - 1][column] + 1,
+          distances[row][column - 1] + 1,
+          distances[row - 1][column - 1] + substitutionCost
+        );
+      }
+    }
+
+    return distances[left.length][right.length];
+  }
+
+  private isValidTagLength(tag: string): boolean {
+    return tag.length <= MAX_RECOMMENDATION_TAG_LENGTH;
+  }
+
+  private clearTagFeedback(): void {
+    this.tagMessage = '';
+    this.pendingTagSuggestion = null;
+  }
+
   private resetForm(): void {
     this.clearImagePreviewObjectUrl();
 
@@ -736,6 +975,8 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
       featured: false,
       available: true,
       useSpecificSchedule: false,
+      tags: [],
+      customTagInput: '',
       dietaryFlags: [],
       allergens: []
     };
@@ -746,6 +987,8 @@ export class ProductFormComponent implements OnChanges, OnDestroy {
     this.imagePreviewUrl = null;
     this.currentImageMetadata = null;
     this.errorMessage = '';
+    this.tagMessage = '';
+    this.pendingTagSuggestion = null;
   }
 
   private clearImagePreviewObjectUrl(): void {
