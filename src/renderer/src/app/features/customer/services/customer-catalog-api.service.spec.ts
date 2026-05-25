@@ -36,6 +36,19 @@ describe('CustomerCatalogApiService', () => {
     request.flush([]);
   });
 
+  it('should search public customer restaurants', () => {
+    service.searchRestaurants('tacos al pastor').subscribe(restaurants => {
+      expect(restaurants).toEqual([]);
+    });
+
+    const request = httpTestingController.expectOne(
+      `${environment.catalogApiUrl}/customer/restaurants/search?query=tacos%20al%20pastor`
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush([]);
+  });
+
   it('should request public customer products by restaurant', () => {
     service.getProducts('restaurant-1').subscribe(products => {
       expect(products).toEqual([]);

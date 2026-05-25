@@ -15,9 +15,21 @@ import { CustomerRestaurantListComponent } from './customer-restaurant-list.comp
 
 class FakeCustomerCatalogApiService {
   public restaurants: CustomerRestaurantResponse[] = [];
+  public searchResults: CustomerRestaurantResponse[] = [];
+  public getRestaurantCalls = 0;
+  public searchCalls = 0;
+  public lastSearchQuery = '';
 
   public getRestaurants() {
+    this.getRestaurantCalls++;
     return of(this.restaurants);
+  }
+
+  public searchRestaurants(query: string) {
+    this.searchCalls++;
+    this.lastSearchQuery = query;
+
+    return of(this.searchResults);
   }
 }
 
@@ -110,6 +122,9 @@ describe('CustomerRestaurantListComponent', () => {
     catalogService.restaurants = [
       restaurant('restaurant-1', 'Tacos Centro', true),
       restaurant('restaurant-2', 'Pizza Norte', false)
+    ];
+    catalogService.searchResults = [
+      restaurant('restaurant-3', 'Postres Sur', true)
     ];
     recommendationService.sections = {
       nearby: [
@@ -240,13 +255,55 @@ describe('CustomerRestaurantListComponent', () => {
     expect(recommendationService.nearbyCalls).toBe(1);
   });
 
-  it('keeps search and open filters over the full restaurant list', () => {
+  it('searches restaurants when search button is clicked', () => {
     fixture.detectChanges();
 
-    component.searchTerm = 'pizza';
-    expect(component.filteredRestaurants.map(item => item.id)).toEqual(['restaurant-2']);
+    component.searchTerm = 'postre';
+    fixture.nativeElement.querySelector('.search-box button').click();
 
-    component.searchTerm = '';
+    expect(catalogService.searchCalls).toBe(1);
+    expect(catalogService.lastSearchQuery).toBe('postre');
+    expect(component.restaurants.map(item => item.id)).toEqual(['restaurant-3']);
+  });
+
+  it('searches restaurants when Enter is pressed', () => {
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector('.search-box input') as HTMLInputElement;
+    input.value = 'tacos';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+    expect(catalogService.searchCalls).toBe(1);
+    expect(catalogService.lastSearchQuery).toBe('tacos');
+  });
+
+  it('reloads all restaurants when search query is blank', () => {
+    fixture.detectChanges();
+
+    component.searchTerm = '   ';
+    component.activeSearchQuery = 'tacos';
+    component.searchRestaurants();
+
+    expect(catalogService.searchCalls).toBe(0);
+    expect(catalogService.getRestaurantCalls).toBe(2);
+    expect(component.activeSearchQuery).toBe('');
+  });
+
+  it('shows search empty state when search has no results', () => {
+    catalogService.searchResults = [];
+    fixture.detectChanges();
+
+    component.searchTerm = 'ramen';
+    component.searchRestaurants();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No encontramos restaurantes o platillos para esta busqueda.');
+  });
+
+  it('keeps open filter over the current restaurant list', () => {
+    fixture.detectChanges();
+
     component.toggleOpenOnly();
     expect(component.filteredRestaurants.map(item => item.id)).toEqual(['restaurant-1']);
   });
