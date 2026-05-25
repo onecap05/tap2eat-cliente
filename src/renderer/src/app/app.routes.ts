@@ -31,6 +31,11 @@ export const routes: Routes = [
     component: ResetPasswordComponent
   },
   {
+    path: 'orders/track/:publicTrackingCode',
+    loadComponent: () => import('./features/customer/pages/public-order-tracking/public-order-tracking.component')
+      .then(component => component.PublicOrderTrackingComponent)
+  },
+  {
     path: 'customer/dashboard',
     redirectTo: 'customer/restaurants',
     pathMatch: 'full'

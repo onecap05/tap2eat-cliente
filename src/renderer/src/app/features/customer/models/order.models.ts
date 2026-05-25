@@ -46,6 +46,7 @@ export interface OrderResponse {
   customerAccountId: string;
   restaurantId: string;
   branchId: string;
+  publicTrackingCode?: string | null;
   items: OrderItemResponse[];
   subtotal: number;
   total: number;
@@ -59,4 +60,31 @@ export interface OrderQueryFilters {
   status?: OrderStatus | string | null;
   from?: string | null;
   to?: string | null;
+}
+
+export interface PublicSelectedModifierResponse {
+  modifierGroupName: string;
+  modifierOptionName: string;
+  priceAdjustment: number;
+}
+
+export interface PublicOrderTrackingItemResponse {
+  productNameSnapshot: string;
+  quantity: number;
+  unitPriceSnapshot: number;
+  selectedModifiers: PublicSelectedModifierResponse[];
+  subtotal: number;
+}
+
+export interface PublicOrderTrackingResponse {
+  publicTrackingCode: string;
+  shortOrderId: string;
+  status: OrderStatus | string;
+  restaurantNameSnapshot?: string | null;
+  branchNameSnapshot?: string | null;
+  items: PublicOrderTrackingItemResponse[];
+  subtotal: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
 }
