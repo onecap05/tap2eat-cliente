@@ -11,6 +11,11 @@ import { ownerGuard } from './guards/owner.guard';
 
 export const routes: Routes = [
   {
+    path: 'orders/track/:publicTrackingCode',
+    loadComponent: () => import('./features/customer/pages/public-order-tracking/public-order-tracking.component')
+      .then(component => component.PublicOrderTrackingComponent)
+  },
+  {
     path: 'register',
     component: RegisterComponent
   },
@@ -29,11 +34,6 @@ export const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent
-  },
-  {
-    path: 'orders/track/:publicTrackingCode',
-    loadComponent: () => import('./features/customer/pages/public-order-tracking/public-order-tracking.component')
-      .then(component => component.PublicOrderTrackingComponent)
   },
   {
     path: 'customer/dashboard',
