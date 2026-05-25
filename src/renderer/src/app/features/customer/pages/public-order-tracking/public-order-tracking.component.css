@@ -1,182 +1,221 @@
 .tracking-page {
+  background: red !important;
+}
+
+.tracking-hero {
+  background: lime !important;
+}
+.tracking-page {
   min-height: 100vh;
-  background: #f7f2ea;
-  color: #261f1a;
-  padding: 28px;
+  background: #f4f6fb;
+  color: #0f172a;
+  padding: 34px 28px;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .state-panel {
   max-width: 560px;
-  margin: 80px auto;
-  border: 1px solid #eadccb;
-  border-radius: 18px;
-  background: #fffaf4;
-  padding: 32px;
+  margin: 90px auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 28px;
+  background: #ffffff;
+  padding: 34px;
   text-align: center;
-  box-shadow: 0 18px 50px rgba(53, 37, 22, 0.08);
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
 }
 
 .state-panel h1 {
   margin: 0 0 10px;
-  font-size: 28px;
+  font-size: 30px;
+  color: #0f172a;
 }
 
 .state-panel p {
-  color: #6f6258;
+  color: #64748b;
 }
 
 .state-panel a {
   display: inline-flex;
-  margin-top: 16px;
-  border-radius: 999px;
-  background: #ef6b2e;
-  color: #fff;
-  padding: 11px 18px;
+  margin-top: 18px;
+  border-radius: 18px;
+  background: #278558;
+  color: #ffffff;
+  padding: 12px 20px;
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 900;
+  box-shadow: 0 14px 28px rgba(39, 133, 88, 0.22);
 }
 
 .state-panel.error {
-  border-color: #f0c8c1;
+  border-color: #fecaca;
 }
 
 .tracking-hero,
 .progress-panel,
 .tracking-grid {
-  max-width: 1080px;
+  max-width: 1380px;
   margin: 0 auto;
 }
 
 .tracking-hero {
-  border-radius: 24px;
-  background: #1f1712;
-  color: #fff;
-  padding: 32px;
-  box-shadow: 0 24px 70px rgba(37, 24, 15, 0.22);
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 34px;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
+  border: 1px solid #eef2f7;
+}
+
+.tracking-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  background: #278558;
 }
 
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   font-weight: 900;
   margin-bottom: 28px;
+  color: #0f172a;
 }
 
 .brand-mark {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #ef6b2e;
-  color: #fff;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #278558;
+  border: 2px solid #278558;
+  font-size: 22px;
+  font-weight: 1000;
 }
 
 .tracking-kicker {
-  color: #ffbc8a;
-  font-size: 13px;
-  font-weight: 900;
+  display: inline-flex;
+  color: #ff6b1a;
+  font-size: 14px;
+  font-weight: 1000;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
 }
 
 .tracking-hero h1 {
-  margin: 8px 0;
-  font-size: clamp(34px, 6vw, 64px);
+  margin: 0 0 8px;
+  font-size: clamp(42px, 5vw, 72px);
   line-height: 1;
+  letter-spacing: -0.05em;
+  color: #0b1324;
 }
 
 .tracking-hero p {
-  color: #e6d7ca;
-  margin: 0 0 20px;
+  color: #64748b;
+  margin: 0 0 24px;
+  font-size: 19px;
+  font-weight: 500;
 }
 
 .status-pill {
   display: inline-flex;
+  align-items: center;
   border-radius: 999px;
-  background: #fff3e7;
-  color: #8c3b11;
-  padding: 10px 16px;
-  font-weight: 900;
+  background: #dcfce7;
+  color: #047857;
+  padding: 12px 20px;
+  font-weight: 1000;
+  font-size: 16px;
 }
 
 .status-pill.cancelled {
-  background: #ffe5e0;
-  color: #a32919;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .progress-panel {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-top: 18px;
-  border-radius: 20px;
-  background: #fffaf4;
-  padding: 22px;
-  border: 1px solid #eadccb;
+  gap: 12px;
+  margin-top: 24px;
+  border-radius: 28px;
+  background: #ffffff;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.05);
 }
 
 .progress-step {
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 8px;
-  color: #a89a8e;
-  font-weight: 800;
+  gap: 10px;
+  color: #94a3b8;
+  font-weight: 900;
   text-align: center;
 }
 
 .progress-step span {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
-  background: #dccbb9;
+  background: #d6dee9;
 }
 
 .progress-step.active {
-  color: #2d2118;
+  color: #0f172a;
 }
 
 .progress-step.active span {
-  background: #35a869;
-  box-shadow: 0 0 0 6px rgba(53, 168, 105, 0.16);
+  background: #278558;
+  box-shadow: 0 0 0 8px rgba(39, 133, 88, 0.14);
 }
 
 .cancelled-note {
   grid-column: 1 / -1;
   margin: 0;
   text-align: center;
-  color: #a32919;
-  font-weight: 900;
+  color: #b91c1c;
+  font-weight: 1000;
 }
 
 .tracking-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 18px;
-  margin-top: 18px;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 24px;
+  margin-top: 24px;
 }
 
 .items-panel,
 .summary-panel {
-  border-radius: 20px;
-  background: #fffaf4;
-  border: 1px solid #eadccb;
-  padding: 22px;
+  border-radius: 28px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 28px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.05);
 }
 
 .items-panel h2,
 .summary-panel h2 {
-  margin: 0 0 16px;
+  margin: 0 0 22px;
+  font-size: 30px;
+  letter-spacing: -0.04em;
+  color: #0b1324;
 }
 
 .item-row,
 .summary-panel dl div {
   display: flex;
   justify-content: space-between;
-  gap: 18px;
-  padding: 14px 0;
-  border-bottom: 1px solid #eadccb;
+  gap: 22px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .item-row:last-child,
@@ -186,18 +225,27 @@
 
 .item-row strong {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.item-row > span {
+  font-weight: 1000;
+  color: #0f172a;
+  white-space: nowrap;
 }
 
 .item-row p,
 .item-row ul {
   margin: 0;
-  color: #6f6258;
+  color: #64748b;
+  font-size: 16px;
 }
 
 .item-row ul {
   padding-left: 18px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .summary-panel dl {
@@ -205,28 +253,69 @@
 }
 
 .summary-panel dt {
-  color: #6f6258;
+  color: #64748b;
+  font-size: 16px;
 }
 
 .summary-panel dd {
   margin: 0;
-  font-weight: 900;
+  font-weight: 1000;
+  color: #0f172a;
   text-align: right;
 }
 
-@media (max-width: 760px) {
-  .tracking-page {
-    padding: 14px;
-  }
-
-  .progress-panel,
+@media (max-width: 900px) {
   .tracking-grid {
     grid-template-columns: 1fr;
   }
 
+  .tracking-page {
+    padding: 22px 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .tracking-hero {
+    padding: 26px 22px;
+    border-radius: 26px;
+  }
+
+  .tracking-hero h1 {
+    font-size: 40px;
+  }
+
+  .brand-mark {
+    width: 52px;
+    height: 52px;
+  }
+
+  .progress-panel {
+    grid-template-columns: 1fr;
+  }
+
   .progress-step {
-    grid-template-columns: 22px 1fr;
+    grid-template-columns: 28px 1fr;
     justify-items: start;
+    align-items: center;
     text-align: left;
+  }
+
+  .tracking-grid {
+    gap: 16px;
+  }
+
+  .items-panel,
+  .summary-panel {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .item-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .item-row > span {
+    align-self: flex-end;
   }
 }
