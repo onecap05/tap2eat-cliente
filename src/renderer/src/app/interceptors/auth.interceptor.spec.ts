@@ -108,6 +108,34 @@ describe('authInterceptor', () => {
     request.flush({});
   });
 
+  it('should not add token or refresh public order tracking requests', () => {
+    authService.expired = true;
+
+    httpClient.get('/api/orders/public/track/public-code-123').subscribe();
+
+    const request = httpTestingController.expectOne('/api/orders/public/track/public-code-123');
+
+    expect(request.request.headers.has('Authorization')).toBe(false);
+    expect(authService.refreshCalls).toBe(0);
+    expect(authService.logoutCalls).toBe(0);
+    expect(router.navigate).not.toHaveBeenCalled();
+    request.flush({});
+  });
+
+  it('should not add token or refresh absolute public order tracking requests', () => {
+    authService.expired = true;
+
+    httpClient.get('https://tap2eat.me/api/orders/public/track/public-code-123').subscribe();
+
+    const request = httpTestingController.expectOne('https://tap2eat.me/api/orders/public/track/public-code-123');
+
+    expect(request.request.headers.has('Authorization')).toBe(false);
+    expect(authService.refreshCalls).toBe(0);
+    expect(authService.logoutCalls).toBe(0);
+    expect(router.navigate).not.toHaveBeenCalled();
+    request.flush({});
+  });
+
   it('should refresh expired access token and retry protected request', () => {
     authService.expired = true;
 

@@ -12,7 +12,7 @@ import { Observable, catchError, finalize, map, shareReplay, switchMap, throwErr
 import { AuthService } from '../services/auth.service';
 import { TokenStorageService } from '../services/token-storage.service';
 
-const PUBLIC_AUTH_PATHS = [
+const PUBLIC_REQUEST_PATHS = [
   '/api/auth/register',
   '/api/auth/login',
   '/api/auth/logout',
@@ -20,7 +20,8 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/verify-email',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
-  '/api/auth/resend-verification-code'
+  '/api/auth/resend-verification-code',
+  '/api/orders/public/track'
 ];
 
 const NON_SESSION_401_PATHS = [
@@ -30,7 +31,7 @@ const NON_SESSION_401_PATHS = [
 let refreshInProgress$: Observable<string> | null = null;
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  if (isPublicAuthRequest(request.url)) {
+  if (isPublicRequest(request.url)) {
     return next(request);
   }
 
@@ -179,10 +180,13 @@ function redirectToLoginWithError(
   }));
 }
 
-function isPublicAuthRequest(url: string): boolean {
+function isPublicRequest(url: string): boolean {
   const requestPath = getRequestPath(url);
 
-  return PUBLIC_AUTH_PATHS.some(publicPath => requestPath.endsWith(publicPath));
+  return PUBLIC_REQUEST_PATHS.some(publicPath => (
+    requestPath === publicPath ||
+    requestPath.startsWith(`${publicPath}/`)
+  ));
 }
 
 function isNonSession401Request(url: string): boolean {
@@ -193,7 +197,7 @@ function isNonSession401Request(url: string): boolean {
 
 function getRequestPath(url: string): string {
   try {
-    return new URL(url).pathname;
+    return new URL(url, 'http://tap2eat.local').pathname;
   } catch {
     return url;
   }
