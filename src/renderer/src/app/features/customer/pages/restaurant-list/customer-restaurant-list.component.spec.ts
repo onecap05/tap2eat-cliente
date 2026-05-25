@@ -4,7 +4,10 @@ import { of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 import { CustomerRestaurantResponse } from '../../models/customer-catalog.models';
-import { RecommendationBranchResponse } from '../../models/recommendation.models';
+import {
+  CustomerRecommendationSectionsResponse,
+  RecommendationBranchResponse
+} from '../../models/recommendation.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
 import { CustomerLocationService } from '../../services/customer-location.service';
 import { RecommendationApiService } from '../../services/recommendation-api.service';
@@ -19,23 +22,34 @@ class FakeCustomerCatalogApiService {
 }
 
 class FakeRecommendationApiService {
-  public recommendations: RecommendationBranchResponse[] = [];
+  public sections: CustomerRecommendationSectionsResponse = {
+    nearby: [],
+    alsoOrdered: [],
+    tasteBased: []
+  };
   public shouldFail = false;
-  public customerCalls = 0;
+  public sectionCalls = 0;
   public nearbyCalls = 0;
   public lastCustomerAccountId = '';
   public lastLat?: number;
   public lastLng?: number;
+  public lastRadiusKm?: number;
 
-  public getCustomerRecommendations(customerAccountId: string, lat?: number, lng?: number) {
-    this.customerCalls++;
+  public getCustomerRecommendationSections(
+    customerAccountId: string,
+    lat?: number,
+    lng?: number,
+    radiusKm?: number
+  ) {
+    this.sectionCalls++;
     this.lastCustomerAccountId = customerAccountId;
     this.lastLat = lat;
     this.lastLng = lng;
+    this.lastRadiusKm = radiusKm;
 
     return this.shouldFail
       ? throwError(() => new Error('recommendation failed'))
-      : of(this.recommendations);
+      : of(this.sections);
   }
 
   public getNearbyRecommendations(lat?: number, lng?: number) {
@@ -45,7 +59,7 @@ class FakeRecommendationApiService {
 
     return this.shouldFail
       ? throwError(() => new Error('recommendation failed'))
-      : of(this.recommendations);
+      : of(this.sections.nearby);
   }
 }
 
@@ -97,9 +111,13 @@ describe('CustomerRestaurantListComponent', () => {
       restaurant('restaurant-1', 'Tacos Centro', true),
       restaurant('restaurant-2', 'Pizza Norte', false)
     ];
-    recommendationService.recommendations = [
-      recommendation('restaurant-1', 'Tacos Centro')
-    ];
+    recommendationService.sections = {
+      nearby: [
+        recommendation('restaurant-1', 'Tacos Centro', 'NEARBY')
+      ],
+      alsoOrdered: [],
+      tasteBased: []
+    };
 
     fixture = TestBed.createComponent(CustomerRestaurantListComponent);
     component = fixture.componentInstance;
@@ -112,22 +130,75 @@ describe('CustomerRestaurantListComponent', () => {
     expect(component.filteredRestaurants.length).toBe(2);
   });
 
-  it('calls recommendation service with location', () => {
+  it('calls recommendation sections service with location', () => {
     fixture.detectChanges();
 
-    expect(recommendationService.customerCalls).toBe(1);
+    expect(recommendationService.sectionCalls).toBe(1);
     expect(recommendationService.lastCustomerAccountId).toBe('customer-1');
     expect(recommendationService.lastLat).toBe(19.43);
     expect(recommendationService.lastLng).toBe(-99.13);
+    expect(recommendationService.lastRadiusKm).toBe(5);
   });
 
-  it('shows recommendations when available', () => {
+  it('shows nearby recommendation section when nearby has data', () => {
     fixture.detectChanges();
 
     const nativeElement: HTMLElement = fixture.nativeElement;
 
-    expect(nativeElement.textContent).toContain('Recomendado para ti');
+    expect(nativeElement.textContent).toContain('Restaurantes cerca de ti');
     expect(nativeElement.textContent).toContain('Sucursal Centro');
+  });
+
+  it('shows also ordered recommendation section when alsoOrdered has data', () => {
+    recommendationService.sections = {
+      nearby: [],
+      alsoOrdered: [
+        recommendation('restaurant-2', 'Pizza Norte', 'ALSO_ORDERED')
+      ],
+      tasteBased: []
+    };
+
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+
+    expect(nativeElement.textContent).toContain('Personas con gustos parecidos también pidieron');
+    expect(nativeElement.textContent).toContain('Pizza Norte');
+  });
+
+  it('shows taste based recommendation section when tasteBased has data', () => {
+    recommendationService.sections = {
+      nearby: [],
+      alsoOrdered: [],
+      tasteBased: [
+        recommendation('restaurant-1', 'Tacos Centro', 'TASTE_BASED')
+      ]
+    };
+
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+
+    expect(nativeElement.textContent).toContain('Porque sabemos lo que te gusta');
+    expect(nativeElement.textContent).toContain('Tacos Centro');
+  });
+
+  it('does not show empty recommendation sections', () => {
+    recommendationService.sections = {
+      nearby: [],
+      alsoOrdered: [
+        recommendation('restaurant-2', 'Pizza Norte', 'ALSO_ORDERED')
+      ],
+      tasteBased: []
+    };
+
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+
+    expect(nativeElement.textContent).not.toContain('Restaurantes cerca de ti');
+    expect(nativeElement.textContent).toContain('Personas con gustos parecidos también pidieron');
+    expect(nativeElement.textContent).not.toContain('Porque sabemos lo que te gusta');
   });
 
   it('keeps showing all restaurants even when recommendations exist', () => {
@@ -156,7 +227,9 @@ describe('CustomerRestaurantListComponent', () => {
     fixture.detectChanges();
 
     expect(component.restaurants.length).toBe(2);
-    expect(component.recommendations).toEqual([]);
+    expect(component.nearbyRecommendations).toEqual([]);
+    expect(component.alsoOrderedRecommendations).toEqual([]);
+    expect(component.tasteBasedRecommendations).toEqual([]);
   });
 
   it('uses nearby recommendations when customer account id is missing', () => {
@@ -178,6 +251,15 @@ describe('CustomerRestaurantListComponent', () => {
     expect(component.filteredRestaurants.map(item => item.id)).toEqual(['restaurant-1']);
   });
 
+  it('navigates from recommendation card using recommendation restaurant id', () => {
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+    const recommendationLink = nativeElement.querySelector('.recommendation-card') as HTMLAnchorElement;
+
+    expect(recommendationLink.getAttribute('href')).toContain('/customer/restaurants/restaurant-1');
+  });
+
   function restaurant(id: string, name: string, open: boolean): CustomerRestaurantResponse {
     return {
       id,
@@ -189,7 +271,11 @@ describe('CustomerRestaurantListComponent', () => {
     } as CustomerRestaurantResponse;
   }
 
-  function recommendation(restaurantId: string, restaurantName: string): RecommendationBranchResponse {
+  function recommendation(
+    restaurantId: string,
+    restaurantName: string,
+    recommendationType: string
+  ): RecommendationBranchResponse {
     return {
       restaurantId,
       restaurantName,
@@ -199,7 +285,8 @@ describe('CustomerRestaurantListComponent', () => {
       branchAddress: 'Centro',
       distanceKm: 2.15,
       reason: 'Cerca de ti',
-      score: 100
+      score: 100,
+      recommendationType
     };
   }
 });

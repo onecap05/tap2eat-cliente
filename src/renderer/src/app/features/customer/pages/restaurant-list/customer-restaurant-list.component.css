@@ -217,7 +217,7 @@
   padding: 16px;
 }
 
-.recommendation-content span {
+.recommendation-badge {
   width: fit-content;
   border-radius: 999px;
   padding: 5px 9px;

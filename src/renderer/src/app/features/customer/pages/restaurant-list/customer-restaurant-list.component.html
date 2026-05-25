@@ -55,49 +55,95 @@
     </div>
   </section>
 
-  <section
-    class="recommendation-section"
-    *ngIf="!isLoadingRecommendations && recommendations.length"
-  >
-    <div class="section-heading">
-      <div>
-        <h2>Recomendado para ti</h2>
-        <p>Sucursales sugeridas según tu ubicación y gustos.</p>
+  <ng-container *ngIf="!isLoadingRecommendations && hasRecommendationSections()">
+    <section
+      class="recommendation-section"
+      *ngIf="nearbyRecommendations.length"
+    >
+      <div class="section-heading">
+        <div>
+          <h2>Restaurantes cerca de ti</h2>
+          <p>Sucursales cercanas según tu ubicación actual.</p>
+        </div>
       </div>
-    </div>
 
-    <div class="recommendation-grid">
-      <a
-        class="recommendation-card"
-        *ngFor="let recommendation of recommendations"
-        [routerLink]="['/customer/restaurants', recommendation.restaurantId]"
-      >
-        <div class="recommendation-image">
-          <img
-            *ngIf="recommendation.restaurantImageUrl; else recommendationInitial"
-            [src]="recommendation.restaurantImageUrl"
-            [alt]="recommendation.restaurantName"
-          />
+      <div class="recommendation-grid">
+        <ng-container
+          *ngTemplateOutlet="recommendationCards; context: { $implicit: nearbyRecommendations }"
+        ></ng-container>
+      </div>
+    </section>
 
-          <ng-template #recommendationInitial>
-            <div class="logo-placeholder small">
-              {{ getInitials(recommendation.restaurantName) }}
-            </div>
-          </ng-template>
+    <section
+      class="recommendation-section"
+      *ngIf="alsoOrderedRecommendations.length"
+    >
+      <div class="section-heading">
+        <div>
+          <h2>Personas con gustos parecidos también pidieron</h2>
+          <p>Restaurantes que otros clientes también han probado.</p>
         </div>
+      </div>
 
-        <div class="recommendation-content">
-          <span>{{ recommendation.reason || 'Cerca de ti' }}</span>
-          <h3>{{ recommendation.restaurantName }}</h3>
-          <p>{{ recommendation.branchName }}</p>
-          <strong *ngIf="recommendation.distanceKm !== null && recommendation.distanceKm !== undefined">
-            {{ formatDistance(recommendation.distanceKm) }}
-          </strong>
-          <em>Ver menú</em>
+      <div class="recommendation-grid">
+        <ng-container
+          *ngTemplateOutlet="recommendationCards; context: { $implicit: alsoOrderedRecommendations }"
+        ></ng-container>
+      </div>
+    </section>
+
+    <section
+      class="recommendation-section"
+      *ngIf="tasteBasedRecommendations.length"
+    >
+      <div class="section-heading">
+        <div>
+          <h2>Porque sabemos lo que te gusta</h2>
+          <p>Recomendaciones basadas en tus pedidos y tags favoritos.</p>
         </div>
-      </a>
-    </div>
-  </section>
+      </div>
+
+      <div class="recommendation-grid">
+        <ng-container
+          *ngTemplateOutlet="recommendationCards; context: { $implicit: tasteBasedRecommendations }"
+        ></ng-container>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #recommendationCards let-items>
+    <a
+      class="recommendation-card"
+      *ngFor="let recommendation of items; trackBy: trackByRecommendationRestaurantId"
+      [routerLink]="['/customer/restaurants', recommendation.restaurantId]"
+    >
+      <div class="recommendation-image">
+        <img
+          *ngIf="recommendation.restaurantImageUrl; else recommendationInitial"
+          [src]="recommendation.restaurantImageUrl"
+          [alt]="recommendation.restaurantName"
+        />
+
+        <ng-template #recommendationInitial>
+          <div class="logo-placeholder small">
+            {{ getInitials(recommendation.restaurantName) }}
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="recommendation-content">
+        <span class="recommendation-badge">
+          {{ recommendation.reason || 'Cerca de ti' }}
+        </span>
+        <h3>{{ recommendation.restaurantName }}</h3>
+        <p>{{ recommendation.branchName }}</p>
+        <strong *ngIf="recommendation.distanceKm !== null && recommendation.distanceKm !== undefined">
+          {{ getRecommendationDistanceLabel(recommendation) }}
+        </strong>
+        <em>Ver menú</em>
+      </div>
+    </a>
+  </ng-template>
 
   <section class="restaurant-section">
     <div class="section-heading">

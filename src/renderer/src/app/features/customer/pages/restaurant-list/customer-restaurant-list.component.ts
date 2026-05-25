@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { catchError, of, switchMap } from 'rxjs';
+import { catchError, map, of, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 import { CustomerRestaurantResponse } from '../../models/customer-catalog.models';
@@ -36,7 +36,9 @@ export class CustomerRestaurantListComponent implements OnInit {
   public errorMessage = '';
   public searchTerm = '';
   public showOpenOnly = false;
-  public recommendations: RecommendationBranchResponse[] = [];
+  public nearbyRecommendations: RecommendationBranchResponse[] = [];
+  public alsoOrderedRecommendations: RecommendationBranchResponse[] = [];
+  public tasteBasedRecommendations: RecommendationBranchResponse[] = [];
   public isLoadingRecommendations = false;
 
   constructor(
@@ -87,6 +89,23 @@ export class CustomerRestaurantListComponent implements OnInit {
       : `A ${distanceKm.toFixed(2)} km`;
   }
 
+  public getRecommendationDistanceLabel(item: RecommendationBranchResponse): string {
+    return this.formatDistance(item.distanceKm);
+  }
+
+  public hasRecommendationSections(): boolean {
+    return this.nearbyRecommendations.length > 0
+      || this.alsoOrderedRecommendations.length > 0
+      || this.tasteBasedRecommendations.length > 0;
+  }
+
+  public trackByRecommendationRestaurantId(
+    _index: number,
+    recommendation: RecommendationBranchResponse
+  ): string {
+    return `${recommendation.recommendationType ?? 'RECOMMENDATION'}-${recommendation.restaurantId}`;
+  }
+
   private loadRestaurants(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -114,13 +133,25 @@ export class CustomerRestaurantListComponent implements OnInit {
           const lng = location?.longitude;
 
           return accountId
-            ? this.recommendationApiService.getCustomerRecommendations(accountId, lat, lng, 5)
-            : this.recommendationApiService.getNearbyRecommendations(lat, lng, 5);
+            ? this.recommendationApiService.getCustomerRecommendationSections(accountId, lat, lng, 5)
+            : this.recommendationApiService.getNearbyRecommendations(lat, lng, 5).pipe(
+              map(nearby => ({
+                nearby,
+                alsoOrdered: [],
+                tasteBased: []
+              }))
+            );
         }),
-        catchError(() => of([] as RecommendationBranchResponse[]))
+        catchError(() => of({
+          nearby: [],
+          alsoOrdered: [],
+          tasteBased: []
+        }))
       )
-      .subscribe(recommendations => {
-        this.recommendations = recommendations;
+      .subscribe(sections => {
+        this.nearbyRecommendations = sections.nearby ?? [];
+        this.alsoOrderedRecommendations = sections.alsoOrdered ?? [];
+        this.tasteBasedRecommendations = sections.tasteBased ?? [];
         this.isLoadingRecommendations = false;
       });
   }

@@ -53,6 +53,20 @@ describe('RecommendationApiService', () => {
     request.flush([]);
   });
 
+  it('builds customer recommendation sections URL with lat lng and radiusKm', () => {
+    service.getCustomerRecommendationSections('customer-1', 19.43, -99.13, 5).subscribe();
+
+    const request = httpTestingController.expectOne(req =>
+      req.url === `${environment.apiBaseUrl}/recommendations/customers/customer-1/sections`
+      && req.params.get('lat') === '19.43'
+      && req.params.get('lng') === '-99.13'
+      && req.params.get('radiusKm') === '5'
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush({ nearby: [], alsoOrdered: [], tasteBased: [] });
+  });
+
   it('builds nearest branch URL', () => {
     service.getNearestBranch('restaurant-1', 19.43, -99.13).subscribe();
 

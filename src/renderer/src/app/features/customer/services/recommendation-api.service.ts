@@ -3,7 +3,10 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
-import { RecommendationBranchResponse } from '../models/recommendation.models';
+import {
+  CustomerRecommendationSectionsResponse,
+  RecommendationBranchResponse
+} from '../models/recommendation.models';
 
 @Injectable({
   providedIn: 'root'
@@ -32,6 +35,18 @@ export class RecommendationApiService {
   ): Observable<RecommendationBranchResponse[]> {
     return this.http.get<RecommendationBranchResponse[]>(
       `${this.baseUrl}/customers/${customerAccountId}`,
+      { params: this.buildLocationParams(lat, lng, radiusKm) }
+    );
+  }
+
+  public getCustomerRecommendationSections(
+    customerAccountId: string,
+    lat?: number,
+    lng?: number,
+    radiusKm?: number
+  ): Observable<CustomerRecommendationSectionsResponse> {
+    return this.http.get<CustomerRecommendationSectionsResponse>(
+      `${this.baseUrl}/customers/${customerAccountId}/sections`,
       { params: this.buildLocationParams(lat, lng, radiusKm) }
     );
   }
