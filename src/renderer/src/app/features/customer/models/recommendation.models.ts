@@ -11,6 +11,13 @@ export interface RecommendationBranchResponse {
   reason: string;
   score: number;
   warning?: string | null;
+  recommendationType?: 'NEARBY' | 'ALSO_ORDERED' | 'TASTE_BASED' | string;
+}
+
+export interface CustomerRecommendationSectionsResponse {
+  nearby: RecommendationBranchResponse[];
+  alsoOrdered: RecommendationBranchResponse[];
+  tasteBased: RecommendationBranchResponse[];
 }
 
 export interface CustomerLocation {
