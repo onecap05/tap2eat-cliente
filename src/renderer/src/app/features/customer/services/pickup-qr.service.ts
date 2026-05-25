@@ -3,33 +3,26 @@ import * as QRCode from 'qrcode';
 
 import { OrderResponse } from '../models/order.models';
 
-export interface PickupQrPayload {
-  type: 'TAP2EAT_PICKUP';
-  orderId: string;
-  customerAccountId: string;
-  restaurantId: string;
-  branchId: string;
-  total: number;
-}
-
 @Injectable({
   providedIn: 'root'
 })
 export class PickupQrService {
-  public buildPayload(order: OrderResponse): PickupQrPayload {
-    // TODO: In production, this pickup payload should come from a signed backend token.
-    return {
-      type: 'TAP2EAT_PICKUP',
-      orderId: order.id,
-      customerAccountId: order.customerAccountId,
-      restaurantId: order.restaurantId,
-      branchId: order.branchId,
-      total: order.total
-    };
+  public buildTrackingUrl(order: OrderResponse): string | null {
+    if (!order.publicTrackingCode) {
+      return null;
+    }
+
+    return `${window.location.origin}/orders/track/${encodeURIComponent(order.publicTrackingCode)}`;
   }
 
   public buildPayloadText(order: OrderResponse): string {
-    return JSON.stringify(this.buildPayload(order));
+    const trackingUrl = this.buildTrackingUrl(order);
+
+    if (!trackingUrl) {
+      throw new Error('Order public tracking code is missing.');
+    }
+
+    return trackingUrl;
   }
 
   public generatePickupQrDataUrl(order: OrderResponse): Promise<string> {

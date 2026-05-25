@@ -11,17 +11,17 @@ describe('PickupQrService', () => {
     service = TestBed.inject(PickupQrService);
   });
 
-  it('should generate pickup payload with order id and main data', () => {
-    const payload = service.buildPayload(order());
+  it('should generate public tracking URL for QR payload', () => {
+    const payload = service.buildPayloadText(order());
 
-    expect(payload).toEqual({
-      type: 'TAP2EAT_PICKUP',
-      orderId: 'order-1',
-      customerAccountId: 'customer-1',
-      restaurantId: 'restaurant-1',
-      branchId: 'branch-1',
-      total: 120
-    });
+    expect(payload).toBe(`${window.location.origin}/orders/track/public-track-1`);
+  });
+
+  it('should throw when public tracking code is missing', () => {
+    const orderWithoutTrackingCode = order();
+    orderWithoutTrackingCode.publicTrackingCode = null;
+
+    expect(() => service.buildPayloadText(orderWithoutTrackingCode)).toThrow();
   });
 
   it('should generate a QR data url', async () => {
@@ -37,6 +37,7 @@ function order(): OrderResponse {
     customerAccountId: 'customer-1',
     restaurantId: 'restaurant-1',
     branchId: 'branch-1',
+    publicTrackingCode: 'public-track-1',
     items: [],
     subtotal: 120,
     total: 120,

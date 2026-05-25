@@ -1,0 +1,99 @@
+<main class="tracking-page">
+  <section *ngIf="isLoading" class="state-panel">
+    Cargando seguimiento...
+  </section>
+
+  <section *ngIf="notFound && !isLoading" class="state-panel error">
+    <h1>Pedido no encontrado</h1>
+    <p>Revisa que el codigo del QR sea correcto o solicita apoyo en el restaurante.</p>
+    <a routerLink="/login">Ir a Tap2Eat</a>
+  </section>
+
+  <section *ngIf="errorMessage && !isLoading" class="state-panel error">
+    <h1>No pudimos cargar el pedido</h1>
+    <p>{{ errorMessage }}</p>
+    <a routerLink="/login">Ir a Tap2Eat</a>
+  </section>
+
+  <ng-container *ngIf="order as currentOrder">
+    <header class="tracking-hero">
+      <div class="brand-row">
+        <span class="brand-mark">T2E</span>
+        <span>Tap2Eat</span>
+      </div>
+
+      <span class="tracking-kicker">Seguimiento publico</span>
+      <h1>Pedido #{{ currentOrder.shortOrderId }}</h1>
+      <p>{{ formatDate(currentOrder.createdAt) }}</p>
+
+      <div class="status-pill" [class.cancelled]="currentOrder.status === 'Cancelled'">
+        {{ statusLabel }}
+      </div>
+    </header>
+
+    <section class="progress-panel" [class.cancelled]="currentOrder.status === 'Cancelled'">
+      <div
+        *ngFor="let step of progressSteps"
+        class="progress-step"
+        [class.active]="isStepActive(step.status)"
+      >
+        <span></span>
+        <p>{{ step.label }}</p>
+      </div>
+
+      <p *ngIf="currentOrder.status === 'Cancelled'" class="cancelled-note">
+        Este pedido fue cancelado.
+      </p>
+    </section>
+
+    <section class="tracking-grid">
+      <article class="items-panel">
+        <h2>Productos</h2>
+
+        <div class="item-row" *ngFor="let item of currentOrder.items">
+          <div>
+            <strong>{{ item.productNameSnapshot }}</strong>
+            <p>x{{ item.quantity }} &middot; {{ formatCurrency(item.unitPriceSnapshot) }}</p>
+
+            <ul *ngIf="item.selectedModifiers.length">
+              <li *ngFor="let modifier of item.selectedModifiers">
+                {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
+                <span *ngIf="modifier.priceAdjustment">
+                  +{{ formatCurrency(modifier.priceAdjustment) }}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <span>{{ formatCurrency(item.subtotal) }}</span>
+        </div>
+      </article>
+
+      <aside class="summary-panel">
+        <h2>Resumen</h2>
+
+        <dl>
+          <div *ngIf="currentOrder.restaurantNameSnapshot">
+            <dt>Restaurante</dt>
+            <dd>{{ currentOrder.restaurantNameSnapshot }}</dd>
+          </div>
+
+          <div *ngIf="currentOrder.branchNameSnapshot">
+            <dt>Sucursal</dt>
+            <dd>{{ currentOrder.branchNameSnapshot }}</dd>
+          </div>
+
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{{ formatCurrency(currentOrder.subtotal) }}</dd>
+          </div>
+
+          <div>
+            <dt>Total</dt>
+            <dd>{{ formatCurrency(currentOrder.total) }}</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+  </ng-container>
+</main>
