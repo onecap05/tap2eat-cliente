@@ -29,8 +29,9 @@
           type="text"
           [placeholder]="text.searchPlaceholder"
           [(ngModel)]="searchTerm"
+          (keydown.enter)="searchRestaurants()"
         />
-        <button type="button">
+        <button type="button" (click)="searchRestaurants()">
           Buscar
         </button>
       </div>
@@ -165,7 +166,7 @@
       class="state-message"
       *ngIf="!isLoading && !errorMessage && !filteredRestaurants.length"
     >
-      {{ text.empty }}
+      {{ emptyStateMessage }}
     </p>
 
     <div

@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -20,6 +20,12 @@ export class CustomerCatalogApiService {
 
   public getRestaurants(): Observable<CustomerRestaurantResponse[]> {
     return this.http.get<CustomerRestaurantResponse[]>(`${this.baseUrl}/restaurants`);
+  }
+
+  public searchRestaurants(query: string): Observable<CustomerRestaurantResponse[]> {
+    const params = new HttpParams().set('query', query);
+
+    return this.http.get<CustomerRestaurantResponse[]>(`${this.baseUrl}/restaurants/search`, { params });
   }
 
   public getRestaurant(restaurantId: string): Observable<CustomerRestaurantResponse> {

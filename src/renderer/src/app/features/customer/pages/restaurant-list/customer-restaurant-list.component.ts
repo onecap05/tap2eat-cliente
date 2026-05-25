@@ -13,6 +13,7 @@ import { RecommendationApiService } from '../../services/recommendation-api.serv
 
 const CUSTOMER_RESTAURANT_LIST_TEXT = {
   empty: 'Todavia no hay restaurantes disponibles.',
+  searchEmpty: 'No encontramos restaurantes o platillos para esta busqueda.',
   error: 'No pudimos cargar los restaurantes. Intenta de nuevo.',
   viewRestaurant: 'Ver restaurante',
   open: 'Abierto',
@@ -35,6 +36,7 @@ export class CustomerRestaurantListComponent implements OnInit {
   public isLoading = true;
   public errorMessage = '';
   public searchTerm = '';
+  public activeSearchQuery = '';
   public showOpenOnly = false;
   public nearbyRecommendations: RecommendationBranchResponse[] = [];
   public alsoOrderedRecommendations: RecommendationBranchResponse[] = [];
@@ -54,19 +56,13 @@ export class CustomerRestaurantListComponent implements OnInit {
   }
 
   public get filteredRestaurants(): CustomerRestaurantResponse[] {
-    const normalizedSearchTerm = this.searchTerm.trim().toLowerCase();
-    const restaurants = this.showOpenOnly
+    return this.showOpenOnly
       ? this.restaurants.filter(restaurant => restaurant.open)
       : this.restaurants;
+  }
 
-    if (!normalizedSearchTerm) {
-      return restaurants;
-    }
-
-    return restaurants.filter(restaurant =>
-      restaurant.name.toLowerCase().includes(normalizedSearchTerm)
-      || (restaurant.description ?? '').toLowerCase().includes(normalizedSearchTerm)
-    );
+  public get emptyStateMessage(): string {
+    return this.activeSearchQuery ? this.text.searchEmpty : this.text.empty;
   }
 
   public getInitials(name: string): string {
@@ -81,6 +77,31 @@ export class CustomerRestaurantListComponent implements OnInit {
 
   public toggleOpenOnly(): void {
     this.showOpenOnly = !this.showOpenOnly;
+  }
+
+  public searchRestaurants(): void {
+    const query = this.searchTerm.trim();
+
+    if (!query) {
+      this.activeSearchQuery = '';
+      this.loadRestaurants();
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.activeSearchQuery = query;
+
+    this.customerCatalogApiService.searchRestaurants(query).subscribe({
+      next: restaurants => {
+        this.restaurants = restaurants;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.errorMessage = this.text.error;
+        this.isLoading = false;
+      }
+    });
   }
 
   public formatDistance(distanceKm?: number | null): string {
