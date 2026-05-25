@@ -11,6 +11,7 @@ import { IResendVerificationCodeRequest } from '../models/IResendVerificationCod
 import { IResendVerificationCodeResponse } from '../models/IResendVerificationCodeResponse';
 import { ILoginRequest } from '../models/ILoginRequest';
 import { ILoginResponse } from '../models/ILoginResponse';
+import { IMeResponse } from '../models/IMeResponse';
 import { IRefreshTokenRequest } from '../models/IRefreshTokenRequest';
 import { IRefreshTokenResponse } from '../models/IRefreshTokenResponse';
 import { IForgotPasswordRequest } from '../models/IForgotPasswordRequest';
@@ -71,6 +72,10 @@ export class AuthService {
 
   public resetPassword(request: IResetPasswordRequest): Observable<IResetPasswordResponse> {
     return this.http.post<IResetPasswordResponse>(`${this.API_URL}/reset-password`, request);
+  }
+
+  public getCurrentAccount(): Observable<IMeResponse> {
+    return this.http.get<IMeResponse>(`${this.API_URL}/me`);
   }
 
   public saveSession(response: ILoginResponse | IRefreshTokenResponse): void {

@@ -1,0 +1,87 @@
+<main class="profile-page">
+  <nav class="customer-navbar">
+    <a class="brand" routerLink="/customer/restaurants">
+      <span class="brand-mark">T2E</span>
+      <span>Tap2Eat</span>
+    </a>
+
+    <div class="nav-actions">
+      <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/orders">Mis pedidos</a>
+      <button type="button" class="icon-button" routerLink="/customer/checkout" aria-label="Carrito">
+        Carrito
+      </button>
+      <button type="button" class="icon-button active" routerLink="/customer/profile" aria-label="Perfil">
+        Perfil
+      </button>
+    </div>
+  </nav>
+
+  <section class="profile-shell">
+    <header class="profile-header">
+      <span>Cuenta</span>
+      <h1>Perfil</h1>
+      <p>Consulta la informacion asociada a tu cuenta Tap2Eat.</p>
+    </header>
+
+    <p class="state-message" *ngIf="isLoading">
+      {{ text.loading }}
+    </p>
+
+    <p class="state-message error" *ngIf="!isLoading && errorMessage">
+      {{ errorMessage }}
+    </p>
+
+    <article class="profile-card" *ngIf="!isLoading && !errorMessage && account">
+      <div class="profile-avatar">
+        {{ (account.firstName || account.email || 'T')[0].toUpperCase() }}
+      </div>
+
+      <div class="profile-summary">
+        <h2>{{ fullName }}</h2>
+        <p>{{ account.email }}</p>
+
+        <div class="profile-badges">
+          <span [class.warning]="!account.isActive">
+            Cuenta {{ accountStatusLabel }}
+          </span>
+          <span [class.warning]="!account.emailVerified">
+            Correo {{ emailVerifiedLabel }}
+          </span>
+        </div>
+      </div>
+
+      <dl class="profile-details">
+        <div>
+          <dt>Nombre completo</dt>
+          <dd>{{ fullName }}</dd>
+        </div>
+
+        <div>
+          <dt>Email</dt>
+          <dd>{{ account.email }}</dd>
+        </div>
+
+        <div>
+          <dt>Telefono</dt>
+          <dd>{{ account.phone || text.notAvailable }}</dd>
+        </div>
+
+        <div>
+          <dt>Rol</dt>
+          <dd>{{ account.role }}</dd>
+        </div>
+
+        <div>
+          <dt>Cuenta activa</dt>
+          <dd>{{ accountStatusLabel }}</dd>
+        </div>
+
+        <div>
+          <dt>Correo verificado</dt>
+          <dd>{{ emailVerifiedLabel }}</dd>
+        </div>
+      </dl>
+    </article>
+  </section>
+</main>
