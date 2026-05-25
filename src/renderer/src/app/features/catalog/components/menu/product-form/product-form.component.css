@@ -145,6 +145,60 @@ textarea {
   color: #166534;
 }
 
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selected-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.selected-tag button {
+  border: none;
+  border-radius: 999px;
+  background: #bbf7d0;
+  color: #14532d;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tag-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.tag-message {
+  margin: 0;
+  color: #92400e;
+  font-weight: 800;
+}
+
+.tag-suggestion {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-weight: 800;
+}
+
+.tag-suggestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .submit-button,
 .secondary-button {
   width: fit-content;
@@ -352,6 +406,10 @@ button:disabled {
 
 @media (max-width: 700px) {
   .schedule-time-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tag-input-row {
     grid-template-columns: 1fr;
   }
 }
