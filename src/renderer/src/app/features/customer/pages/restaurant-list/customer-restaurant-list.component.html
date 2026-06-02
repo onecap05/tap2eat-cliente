@@ -7,6 +7,7 @@
 
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/favorites">Mis favoritos</a>
       <a routerLink="/customer/orders">Mis pedidos</a>
       <app-customer-notification-bell></app-customer-notification-bell>
       <button type="button" class="icon-button" routerLink="/customer/checkout" aria-label="Carrito">
@@ -163,6 +164,14 @@
       {{ errorMessage }}
     </p>
 
+    <p class="state-message success" *ngIf="favoriteMessage">
+      {{ favoriteMessage }}
+    </p>
+
+    <p class="state-message error" *ngIf="favoriteErrorMessage">
+      {{ favoriteErrorMessage }}
+    </p>
+
     <p
       class="state-message"
       *ngIf="!isLoading && !errorMessage && !filteredRestaurants.length"
@@ -174,12 +183,15 @@
       class="restaurant-grid"
       *ngIf="!isLoading && !errorMessage && filteredRestaurants.length"
     >
-      <a
+      <article
         class="restaurant-card"
         *ngFor="let restaurant of filteredRestaurants"
         [class.closed]="!restaurant.open"
-        [routerLink]="['/customer/restaurants', restaurant.id]"
+        role="link"
+        tabindex="0"
         [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
+        (click)="openRestaurant(restaurant.id)"
+        (keydown.enter)="openRestaurant(restaurant.id)"
       >
         <div class="image-wrapper">
           <img
@@ -197,6 +209,18 @@
           <span class="badge" [class.closed]="!restaurant.open">
             {{ restaurant.open ? text.open : text.closed }}
           </span>
+
+          <button
+            type="button"
+            class="favorite-button"
+            [class.active]="isRestaurantFavorite(restaurant.id)"
+            [disabled]="isRestaurantFavoritePending(restaurant.id)"
+            [attr.aria-pressed]="isRestaurantFavorite(restaurant.id)"
+            [attr.aria-label]="isRestaurantFavorite(restaurant.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+            (click)="toggleRestaurantFavorite($event, restaurant)"
+          >
+            {{ isRestaurantFavorite(restaurant.id) ? '♥' : '♡' }}
+          </button>
         </div>
 
         <div class="restaurant-content">
@@ -211,7 +235,7 @@
             {{ text.viewRestaurant }}
           </span>
         </div>
-      </a>
+      </article>
     </div>
   </section>
 </main>

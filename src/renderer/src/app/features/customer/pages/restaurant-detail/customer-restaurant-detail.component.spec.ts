@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
+import { AuthService } from '../../../../services/auth.service';
 import { ICartState } from '../../models/cart.models';
 import {
   CustomerBranchResponse,
@@ -13,6 +14,7 @@ import {
 import { RecommendationBranchResponse } from '../../models/recommendation.models';
 import { CartService } from '../../services/cart.service';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerFavoritesApiService } from '../../services/customer-favorites-api.service';
 import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { CustomerLocationService } from '../../services/customer-location.service';
 import { RecommendationApiService } from '../../services/recommendation-api.service';
@@ -156,6 +158,62 @@ class FakeCartService {
   public removeItem(): void {}
 }
 
+class FakeAuthService {
+  public accountId: string | null = 'customer-1';
+
+  public getAccountId(): string | null {
+    return this.accountId;
+  }
+}
+
+class FakeCustomerFavoritesApiService {
+  public favoriteRestaurantIds: string[] = [];
+  public favoriteProductIds: string[] = [];
+  public featuredProduct: unknown = null;
+  public addRestaurantCalls = 0;
+  public addProductCalls = 0;
+  public lastProductId = '';
+  public shouldFail = false;
+
+  public getCustomerFavoriteStatus() {
+    return of({
+      restaurantIds: this.favoriteRestaurantIds,
+      productIds: this.favoriteProductIds
+    });
+  }
+
+  public getFeaturedProduct() {
+    return this.featuredProduct
+      ? of(this.featuredProduct)
+      : throwError(() => new Error('not found'));
+  }
+
+  public addRestaurantFavorite() {
+    this.addRestaurantCalls++;
+
+    return this.shouldFail
+      ? throwError(() => new Error('favorite failed'))
+      : of({ restaurantId: 'restaurant-1' });
+  }
+
+  public removeRestaurantFavorite() {
+    return of(null);
+  }
+
+  public addProductFavorite(_customerAccountId: string, productId: string) {
+    this.addProductCalls++;
+    this.lastProductId = productId;
+
+    return this.shouldFail
+      ? throwError(() => new Error('favorite failed'))
+      : of({ productId });
+  }
+
+  public removeProductFavorite() {
+    return of(null);
+  }
+}
+
 class FakeCustomerNotificationService {
   public notifications$ = of([]);
   public unreadCount$ = of(0);
@@ -171,6 +229,7 @@ describe('CustomerRestaurantDetailComponent', () => {
   let fixture: ComponentFixture<CustomerRestaurantDetailComponent>;
   let component: CustomerRestaurantDetailComponent;
   let recommendationService: FakeRecommendationApiService;
+  let favoritesService: FakeCustomerFavoritesApiService;
   let catalogService: FakeCustomerCatalogApiService;
   let cartService: FakeCartService;
 
@@ -191,13 +250,16 @@ describe('CustomerRestaurantDetailComponent', () => {
         { provide: Router, useValue: { navigate: vi.fn().mockResolvedValue(true) } },
         { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
         { provide: RecommendationApiService, useClass: FakeRecommendationApiService },
+        { provide: CustomerFavoritesApiService, useClass: FakeCustomerFavoritesApiService },
         { provide: CustomerLocationService, useClass: FakeCustomerLocationService },
         { provide: CartService, useClass: FakeCartService },
+        { provide: AuthService, useClass: FakeAuthService },
         { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 
     recommendationService = TestBed.inject(RecommendationApiService) as unknown as FakeRecommendationApiService;
+    favoritesService = TestBed.inject(CustomerFavoritesApiService) as unknown as FakeCustomerFavoritesApiService;
     catalogService = TestBed.inject(CustomerCatalogApiService) as unknown as FakeCustomerCatalogApiService;
     cartService = TestBed.inject(CartService) as unknown as FakeCartService;
 
@@ -259,6 +321,72 @@ describe('CustomerRestaurantDetailComponent', () => {
     component.addSelectedProductToCart();
 
     expect(cartService.lastBranchId).toBe('branch-near');
+  });
+
+  it('loads favorite status for restaurant and products', () => {
+    catalogService.products = [product('product-1')];
+    favoritesService.favoriteRestaurantIds = ['restaurant-1'];
+    favoritesService.favoriteProductIds = ['product-1'];
+
+    fixture.detectChanges();
+
+    expect(component.restaurantIsFavorite).toBe(true);
+    expect(component.isProductFavorite('product-1')).toBe(true);
+  });
+
+  it('toggles restaurant favorite', () => {
+    fixture.detectChanges();
+
+    component.toggleRestaurantFavorite(new MouseEvent('click'));
+
+    expect(favoritesService.addRestaurantCalls).toBe(1);
+    expect(component.restaurantIsFavorite).toBe(true);
+  });
+
+  it('toggles product favorite with only base product id', () => {
+    catalogService.products = [product('product-1')];
+    fixture.detectChanges();
+
+    component.selectedProduct = catalogService.products[0];
+    component.selectedOptionsByGroup.set('group-1', [
+      { id: 'option-1', name: 'Extra queso', additionalPrice: 10, active: true } as never
+    ]);
+    component.toggleProductFavorite(new MouseEvent('click'), catalogService.products[0]);
+
+    expect(favoritesService.addProductCalls).toBe(1);
+    expect(favoritesService.lastProductId).toBe('product-1');
+    expect(component.isProductFavorite('product-1')).toBe(true);
+  });
+
+  it('shows featured product when it exists', () => {
+    favoritesService.featuredProduct = {
+      productId: 'product-1',
+      productName: 'Taco favorito',
+      restaurantId: 'restaurant-1',
+      price: 50,
+      favoriteCount: 2
+    };
+
+    fixture.detectChanges();
+
+    expect(component.featuredProduct?.productId).toBe('product-1');
+    expect(fixture.nativeElement.textContent).toContain('Producto destacado');
+  });
+
+  it('does not show featured product when api returns not found', () => {
+    fixture.detectChanges();
+
+    expect(component.featuredProduct).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Producto destacado');
+  });
+
+  it('shows friendly error when favorite api fails', () => {
+    favoritesService.shouldFail = true;
+    fixture.detectChanges();
+
+    component.toggleRestaurantFavorite(new MouseEvent('click'));
+
+    expect(component.favoriteErrorMessage).toContain('No pudimos');
   });
 
   it('connects navbar cart and profile actions to protected customer routes', () => {

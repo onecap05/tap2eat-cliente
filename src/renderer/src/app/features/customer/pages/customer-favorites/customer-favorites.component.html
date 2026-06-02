@@ -1,0 +1,101 @@
+<main class="favorites-page">
+  <nav class="customer-navbar">
+    <a class="brand" routerLink="/customer/restaurants">
+      <span class="brand-mark">T2E</span>
+      <span>Tap2Eat</span>
+    </a>
+
+    <div class="nav-actions">
+      <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/favorites">Mis favoritos</a>
+      <a routerLink="/customer/orders">Mis pedidos</a>
+      <app-customer-notification-bell></app-customer-notification-bell>
+      <button type="button" class="icon-button" routerLink="/customer/checkout" aria-label="Carrito">Carrito</button>
+      <button type="button" class="icon-button" routerLink="/customer/profile" aria-label="Perfil">Perfil</button>
+    </div>
+  </nav>
+
+  <section class="favorites-header">
+    <div>
+      <span>Tap2Eat</span>
+      <h1>Mis favoritos</h1>
+      <p>Restaurantes y productos base que guardaste para encontrarlos rapido.</p>
+    </div>
+  </section>
+
+  <p class="state-message" *ngIf="isLoading">{{ text.loading }}</p>
+  <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+  <p class="state-message" *ngIf="!isLoading && !errorMessage && !hasFavorites">{{ text.empty }}</p>
+
+  <section class="favorites-section" *ngIf="!isLoading && !errorMessage && restaurants.length">
+    <div class="section-heading">
+      <h2>{{ text.restaurants }}</h2>
+    </div>
+
+    <div class="favorite-grid">
+      <article
+        class="favorite-card"
+        *ngFor="let restaurant of restaurants"
+        role="link"
+        tabindex="0"
+        (click)="openRestaurant(restaurant.restaurantId)"
+        (keydown.enter)="openRestaurant(restaurant.restaurantId)"
+      >
+        <div class="favorite-image">
+          <img
+            *ngIf="restaurant.restaurantImageUrl; else restaurantInitial"
+            [src]="restaurant.restaurantImageUrl"
+            [alt]="restaurant.restaurantName"
+          />
+
+          <ng-template #restaurantInitial>
+            <span>{{ restaurant.restaurantName[0] }}</span>
+          </ng-template>
+        </div>
+
+        <div class="favorite-content">
+          <span>Restaurante</span>
+          <h3>{{ restaurant.restaurantName }}</h3>
+          <p>{{ restaurant.available ? 'Disponible para consultar' : 'No disponible ahora' }}</p>
+          <strong>{{ text.openRestaurant }}</strong>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="favorites-section" *ngIf="!isLoading && !errorMessage && products.length">
+    <div class="section-heading">
+      <h2>{{ text.products }}</h2>
+    </div>
+
+    <div class="favorite-grid">
+      <article
+        class="favorite-card"
+        *ngFor="let product of products"
+        role="link"
+        tabindex="0"
+        (click)="openRestaurant(product.restaurantId)"
+        (keydown.enter)="openRestaurant(product.restaurantId)"
+      >
+        <div class="favorite-image">
+          <img
+            *ngIf="product.productImageUrl; else productInitial"
+            [src]="product.productImageUrl"
+            [alt]="product.productName"
+          />
+
+          <ng-template #productInitial>
+            <span>{{ product.productName[0] }}</span>
+          </ng-template>
+        </div>
+
+        <div class="favorite-content">
+          <span>Producto base</span>
+          <h3>{{ product.productName }}</h3>
+          <p>{{ product.restaurantName }}</p>
+          <strong>{{ formatCurrency(product.price) }}</strong>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>

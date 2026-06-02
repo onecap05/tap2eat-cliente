@@ -7,6 +7,7 @@
 
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/favorites">Mis favoritos</a>
       <a routerLink="/customer/orders">Mis pedidos</a>
       <app-customer-notification-bell></app-customer-notification-bell>
       <button type="button" class="icon-button" routerLink="/customer/checkout" aria-label="Carrito">Carrito</button>
@@ -17,6 +18,8 @@
   <p class="state-message" *ngIf="isLoading">{{ text.loading }}</p>
   <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
   <p class="state-message warning" *ngIf="!isLoading && availabilityMessage">{{ availabilityMessage }}</p>
+  <p class="state-message success" *ngIf="favoriteMessage">{{ favoriteMessage }}</p>
+  <p class="state-message error" *ngIf="favoriteErrorMessage">{{ favoriteErrorMessage }}</p>
 
   <ng-container *ngIf="!isLoading && !errorMessage && restaurant">
     <section class="restaurant-hero" [class.closed]="!restaurant.open">
@@ -40,6 +43,17 @@
           <span class="status-badge" [class.closed]="!restaurant.open">
             {{ restaurant.open ? text.open : text.closed }}
           </span>
+          <button
+            type="button"
+            class="hero-favorite-button"
+            [class.active]="restaurantIsFavorite"
+            [disabled]="isFavoritePending(restaurant.id)"
+            [attr.aria-pressed]="restaurantIsFavorite"
+            [attr.aria-label]="restaurantIsFavorite ? 'Quitar restaurante de favoritos' : 'Agregar restaurante a favoritos'"
+            (click)="toggleRestaurantFavorite($event)"
+          >
+            {{ restaurantIsFavorite ? '♥' : '♡' }}
+          </button>
           <h1>{{ restaurant.name }}</h1>
           <p>{{ restaurant.description || 'Explora el menu disponible.' }}</p>
 
@@ -129,14 +143,36 @@
             </div>
           </div>
 
+          <article class="featured-product-card" *ngIf="featuredProduct">
+            <div class="featured-product-image">
+              <img
+                *ngIf="featuredProduct.imageUrl; else featuredInitial"
+                [src]="featuredProduct.imageUrl"
+                [alt]="featuredProduct.productName"
+              />
+
+              <ng-template #featuredInitial>
+                <span>{{ featuredProduct.productName[0] }}</span>
+              </ng-template>
+            </div>
+
+            <div class="featured-product-content">
+              <span>Producto destacado</span>
+              <h3>{{ featuredProduct.productName }}</h3>
+              <p>Favorito de los clientes</p>
+              <strong>{{ formatCurrency(featuredProduct.price) }}</strong>
+            </div>
+          </article>
+
           <div class="product-list">
-            <button
+            <article
               class="product-card"
-              type="button"
               *ngFor="let product of filteredProducts"
-              [disabled]="!restaurant.open || !product.available"
+              role="button"
+              tabindex="0"
               [class.disabled]="!restaurant.open || !product.available"
               (click)="openProduct(product)"
+              (keydown.enter)="openProduct(product)"
             >
               <div class="product-info">
                 <span class="status-badge small" [class.closed]="!product.available">
@@ -152,6 +188,18 @@
               </div>
 
               <div class="product-actions">
+                <button
+                  type="button"
+                  class="product-favorite-button"
+                  [class.active]="isProductFavorite(product.id)"
+                  [disabled]="isFavoritePending(product.id)"
+                  [attr.aria-pressed]="isProductFavorite(product.id)"
+                  [attr.aria-label]="isProductFavorite(product.id) ? 'Quitar producto de favoritos' : 'Agregar producto a favoritos'"
+                  (click)="toggleProductFavorite($event, product)"
+                >
+                  {{ isProductFavorite(product.id) ? '♥' : '♡' }}
+                </button>
+
                 <span class="add-product-button">
                   + Agregar
                 </span>
@@ -167,7 +215,7 @@
                   </span>
                 </div>
               </div>
-            </button>
+            </article>
           </div>
 
           <p class="state-message" *ngIf="!filteredProducts.length">

@@ -2,8 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, forkJoin, of, Subscription, switchMap } from 'rxjs';
+import { catchError, forkJoin, Observable, of, Subscription, switchMap } from 'rxjs';
 
+import { AuthService } from '../../../../services/auth.service';
 import { IModifierGroupResponse } from '../../../catalog/models/commons/IModifierGroupResponse';
 import { IModifierOptionResponse } from '../../../catalog/models/commons/IModifierOptionResponse';
 import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
@@ -14,9 +15,11 @@ import {
   CustomerProductResponse,
   CustomerRestaurantResponse
 } from '../../models/customer-catalog.models';
+import { FeaturedProductResponse } from '../../models/favorite.models';
 import { RecommendationBranchResponse } from '../../models/recommendation.models';
 import { CartService } from '../../services/cart.service';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerFavoritesApiService } from '../../services/customer-favorites-api.service';
 import { CustomerLocationService } from '../../services/customer-location.service';
 import { RecommendationApiService } from '../../services/recommendation-api.service';
 
@@ -48,7 +51,10 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   unavailableProduct: 'Este producto no esta disponible ahora.',
   unavailableCart: 'El carrito queda bloqueado mientras el restaurante este cerrado.',
   loading: 'Cargando restaurante...',
-  error: 'No pudimos cargar este restaurante.'
+  error: 'No pudimos cargar este restaurante.',
+  favoriteAdded: 'Agregado a favoritos.',
+  favoriteRemoved: 'Quitado de favoritos.',
+  favoriteError: 'No pudimos actualizar tus favoritos.'
 };
 
 @Component({
@@ -80,6 +86,12 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
   public recommendedBranch: RecommendationBranchResponse | null = null;
   public recommendationWarning = '';
   public showBranchList = false;
+  public restaurantIsFavorite = false;
+  public favoriteProductIds = new Set<string>();
+  public pendingFavoriteIds = new Set<string>();
+  public favoriteMessage = '';
+  public favoriteErrorMessage = '';
+  public featuredProduct: FeaturedProductResponse | null = null;
   public pendingAddRequest: {
     product: CustomerProductResponse;
     selections: IProductModifierSelection[];
@@ -93,8 +105,10 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly customerCatalogApiService: CustomerCatalogApiService,
     private readonly recommendationApiService: RecommendationApiService,
+    private readonly customerFavoritesApiService: CustomerFavoritesApiService,
     private readonly customerLocationService: CustomerLocationService,
-    private readonly cartService: CartService
+    private readonly cartService: CartService,
+    private readonly authService: AuthService
   ) {
     this.cartState = this.cartService.getSnapshot();
   }
@@ -336,6 +350,86 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
       .sort((first, second) => (first.displayOrder ?? 999) - (second.displayOrder ?? 999));
   }
 
+  public isProductFavorite(productId: string): boolean {
+    return this.favoriteProductIds.has(productId);
+  }
+
+  public isFavoritePending(id: string): boolean {
+    return this.pendingFavoriteIds.has(id);
+  }
+
+  public toggleRestaurantFavorite(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!this.restaurant || this.pendingFavoriteIds.has(this.restaurant.id)) {
+      return;
+    }
+
+    const customerAccountId = this.authService.getAccountId();
+    if (!customerAccountId) {
+      return;
+    }
+
+    const restaurantId = this.restaurant.id;
+    const isFavorite = this.restaurantIsFavorite;
+    this.favoriteMessage = '';
+    this.favoriteErrorMessage = '';
+    this.pendingFavoriteIds.add(restaurantId);
+
+    const request$: Observable<unknown> = isFavorite
+      ? this.customerFavoritesApiService.removeRestaurantFavorite(customerAccountId, restaurantId)
+      : this.customerFavoritesApiService.addRestaurantFavorite(customerAccountId, restaurantId);
+
+    request$.subscribe({
+      next: () => {
+        this.restaurantIsFavorite = !isFavorite;
+        this.favoriteMessage = isFavorite ? this.text.favoriteRemoved : this.text.favoriteAdded;
+        this.pendingFavoriteIds.delete(restaurantId);
+      },
+      error: () => {
+        this.favoriteErrorMessage = this.text.favoriteError;
+        this.pendingFavoriteIds.delete(restaurantId);
+      }
+    });
+  }
+
+  public toggleProductFavorite(event: Event, product: CustomerProductResponse): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const customerAccountId = this.authService.getAccountId();
+    if (!customerAccountId || this.pendingFavoriteIds.has(product.id)) {
+      return;
+    }
+
+    const isFavorite = this.favoriteProductIds.has(product.id);
+    this.favoriteMessage = '';
+    this.favoriteErrorMessage = '';
+    this.pendingFavoriteIds.add(product.id);
+
+    const request$: Observable<unknown> = isFavorite
+      ? this.customerFavoritesApiService.removeProductFavorite(customerAccountId, product.id)
+      : this.customerFavoritesApiService.addProductFavorite(customerAccountId, product.id);
+
+    request$.subscribe({
+      next: () => {
+        if (isFavorite) {
+          this.favoriteProductIds.delete(product.id);
+        } else {
+          this.favoriteProductIds.add(product.id);
+        }
+
+        this.favoriteMessage = isFavorite ? this.text.favoriteRemoved : this.text.favoriteAdded;
+        this.pendingFavoriteIds.delete(product.id);
+      },
+      error: () => {
+        this.favoriteErrorMessage = this.text.favoriteError;
+        this.pendingFavoriteIds.delete(product.id);
+      }
+    });
+  }
+
   private loadRestaurant(restaurantId: string): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -356,6 +450,8 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
         this.categories = response.categories;
         this.products = response.products.filter(product => product.available);
         this.isLoading = false;
+        this.loadFavoriteStatus(restaurantId, this.products.map(product => product.id));
+        this.loadFeaturedProduct(restaurantId);
         this.loadNearestBranchRecommendation(restaurantId);
       },
       error: () => {
@@ -461,6 +557,33 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
         this.recommendedBranch = recommendation;
         this.recommendationWarning = recommendation.warning ?? '';
         this.showBranchList = false;
+      });
+  }
+
+  private loadFavoriteStatus(restaurantId: string, productIds: string[]): void {
+    const customerAccountId = this.authService.getAccountId();
+
+    if (!customerAccountId) {
+      this.restaurantIsFavorite = false;
+      this.favoriteProductIds = new Set();
+      return;
+    }
+
+    this.customerFavoritesApiService
+      .getCustomerFavoriteStatus(customerAccountId, [restaurantId], productIds)
+      .pipe(catchError(() => of({ restaurantIds: [] as string[], productIds: [] as string[] })))
+      .subscribe(status => {
+        this.restaurantIsFavorite = (status.restaurantIds ?? []).includes(restaurantId);
+        this.favoriteProductIds = new Set(status.productIds ?? []);
+      });
+  }
+
+  private loadFeaturedProduct(restaurantId: string): void {
+    this.customerFavoritesApiService
+      .getFeaturedProduct(restaurantId)
+      .pipe(catchError(() => of(null)))
+      .subscribe(product => {
+        this.featuredProduct = product;
       });
   }
 

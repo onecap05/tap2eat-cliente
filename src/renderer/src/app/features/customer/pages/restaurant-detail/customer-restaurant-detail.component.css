@@ -42,7 +42,7 @@
 .product-list{display:grid;gap:16px}
 .product-card{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px;border:1px solid #e2e8f0;border-radius:22px;background:#fff;text-align:left;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
 .product-card:hover{transform:translateY(-2px);border-color:#86efac;box-shadow:0 18px 40px rgba(15,23,42,.09)}
-.product-card:disabled{cursor:not-allowed;transform:none}
+.product-card.disabled{opacity:.68}
 .product-info{display:grid;gap:8px}
 .product-info h3{margin:0;font-size:20px;font-weight:900}
 .product-info p{margin:0;color:#64748b;line-height:1.35}
