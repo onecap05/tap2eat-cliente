@@ -5,7 +5,10 @@ export interface RealtimeOrderEventMessage {
   restaurantId?: string | null;
   branchId?: string | null;
   status?: string | null;
+  newStatus?: string | null;
   previousStatus?: string | null;
+  estimatedPreparationMinutes?: number | null;
+  estimatedReadyAt?: string | null;
   total?: number | null;
   occurredAt?: string | null;
 }

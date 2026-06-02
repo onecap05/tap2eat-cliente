@@ -9,6 +9,7 @@ import {
   RecommendationBranchResponse
 } from '../../models/recommendation.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { CustomerLocationService } from '../../services/customer-location.service';
 import { RecommendationApiService } from '../../services/recommendation-api.service';
 import { CustomerRestaurantListComponent } from './customer-restaurant-list.component';
@@ -94,6 +95,17 @@ class FakeAuthService {
   }
 }
 
+class FakeCustomerNotificationService {
+  public notifications$ = of([]);
+  public unreadCount$ = of(0);
+  public toast$ = of(null);
+
+  public initializeForCurrentCustomer(): void {}
+  public markAsRead(): void {}
+  public markAllAsRead(): void {}
+  public clearToast(): void {}
+}
+
 describe('CustomerRestaurantListComponent', () => {
   let fixture: ComponentFixture<CustomerRestaurantListComponent>;
   let component: CustomerRestaurantListComponent;
@@ -110,7 +122,8 @@ describe('CustomerRestaurantListComponent', () => {
         { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
         { provide: RecommendationApiService, useClass: FakeRecommendationApiService },
         { provide: CustomerLocationService, useClass: FakeCustomerLocationService },
-        { provide: AuthService, useClass: FakeAuthService }
+        { provide: AuthService, useClass: FakeAuthService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 

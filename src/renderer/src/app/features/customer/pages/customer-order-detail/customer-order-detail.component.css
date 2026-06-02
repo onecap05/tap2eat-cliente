@@ -161,6 +161,16 @@
   text-align: center;
 }
 
+.estimated-ready-panel {
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  border: 1px solid #99f6e4;
+  border-radius: 18px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-weight: 900;
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 380px;

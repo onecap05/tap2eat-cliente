@@ -179,6 +179,17 @@
   font-weight: 1000;
 }
 
+.estimated-ready-panel {
+  max-width: 1380px;
+  margin: 24px auto 0;
+  padding: 18px 20px;
+  border: 1px solid #99f6e4;
+  border-radius: 22px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-weight: 1000;
+}
+
 .tracking-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;

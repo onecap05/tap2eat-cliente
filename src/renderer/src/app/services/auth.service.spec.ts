@@ -101,6 +101,16 @@ describe('AuthService', () => {
     });
   });
 
+  it('should read accountId from the access token payload', () => {
+    tokenStorageService.saveAccessToken(createJwt({
+      accountId: 'f15ee490-ba60-4828-b3d9-ba9bc54129df',
+      role: 'CUSTOMER',
+      exp: Math.floor(Date.now() / 1000) + 600
+    }));
+
+    expect(service.getAccountId()).toBe('f15ee490-ba60-4828-b3d9-ba9bc54129df');
+  });
+
   it('should keep existing refresh token when refresh response omits it', () => {
     tokenStorageService.saveRefreshToken('existing-refresh-token');
 

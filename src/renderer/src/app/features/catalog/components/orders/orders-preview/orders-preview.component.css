@@ -430,6 +430,16 @@
   padding: 12px;
 }
 
+.estimated-ready-note {
+  margin: 0 0 18px;
+  color: #0f766e;
+  font-weight: 850;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 14px;
+  padding: 12px;
+}
+
 .detail-products h4 {
   margin: 0 0 14px;
   font-size: 22px;
@@ -500,6 +510,35 @@
   font-weight: 900;
 }
 
+.preparation-time-panel {
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #dce5ef;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.preparation-time-panel label {
+  display: grid;
+  gap: 8px;
+  color: #53667f;
+  font-weight: 850;
+}
+
+.preparation-time-panel select,
+.preparation-time-panel input {
+  width: 100%;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+  color: #071a36;
+  font: inherit;
+}
+
 .detail-actions {
   display: flex;
   flex-wrap: wrap;
@@ -545,7 +584,8 @@
   }
 
   .detail-info-grid,
-  .detail-progress {
+  .detail-progress,
+  .preparation-time-panel {
     grid-template-columns: 1fr;
   }
 }

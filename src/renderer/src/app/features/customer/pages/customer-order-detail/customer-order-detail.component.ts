@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of, Subscription } from 'rxjs';
 
 import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
+import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
 import { CustomerBranchResponse } from '../../models/customer-catalog.models';
 import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
@@ -32,7 +33,7 @@ const ORDER_PROGRESS = [
 @Component({
   selector: 'app-customer-order-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, CustomerNotificationBellComponent],
   templateUrl: './customer-order-detail.component.html',
   styleUrl: './customer-order-detail.component.css'
 })
@@ -161,6 +162,19 @@ export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(new Date(value));
+  }
+
+  public getEstimatedReadyLabel(): string {
+    if (!this.order?.estimatedReadyAt) {
+      return '';
+    }
+
+    const readyTime = new Intl.DateTimeFormat('es-MX', {
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(this.order.estimatedReadyAt));
+
+    return `Listo para recoger aproximadamente a las ${readyTime}.`;
   }
 
   private async generatePickupQr(order: OrderResponse): Promise<void> {

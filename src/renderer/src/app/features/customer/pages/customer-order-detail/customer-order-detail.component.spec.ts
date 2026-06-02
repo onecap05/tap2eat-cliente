@@ -11,6 +11,7 @@ import { RealtimeNotificationService } from '../../../../services/realtime-notif
 import { OrderResponse } from '../../models/order.models';
 import { PaymentResponse } from '../../models/payment.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
 import { PickupQrService } from '../../services/pickup-qr.service';
@@ -19,11 +20,12 @@ import { CustomerOrderDetailComponent } from './customer-order-detail.component'
 class FakeOrderApiService {
   public lastOrderId = '';
   public getOrderByIdCalls = 0;
+  public order: OrderResponse = order();
 
   public getOrderById(orderId: string) {
     this.lastOrderId = orderId;
     this.getOrderByIdCalls++;
-    return of(order());
+    return of(this.order);
   }
 }
 
@@ -80,6 +82,17 @@ class FakeCustomerCatalogApiService {
       open: true
     }] : []);
   }
+}
+
+class FakeCustomerNotificationService {
+  public notifications$ = of([]);
+  public unreadCount$ = of(0);
+  public toast$ = of(null);
+
+  public initializeForCurrentCustomer(): void {}
+  public markAsRead(): void {}
+  public markAllAsRead(): void {}
+  public clearToast(): void {}
 }
 
 class FakeRealtimeNotificationService {
@@ -144,7 +157,8 @@ describe('CustomerOrderDetailComponent', () => {
         { provide: PaymentApiService, useClass: FakePaymentApiService },
         { provide: PickupQrService, useClass: FakePickupQrService },
         { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
-        { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService }
+        { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 
@@ -304,6 +318,18 @@ describe('CustomerOrderDetailComponent', () => {
     expect(text).toContain('Sucursal #8F7A');
     expect(text).not.toContain('restaurant-long-1384d0');
     expect(text).not.toContain('branch-long-8f7a');
+  });
+
+  it('should show estimated ready time when available', () => {
+    orderApiService.order = {
+      ...order(),
+      status: 'Accepted',
+      estimatedPreparationMinutes: 20,
+      estimatedReadyAt: '2026-05-23T12:20:00Z'
+    };
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Listo para recoger aproximadamente');
   });
 });
 

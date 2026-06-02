@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { catchError, map, of, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
+import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
 import { CustomerRestaurantResponse } from '../../models/customer-catalog.models';
 import { RecommendationBranchResponse } from '../../models/recommendation.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
@@ -25,7 +26,7 @@ const CUSTOMER_RESTAURANT_LIST_TEXT = {
 @Component({
   selector: 'app-customer-restaurant-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CustomerNotificationBellComponent],
   templateUrl: './customer-restaurant-list.component.html',
   styleUrl: './customer-restaurant-list.component.css'
 })

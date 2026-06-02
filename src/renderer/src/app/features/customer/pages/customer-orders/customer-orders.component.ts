@@ -5,6 +5,7 @@ import { catchError, forkJoin, map, of, Subscription } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
 import { RealtimeNotificationService } from '../../../../services/realtime-notification.service';
+import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
 import { CustomerBranchResponse, CustomerRestaurantResponse } from '../../models/customer-catalog.models';
 import { OrderResponse } from '../../models/order.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
@@ -15,7 +16,7 @@ type CustomerOrdersTab = 'active' | 'delivered';
 @Component({
   selector: 'app-customer-orders',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, CustomerNotificationBellComponent],
   templateUrl: './customer-orders.component.html',
   styleUrl: './customer-orders.component.css'
 })
@@ -208,6 +209,14 @@ export class CustomerOrdersComponent implements OnInit, OnDestroy {
     }).format(new Date(order.createdAt));
   }
 
+  public getEstimatedReadyLabel(order: OrderResponse): string {
+    if (!order.estimatedReadyAt) {
+      return '';
+    }
+
+    return `Listo para recoger aproximadamente a las ${this.formatTime(order.estimatedReadyAt)}.`;
+  }
+
   public formatCurrency(value: number): string {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -220,6 +229,13 @@ export class CustomerOrdersComponent implements OnInit, OnDestroy {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
+    }).format(new Date(value));
+  }
+
+  private formatTime(value: string): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      hour: 'numeric',
+      minute: '2-digit'
     }).format(new Date(value));
   }
 

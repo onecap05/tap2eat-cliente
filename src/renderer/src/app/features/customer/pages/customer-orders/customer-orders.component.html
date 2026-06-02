@@ -5,9 +5,12 @@
       <p>Consulta tus pedidos activos y los pedidos entregados.</p>
     </div>
 
-    <button class="outline-button" type="button" routerLink="/customer/restaurants">
-      Ver restaurantes
-    </button>
+    <div class="header-actions">
+      <app-customer-notification-bell></app-customer-notification-bell>
+      <button class="outline-button" type="button" routerLink="/customer/restaurants">
+        Ver restaurantes
+      </button>
+    </div>
   </header>
 
   <section class="orders-tabs">
@@ -74,6 +77,10 @@
       </div>
 
       <div class="order-divider"></div>
+
+      <p class="estimated-ready-note" *ngIf="getEstimatedReadyLabel(order)">
+        {{ getEstimatedReadyLabel(order) }}
+      </p>
 
       <div class="order-summary">
         <div>

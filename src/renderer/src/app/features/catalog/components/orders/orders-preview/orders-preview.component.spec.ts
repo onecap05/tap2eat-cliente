@@ -15,7 +15,7 @@ import { OrdersPreviewComponent } from './orders-preview.component';
 class FakeOrderApiService {
   public lastRestaurantId = '';
   public lastFilters: unknown;
-  public lastUpdate: { orderId: string; status: string } | null = null;
+  public lastUpdate: { orderId: string; status: string; estimatedPreparationMinutes?: number | null } | null = null;
   public getRestaurantOrdersCalls = 0;
   public orders: OrderResponse[] = [
     order('order-1', 'Created', 'branch-long-8f7a'),
@@ -30,8 +30,8 @@ class FakeOrderApiService {
     return of(this.orders);
   }
 
-  public updateOrderStatus(orderId: string, status: string) {
-    this.lastUpdate = { orderId, status };
+  public updateOrderStatus(orderId: string, status: string, estimatedPreparationMinutes?: number | null) {
+    this.lastUpdate = { orderId, status, estimatedPreparationMinutes };
 
     if (this.updateShouldFail) {
       return throwError(() => new Error('update failed'));
@@ -39,7 +39,9 @@ class FakeOrderApiService {
 
     const updatedOrder = {
       ...(this.orders.find(existingOrder => existingOrder.id === orderId) ?? this.orders[0]),
-      status
+      status,
+      estimatedPreparationMinutes: estimatedPreparationMinutes ?? null,
+      estimatedReadyAt: estimatedPreparationMinutes ? '2026-05-23T12:20:00Z' : null
     };
 
     return of(updatedOrder);
@@ -265,8 +267,37 @@ describe('OrdersPreviewComponent', () => {
 
     component.updateOrderStatus(component.orders[0], 'Accepted');
 
-    expect(orderApiService.lastUpdate).toEqual({ orderId: 'order-1', status: 'Accepted' });
+    expect(orderApiService.lastUpdate).toEqual({
+      orderId: 'order-1',
+      status: 'Accepted',
+      estimatedPreparationMinutes: 15
+    });
     expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('should send custom estimated preparation minutes when accepting an order', () => {
+    fixture.detectChanges();
+    component.selectedPreparationTimeOption = 'custom';
+    component.customPreparationMinutes = 22;
+
+    component.updateOrderStatus(component.orders[0], 'Accepted');
+
+    expect(orderApiService.lastUpdate).toEqual({
+      orderId: 'order-1',
+      status: 'Accepted',
+      estimatedPreparationMinutes: 22
+    });
+  });
+
+  it('should block accepting an order with invalid custom preparation minutes', () => {
+    fixture.detectChanges();
+    component.selectedPreparationTimeOption = 'custom';
+    component.customPreparationMinutes = -5;
+
+    component.updateOrderStatus(component.orders[0], 'Accepted');
+
+    expect(orderApiService.lastUpdate).toBeNull();
+    expect(component.actionErrorMessage).toContain('tiempo estimado');
   });
 
   it('should not ask for confirmation when updating to non-cancelled statuses', () => {
@@ -275,7 +306,11 @@ describe('OrdersPreviewComponent', () => {
 
     (['Accepted', 'Preparing', 'Ready', 'Delivered'] as OrderStatus[]).forEach(status => {
       component.updateOrderStatus(component.orders[0], status);
-      expect(orderApiService.lastUpdate).toEqual({ orderId: 'order-1', status });
+      expect(orderApiService.lastUpdate).toEqual({
+        orderId: 'order-1',
+        status,
+        estimatedPreparationMinutes: status === 'Accepted' ? 15 : undefined
+      });
     });
 
     expect(confirmSpy).not.toHaveBeenCalled();
@@ -300,7 +335,11 @@ describe('OrdersPreviewComponent', () => {
 
     component.updateOrderStatus(component.orders[0], 'Cancelled');
 
-    expect(orderApiService.lastUpdate).toEqual({ orderId: 'order-1', status: 'Cancelled' });
+    expect(orderApiService.lastUpdate).toEqual({
+      orderId: 'order-1',
+      status: 'Cancelled',
+      estimatedPreparationMinutes: undefined
+    });
   });
 
   it('should update local orders and selected order when cancellation succeeds', () => {

@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 
 import { IMeResponse } from '../../../../models/IMeResponse';
 import { AuthService } from '../../../../services/auth.service';
+import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { CustomerProfileComponent } from './customer-profile.component';
 
 class FakeAuthService {
@@ -26,6 +27,17 @@ class FakeAuthService {
   }
 }
 
+class FakeCustomerNotificationService {
+  public notifications$ = of([]);
+  public unreadCount$ = of(0);
+  public toast$ = of(null);
+
+  public initializeForCurrentCustomer(): void {}
+  public markAsRead(): void {}
+  public markAllAsRead(): void {}
+  public clearToast(): void {}
+}
+
 describe('CustomerProfileComponent', () => {
   let fixture: ComponentFixture<CustomerProfileComponent>;
   let component: CustomerProfileComponent;
@@ -36,7 +48,8 @@ describe('CustomerProfileComponent', () => {
       imports: [CustomerProfileComponent],
       providers: [
         provideRouter([]),
-        { provide: AuthService, useClass: FakeAuthService }
+        { provide: AuthService, useClass: FakeAuthService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 

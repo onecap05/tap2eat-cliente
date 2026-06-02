@@ -84,6 +84,18 @@ describe('PublicOrderTrackingComponent', () => {
     expect(component.isStepActive('Accepted')).toBe(true);
     expect(component.isStepActive('Preparing')).toBe(false);
   });
+
+  it('should show estimated ready time when available', () => {
+    service.response = {
+      ...order(),
+      estimatedPreparationMinutes: 20,
+      estimatedReadyAt: '2026-05-25T12:25:00Z'
+    };
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Listo para recoger aproximadamente');
+  });
 });
 
 function order(): PublicOrderTrackingResponse {

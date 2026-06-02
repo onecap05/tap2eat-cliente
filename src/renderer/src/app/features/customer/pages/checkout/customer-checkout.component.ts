@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { map, retry, Subscription, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth.service';
+import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
 import { PayPalCheckoutButtonComponent } from '../../components/paypal-checkout-button/paypal-checkout-button.component';
 import { ICartItem, ICartState } from '../../models/cart.models';
 import { CreateOrderRequest } from '../../models/order.models';
@@ -45,7 +46,7 @@ const PAYMENT_LOOKUP_RETRY_DELAY_MS = 700;
 @Component({
   selector: 'app-customer-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, PayPalCheckoutButtonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PayPalCheckoutButtonComponent, CustomerNotificationBellComponent],
   templateUrl: './customer-checkout.component.html',
   styleUrl: './customer-checkout.component.css'
 })

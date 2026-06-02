@@ -46,6 +46,10 @@
       </p>
     </section>
 
+    <section class="estimated-ready-panel" *ngIf="getEstimatedReadyLabel()">
+      {{ getEstimatedReadyLabel() }}
+    </section>
+
     <section class="tracking-grid">
       <article class="items-panel">
         <h2>Productos</h2>

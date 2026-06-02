@@ -2,6 +2,7 @@
   <nav class="detail-nav">
     <a routerLink="/customer/orders">Mis pedidos</a>
     <a routerLink="/customer/restaurants">Restaurantes</a>
+    <app-customer-notification-bell></app-customer-notification-bell>
   </nav>
 
   <section *ngIf="isLoading" class="state-panel">
@@ -39,6 +40,10 @@
       <p *ngIf="order.status === 'Cancelled'" class="cancelled-note">
         Este pedido fue cancelado.
       </p>
+    </section>
+
+    <section class="estimated-ready-panel" *ngIf="getEstimatedReadyLabel()">
+      {{ getEstimatedReadyLabel() }}
     </section>
 
     <section class="detail-grid">

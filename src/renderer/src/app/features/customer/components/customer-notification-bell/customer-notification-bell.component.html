@@ -1,0 +1,70 @@
+<div class="notification-shell">
+  <button
+    type="button"
+    class="notification-button"
+    aria-label="Notificaciones"
+    [attr.aria-expanded]="isOpen"
+    (click)="togglePanel()"
+  >
+    <span aria-hidden="true">&#128276;</span>
+    <strong *ngIf="notificationService.unreadCount$ | async as unreadCount">
+      {{ unreadCount > 99 ? '99+' : unreadCount }}
+    </strong>
+  </button>
+
+  <section class="notification-panel" *ngIf="isOpen">
+    <header>
+      <div>
+        <span>Notificaciones</span>
+        <h2>Pedidos</h2>
+      </div>
+
+      <button type="button" (click)="markAllAsRead()">
+        Marcar todas
+      </button>
+    </header>
+
+    <ng-container *ngIf="notificationService.notifications$ | async as notifications">
+      <p class="empty-state" *ngIf="notifications.length === 0">
+        No tienes notificaciones.
+      </p>
+
+      <a
+        class="notification-item"
+        *ngFor="let notification of notifications; trackBy: trackByNotificationId"
+        [class.unread]="!notification.read"
+        [routerLink]="['/customer/orders', notification.orderId]"
+        (click)="notificationService.markAsRead(notification.id); closePanel()"
+      >
+        <div>
+          <strong>{{ notification.title }}</strong>
+          <p>{{ notification.message }}</p>
+          <span>{{ formatNotificationDate(notification.createdAt) }}</span>
+        </div>
+
+        <button
+          *ngIf="!notification.read"
+          type="button"
+          aria-label="Marcar como leida"
+          (click)="markAsRead(notification, $event)"
+        >
+          Leida
+        </button>
+      </a>
+    </ng-container>
+  </section>
+</div>
+
+<article
+  class="notification-toast"
+  *ngIf="notificationService.toast$ | async as toast"
+>
+  <div>
+    <strong>{{ toast.title }}</strong>
+    <p>{{ toast.message }}</p>
+  </div>
+
+  <button type="button" aria-label="Cerrar notificacion" (click)="dismissToast(toast.id)">
+    x
+  </button>
+</article>
