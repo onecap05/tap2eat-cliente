@@ -41,12 +41,23 @@
   </section>
 
   <section class="category-section">
-    <h2>Categorias</h2>
+    <h2>Tipos de comida</h2>
+
+    <div class="food-type-list" aria-label="Tipos de comida">
+      <button
+        type="button"
+        class="food-type-chip"
+        *ngFor="let foodType of foodTypes; trackBy: trackByFoodTypeQuery"
+        [class.active]="isFoodTypeActive(foodType)"
+        [attr.aria-pressed]="isFoodTypeActive(foodType)"
+        (click)="selectFoodType(foodType)"
+      >
+        <span class="food-type-icon">{{ foodType.icon }}</span>
+        <span>{{ foodType.label }}</span>
+      </button>
+    </div>
 
     <div class="category-list">
-      <button type="button" class="category-chip active">
-        Todos
-      </button>
       <button
         type="button"
         class="category-chip"

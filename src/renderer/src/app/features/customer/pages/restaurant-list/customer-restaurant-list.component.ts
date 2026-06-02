@@ -16,6 +16,7 @@ import { RecommendationApiService } from '../../services/recommendation-api.serv
 const CUSTOMER_RESTAURANT_LIST_TEXT = {
   empty: 'Todavia no hay restaurantes disponibles.',
   searchEmpty: 'No encontramos restaurantes o platillos para esta busqueda.',
+  foodTypeEmpty: 'No encontramos restaurantes o platillos para este tipo de comida.',
   error: 'No pudimos cargar los restaurantes. Intenta de nuevo.',
   viewRestaurant: 'Ver restaurante',
   open: 'Abierto',
@@ -27,6 +28,26 @@ const CUSTOMER_RESTAURANT_LIST_TEXT = {
   favoriteError: 'No pudimos actualizar tus favoritos.'
 };
 
+interface FoodTypeFilter {
+  label: string;
+  icon: string;
+  query: string;
+}
+
+const FOOD_TYPE_FILTERS: FoodTypeFilter[] = [
+  { label: 'Todos', icon: 'Todo', query: '' },
+  { label: 'Hamburguesas', icon: '🍔', query: 'hamburguesas' },
+  { label: 'Pizza', icon: '🍕', query: 'pizza' },
+  { label: 'Tacos', icon: '🌮', query: 'tacos' },
+  { label: 'Pollo', icon: '🍗', query: 'pollo' },
+  { label: 'Sushi', icon: '🍣', query: 'sushi' },
+  { label: 'Postres', icon: '🍦', query: 'postres' },
+  { label: 'Café', icon: '☕', query: 'cafe' },
+  { label: 'Bebidas', icon: '🥤', query: 'bebidas' },
+  { label: 'Saludable', icon: '🥗', query: 'saludable' },
+  { label: 'Pasta', icon: '🍝', query: 'pasta' }
+];
+
 @Component({
   selector: 'app-customer-restaurant-list',
   standalone: true,
@@ -36,12 +57,14 @@ const CUSTOMER_RESTAURANT_LIST_TEXT = {
 })
 export class CustomerRestaurantListComponent implements OnInit {
   public readonly text = CUSTOMER_RESTAURANT_LIST_TEXT;
+  public readonly foodTypes = FOOD_TYPE_FILTERS;
 
   public restaurants: CustomerRestaurantResponse[] = [];
   public isLoading = true;
   public errorMessage = '';
   public searchTerm = '';
   public activeSearchQuery = '';
+  public selectedFoodTypeQuery = '';
   public showOpenOnly = false;
   public nearbyRecommendations: RecommendationBranchResponse[] = [];
   public alsoOrderedRecommendations: RecommendationBranchResponse[] = [];
@@ -73,6 +96,10 @@ export class CustomerRestaurantListComponent implements OnInit {
   }
 
   public get emptyStateMessage(): string {
+    if (this.selectedFoodTypeQuery && this.activeSearchQuery) {
+      return this.text.foodTypeEmpty;
+    }
+
     return this.activeSearchQuery ? this.text.searchEmpty : this.text.empty;
   }
 
@@ -90,8 +117,33 @@ export class CustomerRestaurantListComponent implements OnInit {
     this.showOpenOnly = !this.showOpenOnly;
   }
 
+  public selectFoodType(foodType: FoodTypeFilter): void {
+    if (!foodType.query) {
+      this.clearFoodType();
+      return;
+    }
+
+    this.selectedFoodTypeQuery = foodType.query;
+    this.searchRestaurants();
+  }
+
+  public clearFoodType(): void {
+    this.selectedFoodTypeQuery = '';
+    this.searchTerm = '';
+    this.activeSearchQuery = '';
+    this.loadRestaurants();
+  }
+
+  public isFoodTypeActive(foodType: FoodTypeFilter): boolean {
+    return this.selectedFoodTypeQuery === foodType.query;
+  }
+
+  public trackByFoodTypeQuery(_index: number, foodType: FoodTypeFilter): string {
+    return foodType.query || 'all';
+  }
+
   public searchRestaurants(): void {
-    const query = this.searchTerm.trim();
+    const query = this.buildSearchQuery();
 
     if (!query) {
       this.activeSearchQuery = '';
@@ -182,6 +234,13 @@ export class CustomerRestaurantListComponent implements OnInit {
         this.pendingRestaurantFavoriteIds.delete(restaurant.id);
       }
     });
+  }
+
+  public buildSearchQuery(): string {
+    return [this.searchTerm.trim(), this.selectedFoodTypeQuery]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
   }
 
   public openRestaurant(restaurantId: string): void {

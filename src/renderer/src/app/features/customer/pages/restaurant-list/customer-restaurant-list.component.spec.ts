@@ -196,6 +196,58 @@ describe('CustomerRestaurantListComponent', () => {
     expect(favoritesService.statusCalls).toBe(1);
   });
 
+  it('renders visual food type filters', () => {
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+
+    expect(nativeElement.textContent).toContain('Tipos de comida');
+    expect(nativeElement.textContent).toContain('Hamburguesas');
+    expect(nativeElement.textContent).toContain('Pizza');
+    expect(nativeElement.textContent).toContain('Tacos');
+    expect(nativeElement.querySelectorAll('.food-type-chip').length).toBe(component.foodTypes.length);
+  });
+
+  it('selects food type and searches with its query', () => {
+    fixture.detectChanges();
+
+    component.selectFoodType(component.foodTypes.find(type => type.query === 'tacos')!);
+    fixture.detectChanges();
+
+    const nativeElement: HTMLElement = fixture.nativeElement;
+    const tacosChip = Array.from(nativeElement.querySelectorAll('.food-type-chip')) as HTMLButtonElement[];
+    const activeTacosChip = tacosChip
+      .find((chip): chip is HTMLButtonElement => chip.textContent?.includes('Tacos') ?? false);
+
+    expect(component.selectedFoodTypeQuery).toBe('tacos');
+    expect(catalogService.searchCalls).toBe(1);
+    expect(catalogService.lastSearchQuery).toBe('tacos');
+    expect(activeTacosChip?.classList.contains('active')).toBe(true);
+  });
+
+  it('combines typed search with selected food type', () => {
+    fixture.detectChanges();
+
+    component.searchTerm = 'centro';
+    component.selectFoodType(component.foodTypes.find(type => type.query === 'pizza')!);
+
+    expect(catalogService.lastSearchQuery).toBe('centro pizza');
+    expect(component.activeSearchQuery).toBe('centro pizza');
+  });
+
+  it('clears food type and reloads all restaurants when Todos is selected', () => {
+    fixture.detectChanges();
+
+    component.searchTerm = 'centro';
+    component.selectFoodType(component.foodTypes.find(type => type.query === 'tacos')!);
+    component.selectFoodType(component.foodTypes[0]);
+
+    expect(component.selectedFoodTypeQuery).toBe('');
+    expect(component.searchTerm).toBe('');
+    expect(component.activeSearchQuery).toBe('');
+    expect(catalogService.getRestaurantCalls).toBe(2);
+  });
+
   it('marks favorite restaurants from status response', () => {
     favoritesService.favoriteRestaurantIds = ['restaurant-1'];
 
@@ -399,11 +451,34 @@ describe('CustomerRestaurantListComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('No encontramos restaurantes o platillos para esta busqueda.');
   });
 
+  it('shows food type empty state when type has no results', () => {
+    catalogService.searchResults = [];
+    fixture.detectChanges();
+
+    component.selectFoodType(component.foodTypes.find(type => type.query === 'sushi')!);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No encontramos restaurantes o platillos para este tipo de comida.');
+  });
+
   it('keeps open filter over the current restaurant list', () => {
     fixture.detectChanges();
 
     component.toggleOpenOnly();
     expect(component.filteredRestaurants.map(item => item.id)).toEqual(['restaurant-1']);
+  });
+
+  it('keeps open filter over food type search results', () => {
+    catalogService.searchResults = [
+      restaurant('restaurant-3', 'Tacos Sur', true),
+      restaurant('restaurant-4', 'Tacos Noche', false)
+    ];
+    fixture.detectChanges();
+
+    component.selectFoodType(component.foodTypes.find(type => type.query === 'tacos')!);
+    component.toggleOpenOnly();
+
+    expect(component.filteredRestaurants.map(item => item.id)).toEqual(['restaurant-3']);
   });
 
   it('navigates from recommendation card using recommendation restaurant id', () => {
