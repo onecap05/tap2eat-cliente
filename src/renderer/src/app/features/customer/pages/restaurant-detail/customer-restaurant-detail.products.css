@@ -1,0 +1,52 @@
+.product-actions{display:flex;align-items:center;gap:16px}
+.add-product-button{border:0;border-radius:999px;padding:13px 20px;background:#ff7733;color:#fff;font-weight:900;box-shadow:0 10px 22px rgba(255,119,51,.25);cursor:pointer}
+.product-image{width:112px;height:112px;display:grid;place-items:center;overflow:hidden;border-radius:16px;background:#ecfdf5;color:#166534;font-size:34px;font-weight:900}
+.product-image img{width:100%;height:100%;object-fit:cover}
+.product-favorite-button{width:40px;height:40px;border:0;outline:0;border-radius:999px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;color:#9ca3af;flex-shrink:0;appearance:none;-webkit-appearance:none;transition:transform .18s ease,background-color .18s ease,color .18s ease}
+.product-favorite-button:hover:not(:disabled){color:#ef4444;background:#f8fafc;transform:scale(1.08)}
+.product-favorite-button:active:not(:disabled){transform:scale(.94)}
+.product-favorite-button:disabled{opacity:.55;cursor:wait}
+.product-favorite-icon{width:26px;height:26px;display:block;overflow:visible}
+.product-favorite-icon path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:fill .18s ease,stroke .18s ease,transform .18s ease}
+.product-favorite-button.active{color:#ef4444}
+.product-favorite-button.active .product-favorite-icon path{fill:currentColor;stroke:currentColor}
+@media (max-width:760px){.product-actions{justify-content:space-between}.product-image{width:96px;height:96px}}
+.featured-product-section {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.featured-product-section h2,
+.menu-section h2 {
+  margin: 0;
+  color: #071a36;
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.menu-section > p {
+  margin: 4px 0 18px;
+  color: #526684;
+  font-size: 17px;
+}
+
+.featured-product-card {
+  border-color: #fed7aa;
+  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+}
+
+.featured-product-card:hover {
+  border-color: #fb923c;
+}
+
+.featured-product-card .status-pill {
+  width: fit-content;
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.featured-product-card .add-product-button {
+  background: #ff7733;
+  color: #ffffff;
+}

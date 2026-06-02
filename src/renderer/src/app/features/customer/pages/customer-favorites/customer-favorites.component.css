@@ -1,0 +1,28 @@
+.favorites-page{min-height:100vh;background:#f8fafc;color:#18212f;font-family:Arial,sans-serif}
+.customer-navbar{height:72px;max-width:1320px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:#fff}
+.brand{display:flex;align-items:center;gap:10px;color:#267f53;font-size:24px;font-weight:900;text-decoration:none}
+.brand-mark{width:46px;height:46px;display:grid;place-items:center;border-radius:999px;background:#267f53;color:#fff;font-size:18px}
+.nav-actions{display:flex;align-items:center;gap:22px}
+.nav-actions a,.icon-button{border:0;background:transparent;color:#334155;font-size:17px;font-weight:700;text-decoration:none;cursor:pointer}
+.icon-button{font-size:15px}
+.favorites-header{min-height:220px;display:grid;align-items:center;background:#0f172a;color:#fff}
+.favorites-header>div{width:min(1320px,100%);margin:0 auto;padding:34px 32px}
+.favorites-header span{font-size:13px;font-weight:900;text-transform:uppercase}
+.favorites-header h1{margin:10px 0;font-size:clamp(36px,5vw,56px);line-height:1;font-weight:900}
+.favorites-header p{max-width:640px;margin:0;color:rgba(255,255,255,.86);font-size:19px}
+.favorites-section{max-width:1320px;margin:0 auto;padding:34px 32px 0}
+.section-heading h2{margin:0 0 20px;font-size:30px;font-weight:900}
+.favorite-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.favorite-card{display:grid;grid-template-columns:108px minmax(0,1fr);overflow:hidden;min-height:138px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;cursor:pointer;box-shadow:0 16px 34px rgba(15,23,42,.07)}
+.favorite-card:hover{border-color:#86efac;box-shadow:0 24px 48px rgba(15,23,42,.12)}
+.favorite-image{display:grid;place-items:center;overflow:hidden;background:#ecfdf5;color:#166534;font-size:34px;font-weight:900}
+.favorite-image img{width:100%;height:100%;object-fit:cover}
+.favorite-content{display:grid;gap:6px;padding:16px}
+.favorite-content span{width:fit-content;border-radius:999px;padding:5px 9px;background:#dcfce7;color:#166534;font-size:12px;font-weight:900}
+.favorite-content h3,.favorite-content p{margin:0}
+.favorite-content h3{font-size:20px;font-weight:900}
+.favorite-content p{color:#64748b;font-weight:700}
+.favorite-content strong{color:#ff7733;font-weight:900}
+.state-message{max-width:1320px;margin:24px auto;padding:18px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;color:#475569}
+.state-message.error{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+@media (max-width:760px){.customer-navbar{padding:0 18px}.nav-actions a{display:none}.favorites-header>div,.favorites-section{padding-inline:18px}.favorite-grid{grid-template-columns:1fr}}

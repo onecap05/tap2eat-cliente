@@ -53,6 +53,12 @@ export const routes: Routes = [
     canActivate: [customerGuard]
   },
   {
+    path: 'customer/favorites',
+    loadComponent: () => import('./features/customer/pages/customer-favorites/customer-favorites.component')
+      .then(component => component.CustomerFavoritesComponent),
+    canActivate: [customerGuard]
+  },
+  {
     path: 'customer/checkout',
     loadComponent: () => import('./features/customer/pages/checkout/customer-checkout.component')
       .then(component => component.CustomerCheckoutComponent),

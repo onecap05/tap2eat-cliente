@@ -7,6 +7,7 @@
 
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/favorites">Mis favoritos</a>
       <a routerLink="/customer/orders">Mis pedidos</a>
       <app-customer-notification-bell></app-customer-notification-bell>
       <button type="button" class="icon-button" routerLink="/customer/checkout" aria-label="Carrito">Carrito</button>
@@ -17,6 +18,8 @@
   <p class="state-message" *ngIf="isLoading">{{ text.loading }}</p>
   <p class="state-message error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
   <p class="state-message warning" *ngIf="!isLoading && availabilityMessage">{{ availabilityMessage }}</p>
+  <p class="state-message success" *ngIf="favoriteMessage">{{ favoriteMessage }}</p>
+  <p class="state-message error" *ngIf="favoriteErrorMessage">{{ favoriteErrorMessage }}</p>
 
   <ng-container *ngIf="!isLoading && !errorMessage && restaurant">
     <section class="restaurant-hero" [class.closed]="!restaurant.open">
@@ -40,6 +43,19 @@
           <span class="status-badge" [class.closed]="!restaurant.open">
             {{ restaurant.open ? text.open : text.closed }}
           </span>
+
+          <button
+            type="button"
+            class="hero-favorite-button"
+            [class.active]="restaurantIsFavorite"
+            [disabled]="isFavoritePending(restaurant.id)"
+            [attr.aria-pressed]="restaurantIsFavorite"
+            [attr.aria-label]="restaurantIsFavorite ? 'Quitar restaurante de favoritos' : 'Agregar restaurante a favoritos'"
+            (click)="toggleRestaurantFavorite($event)"
+          >
+            {{ restaurantIsFavorite ? '♥' : '♡' }}
+          </button>
+
           <h1>{{ restaurant.name }}</h1>
           <p>{{ restaurant.description || 'Explora el menu disponible.' }}</p>
 
@@ -88,9 +104,11 @@
             <span class="status-badge small">{{ text.recommendedBranch }}</span>
             <h3>{{ recommendedBranch.branchName }}</h3>
             <p>{{ recommendedBranch.branchAddress || 'Direccion no disponible.' }}</p>
+
             <strong *ngIf="recommendedBranch.distanceKm !== null && recommendedBranch.distanceKm !== undefined">
               {{ formatDistance(recommendedBranch.distanceKm) }}
             </strong>
+
             <em *ngIf="recommendationWarning">{{ recommendationWarning }}</em>
 
             <button type="button" (click)="showBranchesForChange()">
@@ -121,6 +139,62 @@
           </div>
         </section>
 
+        <section class="featured-product-section" *ngIf="featuredProduct">
+          <div class="section-heading">
+            <div>
+              <h2>Producto destacado</h2>
+              <p>El producto más guardado por los clientes.</p>
+            </div>
+          </div>
+
+          <article
+            class="product-card featured-product-card"
+            role="button"
+            tabindex="0"
+            [class.disabled]="!restaurant.open"
+            (click)="openFeaturedProduct($event)"
+            (keydown.enter)="openFeaturedProduct($event)"
+          >
+            <div class="product-info">
+              <span class="status-badge small">
+                Favorito de los clientes
+              </span>
+
+              <h3>{{ featuredProduct.productName }}</h3>
+
+              <p>
+                Producto destacado del restaurante.
+              </p>
+
+              <strong>
+                {{ formatCurrency(featuredProduct.price) }}
+              </strong>
+            </div>
+
+            <div class="product-actions">
+              <button
+                type="button"
+                class="add-product-button"
+                (click)="openFeaturedProduct($event)"
+              >
+                + Agregar
+              </button>
+
+              <div class="product-image">
+                <img
+                  *ngIf="featuredProduct.imageUrl"
+                  [src]="featuredProduct.imageUrl"
+                  [alt]="featuredProduct.productName"
+                />
+
+                <span *ngIf="!featuredProduct.imageUrl">
+                  {{ featuredProduct.productName[0] }}
+                </span>
+              </div>
+            </div>
+          </article>
+        </section>
+
         <section class="menu-section">
           <div class="section-heading">
             <div>
@@ -130,18 +204,20 @@
           </div>
 
           <div class="product-list">
-            <button
+            <article
               class="product-card"
-              type="button"
               *ngFor="let product of filteredProducts"
-              [disabled]="!restaurant.open || !product.available"
+              role="button"
+              tabindex="0"
               [class.disabled]="!restaurant.open || !product.available"
               (click)="openProduct(product)"
+              (keydown.enter)="openProduct(product)"
             >
               <div class="product-info">
                 <span class="status-badge small" [class.closed]="!product.available">
                   {{ product.available ? 'Disponible' : 'No disponible' }}
                 </span>
+
                 <h3>{{ product.name }}</h3>
                 <p>{{ product.description || 'Producto disponible.' }}</p>
                 <strong>{{ formatCurrency(product.price) }}</strong>
@@ -152,6 +228,27 @@
               </div>
 
               <div class="product-actions">
+                <button
+                  type="button"
+                  class="product-favorite-button"
+                  [class.active]="isProductFavorite(product.id)"
+                  [disabled]="isFavoritePending(product.id)"
+                  [attr.aria-pressed]="isProductFavorite(product.id)"
+                  [attr.aria-label]="isProductFavorite(product.id) ? 'Quitar producto de favoritos' : 'Agregar producto a favoritos'"
+                  (click)="toggleProductFavorite($event, product)"
+                >
+                  <svg
+                    class="product-favorite-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    ></path>
+                  </svg>
+                </button>
+
                 <span class="add-product-button">
                   + Agregar
                 </span>
@@ -162,12 +259,13 @@
                     [src]="product.image?.url"
                     [alt]="product.name"
                   />
+
                   <span *ngIf="!product.image?.url">
                     {{ product.name[0] }}
                   </span>
                 </div>
               </div>
-            </button>
+            </article>
           </div>
 
           <p class="state-message" *ngIf="!filteredProducts.length">
@@ -250,6 +348,7 @@
               [src]="selectedProduct.image?.url"
               [alt]="selectedProduct.name"
             />
+
             <span *ngIf="!selectedProduct.image?.url">
               {{ selectedProduct.name[0] }}
             </span>

@@ -9,6 +9,7 @@ import {
   RecommendationBranchResponse
 } from '../../models/recommendation.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerFavoritesApiService } from '../../services/customer-favorites-api.service';
 import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { CustomerLocationService } from '../../services/customer-location.service';
 import { RecommendationApiService } from '../../services/recommendation-api.service';
@@ -87,6 +88,39 @@ class FakeCustomerLocationService {
   }
 }
 
+class FakeCustomerFavoritesApiService {
+  public favoriteRestaurantIds: string[] = [];
+  public statusCalls = 0;
+  public addRestaurantCalls = 0;
+  public removeRestaurantCalls = 0;
+  public shouldFail = false;
+
+  public getCustomerFavoriteStatus() {
+    this.statusCalls++;
+
+    return of({
+      restaurantIds: this.favoriteRestaurantIds,
+      productIds: []
+    });
+  }
+
+  public addRestaurantFavorite() {
+    this.addRestaurantCalls++;
+
+    return this.shouldFail
+      ? throwError(() => new Error('favorite failed'))
+      : of({ restaurantId: 'restaurant-1' });
+  }
+
+  public removeRestaurantFavorite() {
+    this.removeRestaurantCalls++;
+
+    return this.shouldFail
+      ? throwError(() => new Error('favorite failed'))
+      : of(null);
+  }
+}
+
 class FakeAuthService {
   public accountId: string | null = 'customer-1';
 
@@ -111,6 +145,7 @@ describe('CustomerRestaurantListComponent', () => {
   let component: CustomerRestaurantListComponent;
   let catalogService: FakeCustomerCatalogApiService;
   let recommendationService: FakeRecommendationApiService;
+  let favoritesService: FakeCustomerFavoritesApiService;
   let locationService: FakeCustomerLocationService;
   let authService: FakeAuthService;
 
@@ -121,6 +156,7 @@ describe('CustomerRestaurantListComponent', () => {
         provideRouter([]),
         { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
         { provide: RecommendationApiService, useClass: FakeRecommendationApiService },
+        { provide: CustomerFavoritesApiService, useClass: FakeCustomerFavoritesApiService },
         { provide: CustomerLocationService, useClass: FakeCustomerLocationService },
         { provide: AuthService, useClass: FakeAuthService },
         { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
@@ -129,6 +165,7 @@ describe('CustomerRestaurantListComponent', () => {
 
     catalogService = TestBed.inject(CustomerCatalogApiService) as unknown as FakeCustomerCatalogApiService;
     recommendationService = TestBed.inject(RecommendationApiService) as unknown as FakeRecommendationApiService;
+    favoritesService = TestBed.inject(CustomerFavoritesApiService) as unknown as FakeCustomerFavoritesApiService;
     locationService = TestBed.inject(CustomerLocationService) as unknown as FakeCustomerLocationService;
     authService = TestBed.inject(AuthService) as unknown as FakeAuthService;
 
@@ -156,6 +193,54 @@ describe('CustomerRestaurantListComponent', () => {
 
     expect(component.restaurants.length).toBe(2);
     expect(component.filteredRestaurants.length).toBe(2);
+    expect(favoritesService.statusCalls).toBe(1);
+  });
+
+  it('marks favorite restaurants from status response', () => {
+    favoritesService.favoriteRestaurantIds = ['restaurant-1'];
+
+    fixture.detectChanges();
+
+    expect(component.isRestaurantFavorite('restaurant-1')).toBe(true);
+    expect(component.isRestaurantFavorite('restaurant-2')).toBe(false);
+  });
+
+  it('toggles restaurant favorite without navigating', () => {
+    fixture.detectChanges();
+
+    component.toggleRestaurantFavorite(new MouseEvent('click'), catalogService.restaurants[0]);
+
+    expect(favoritesService.addRestaurantCalls).toBe(1);
+    expect(component.isRestaurantFavorite('restaurant-1')).toBe(true);
+    expect(component.favoriteMessage).toContain('agregado');
+  });
+
+  it('removes restaurant favorite when already active', () => {
+    favoritesService.favoriteRestaurantIds = ['restaurant-1'];
+    fixture.detectChanges();
+
+    component.toggleRestaurantFavorite(new MouseEvent('click'), catalogService.restaurants[0]);
+
+    expect(favoritesService.removeRestaurantCalls).toBe(1);
+    expect(component.isRestaurantFavorite('restaurant-1')).toBe(false);
+  });
+
+  it('shows friendly error when favorite api fails', () => {
+    favoritesService.shouldFail = true;
+    fixture.detectChanges();
+
+    component.toggleRestaurantFavorite(new MouseEvent('click'), catalogService.restaurants[0]);
+
+    expect(component.favoriteErrorMessage).toContain('No pudimos');
+  });
+
+  it('does not send duplicate favorite requests while pending', () => {
+    fixture.detectChanges();
+    component.pendingRestaurantFavoriteIds.add('restaurant-1');
+
+    component.toggleRestaurantFavorite(new MouseEvent('click'), catalogService.restaurants[0]);
+
+    expect(favoritesService.addRestaurantCalls).toBe(0);
   });
 
   it('calls recommendation sections service with location', () => {

@@ -7,6 +7,7 @@
 
     <div class="nav-actions">
       <a routerLink="/customer/restaurants">Explorar</a>
+      <a routerLink="/customer/favorites">Mis favoritos</a>
       <a routerLink="/customer/orders">Mis pedidos</a>
       <app-customer-notification-bell></app-customer-notification-bell>
       <button type="button" class="icon-button" routerLink="/customer/checkout" aria-label="Carrito">
@@ -163,6 +164,14 @@
       {{ errorMessage }}
     </p>
 
+    <p class="state-message success" *ngIf="favoriteMessage">
+      {{ favoriteMessage }}
+    </p>
+
+    <p class="state-message error" *ngIf="favoriteErrorMessage">
+      {{ favoriteErrorMessage }}
+    </p>
+
     <p
       class="state-message"
       *ngIf="!isLoading && !errorMessage && !filteredRestaurants.length"
@@ -174,44 +183,75 @@
       class="restaurant-grid"
       *ngIf="!isLoading && !errorMessage && filteredRestaurants.length"
     >
-      <a
-        class="restaurant-card"
-        *ngFor="let restaurant of filteredRestaurants"
-        [class.closed]="!restaurant.open"
-        [routerLink]="['/customer/restaurants', restaurant.id]"
-        [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
+      <article
+  class="restaurant-card"
+  *ngFor="let restaurant of filteredRestaurants"
+  [class.closed]="!restaurant.open"
+  role="link"
+  tabindex="0"
+  [attr.aria-label]="text.viewRestaurant + ' ' + restaurant.name"
+  (click)="openRestaurant(restaurant.id)"
+  (keydown.enter)="openRestaurant(restaurant.id)"
+>
+  <div class="image-wrapper">
+    <img
+      *ngIf="restaurant.logo?.url; else logoInitial"
+      [src]="restaurant.logo?.url"
+      [alt]="restaurant.name"
+    />
+
+    <ng-template #logoInitial>
+      <div class="logo-placeholder">
+        {{ getInitials(restaurant.name) }}
+      </div>
+    </ng-template>
+
+    <span class="badge" [class.closed]="!restaurant.open">
+      {{ restaurant.open ? text.open : text.closed }}
+    </span>
+  </div>
+
+  <div class="restaurant-content">
+    <div class="restaurant-header-row">
+      <div class="restaurant-title-block">
+        <h3>{{ restaurant.name }}</h3>
+
+        <div class="restaurant-rating-row">
+          <span class="rating">4.6★</span>
+          <span class="reviews">(29)</span>
+          <span class="dot">·</span>
+          <span class="time">12 min</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="favorite-button"
+        [class.active]="isRestaurantFavorite(restaurant.id)"
+        [disabled]="isRestaurantFavoritePending(restaurant.id)"
+        [attr.aria-pressed]="isRestaurantFavorite(restaurant.id)"
+        [attr.aria-label]="isRestaurantFavorite(restaurant.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+        (click)="toggleRestaurantFavorite($event, restaurant)"
       >
-        <div class="image-wrapper">
-          <img
-            *ngIf="restaurant.logo?.url; else logoInitial"
-            [src]="restaurant.logo?.url"
-            [alt]="restaurant.name"
-          />
+        <svg class="favorite-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+          ></path>
+        </svg>
+      </button>
+    </div>
 
-          <ng-template #logoInitial>
-            <div class="logo-placeholder">
-              {{ getInitials(restaurant.name) }}
-            </div>
-          </ng-template>
+    <p>{{ restaurant.description || 'Menu disponible para consultar.' }}</p>
 
-          <span class="badge" [class.closed]="!restaurant.open">
-            {{ restaurant.open ? text.open : text.closed }}
-          </span>
-        </div>
+    <div class="restaurant-meta">
+      <span>{{ restaurant.open ? 'Aceptando pedidos' : 'Pedidos pausados' }}</span>
+    </div>
 
-        <div class="restaurant-content">
-          <h3>{{ restaurant.name }}</h3>
-          <p>{{ restaurant.description || 'Menu disponible para consultar.' }}</p>
-
-          <div class="restaurant-meta">
-            <span>{{ restaurant.open ? 'Aceptando pedidos' : 'Pedidos pausados' }}</span>
-          </div>
-
-          <span class="open-action">
-            {{ text.viewRestaurant }}
-          </span>
-        </div>
-      </a>
+    <span class="open-action">
+      {{ text.viewRestaurant }}
+    </span>
+  </div>
+</article>
     </div>
   </section>
 </main>
