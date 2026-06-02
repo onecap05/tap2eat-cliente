@@ -10,6 +10,7 @@ import {
 
 export interface RealtimeStompClient {
   connected: boolean;
+  active?: boolean;
   onConnect?: () => void;
   onStompError?: (frame: unknown) => void;
   onWebSocketError?: (event: unknown) => void;
@@ -153,20 +154,27 @@ export class RealtimeNotificationService {
               return;
             }
 
-            stompSubscription = client.subscribe(topic, message => {
-              const parsedMessage = parseMessage(message.body);
+            try {
+              stompSubscription = client.subscribe(topic, message => {
+                const parsedMessage = parseMessage(message.body);
 
-              if (parsedMessage) {
-                observer.next(parsedMessage);
-              }
-            });
+                if (parsedMessage) {
+                  observer.next(parsedMessage);
+                }
+              });
+            } catch (error) {
+              console.warn(`Realtime notification subscription failed for ${topic}:`, error);
+              observer.complete();
+            }
           };
 
           if (client.connected) {
             subscribeToTopic();
           } else {
             this.pendingSubscriptions.push(subscribeToTopic);
-            client.activate();
+            if (!client.active) {
+              client.activate();
+            }
           }
         })
         .catch(error => {

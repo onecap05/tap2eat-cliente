@@ -34,6 +34,11 @@ interface ProgressStep {
   label: string;
 }
 
+interface PreparationTimeOption {
+  value: string;
+  label: string;
+}
+
 const STATUS_FILTERS: StatusFilterOption[] = [
   { value: 'all', label: 'Todos' },
   { value: 'Created', label: 'Recibidos' },
@@ -82,6 +87,14 @@ const ORDER_ACTIONS: Partial<Record<OrderStatus, OrderAction[]>> = {
 const CANCEL_ORDER_CONFIRMATION_MESSAGE =
   '¿Seguro que deseas cancelar este pedido? El cliente será notificado del cambio.';
 
+const PREPARATION_TIME_OPTIONS: PreparationTimeOption[] = [
+  { value: '10', label: '10 minutos' },
+  { value: '15', label: '15 minutos' },
+  { value: '20', label: '20 minutos' },
+  { value: '30', label: '30 minutos' },
+  { value: 'custom', label: 'Personalizado' }
+];
+
 @Component({
   selector: 'app-orders-preview',
   standalone: true,
@@ -102,6 +115,7 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
     { status: 'Ready', label: 'Listo' },
     { status: 'Delivered', label: 'Entregado' }
   ];
+  public readonly preparationTimeOptions = PREPARATION_TIME_OPTIONS;
 
   public orders: OrderResponse[] = [];
   public selectedOrder: OrderResponse | null = null;
@@ -113,6 +127,8 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
   public errorMessage = '';
   public actionErrorMessage = '';
   public updatingOrderId: string | null = null;
+  public selectedPreparationTimeOption = '15';
+  public customPreparationMinutes = 25;
 
   private realtimeOrdersSubscription?: Subscription;
   private realtimePaymentsSubscription?: Subscription;
@@ -171,10 +187,19 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
       return;
     }
 
+    const estimatedPreparationMinutes = status === 'Accepted'
+      ? this.getSelectedPreparationMinutes()
+      : undefined;
+
+    if (status === 'Accepted' && estimatedPreparationMinutes === null) {
+      this.actionErrorMessage = 'Selecciona un tiempo estimado valido.';
+      return;
+    }
+
     this.updatingOrderId = order.id;
     this.actionErrorMessage = '';
 
-    this.orderApiService.updateOrderStatus(order.id, status)
+    this.orderApiService.updateOrderStatus(order.id, status, estimatedPreparationMinutes)
       .pipe(
         finalize(() => {
           this.updatingOrderId = null;
@@ -253,6 +278,19 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
     }).format(new Date(value));
   }
 
+  public getEstimatedReadyLabel(order: OrderResponse): string {
+    if (!order.estimatedReadyAt) {
+      return '';
+    }
+
+    const readyTime = new Intl.DateTimeFormat('es-MX', {
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(order.estimatedReadyAt));
+
+    return `Listo para recoger aproximadamente a las ${readyTime}.`;
+  }
+
   private loadOrders(): void {
     if (!this.restaurantId) {
       return;
@@ -284,6 +322,18 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
           this.orders = [];
         }
       });
+  }
+
+  private getSelectedPreparationMinutes(): number | null {
+    const minutes = this.selectedPreparationTimeOption === 'custom'
+      ? this.customPreparationMinutes
+      : Number(this.selectedPreparationTimeOption);
+
+    if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 240) {
+      return null;
+    }
+
+    return Math.round(minutes);
   }
 
   private subscribeToRealtimeOrders(): void {

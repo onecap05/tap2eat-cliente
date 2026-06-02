@@ -113,4 +113,24 @@ describe('OrderApiService', () => {
     expect(httpRequest.request.body).toEqual({ status: 'Accepted' });
     httpRequest.flush({ id: 'order-1', status: 'Accepted' });
   });
+
+  it('should update order status with estimated preparation minutes', () => {
+    service.updateOrderStatus('order-1', 'Accepted', 20).subscribe(response => {
+      expect(response.estimatedPreparationMinutes).toBe(20);
+    });
+
+    const httpRequest = httpTestingController.expectOne(`${environment.apiBaseUrl}/orders/order-1/status`);
+
+    expect(httpRequest.request.method).toBe('PATCH');
+    expect(httpRequest.request.body).toEqual({
+      status: 'Accepted',
+      estimatedPreparationMinutes: 20
+    });
+    httpRequest.flush({
+      id: 'order-1',
+      status: 'Accepted',
+      estimatedPreparationMinutes: 20,
+      estimatedReadyAt: '2026-05-23T12:20:00Z'
+    });
+  });
 });

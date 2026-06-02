@@ -53,8 +53,14 @@ export class OrderApiService {
     );
   }
 
-  public updateOrderStatus(orderId: string, status: string): Observable<OrderResponse> {
-    const request: UpdateOrderStatusRequest = { status };
+  public updateOrderStatus(
+    orderId: string,
+    status: string,
+    estimatedPreparationMinutes?: number | null
+  ): Observable<OrderResponse> {
+    const request: UpdateOrderStatusRequest = estimatedPreparationMinutes === undefined
+      ? { status }
+      : { status, estimatedPreparationMinutes };
 
     return this.http.patch<OrderResponse>(`${this.baseUrl}/${orderId}/status`, request);
   }

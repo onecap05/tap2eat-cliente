@@ -13,6 +13,7 @@ import {
 import { RecommendationBranchResponse } from '../../models/recommendation.models';
 import { CartService } from '../../services/cart.service';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { CustomerLocationService } from '../../services/customer-location.service';
 import { RecommendationApiService } from '../../services/recommendation-api.service';
 import { CustomerRestaurantDetailComponent } from './customer-restaurant-detail.component';
@@ -155,6 +156,17 @@ class FakeCartService {
   public removeItem(): void {}
 }
 
+class FakeCustomerNotificationService {
+  public notifications$ = of([]);
+  public unreadCount$ = of(0);
+  public toast$ = of(null);
+
+  public initializeForCurrentCustomer(): void {}
+  public markAsRead(): void {}
+  public markAllAsRead(): void {}
+  public clearToast(): void {}
+}
+
 describe('CustomerRestaurantDetailComponent', () => {
   let fixture: ComponentFixture<CustomerRestaurantDetailComponent>;
   let component: CustomerRestaurantDetailComponent;
@@ -180,7 +192,8 @@ describe('CustomerRestaurantDetailComponent', () => {
         { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
         { provide: RecommendationApiService, useClass: FakeRecommendationApiService },
         { provide: CustomerLocationService, useClass: FakeCustomerLocationService },
-        { provide: CartService, useClass: FakeCartService }
+        { provide: CartService, useClass: FakeCartService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 

@@ -10,6 +10,7 @@ import {
 } from '../../../../models/realtime-notification.models';
 import { OrderResponse, OrderStatus } from '../../models/order.models';
 import { CustomerCatalogApiService } from '../../services/customer-catalog-api.service';
+import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { CustomerOrdersComponent } from './customer-orders.component';
 
@@ -90,6 +91,17 @@ class FakeCustomerCatalogApiService {
   }
 }
 
+class FakeCustomerNotificationService {
+  public notifications$ = of([]);
+  public unreadCount$ = of(0);
+  public toast$ = of(null);
+
+  public initializeForCurrentCustomer(): void {}
+  public markAsRead(): void {}
+  public markAllAsRead(): void {}
+  public clearToast(): void {}
+}
+
 describe('CustomerOrdersComponent', () => {
   let fixture: ComponentFixture<CustomerOrdersComponent>;
   let component: CustomerOrdersComponent;
@@ -106,7 +118,8 @@ describe('CustomerOrdersComponent', () => {
         { provide: AuthService, useClass: FakeAuthService },
         { provide: OrderApiService, useClass: FakeOrderApiService },
         { provide: CustomerCatalogApiService, useClass: FakeCustomerCatalogApiService },
-        { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService }
+        { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 
@@ -308,6 +321,17 @@ describe('CustomerOrdersComponent', () => {
     expect(text).toContain('Sucursal #8F7A');
     expect(text).not.toContain('restaurant-long-1384d0');
     expect(text).not.toContain('branch-long-8f7a');
+  });
+
+  it('should show estimated ready time when available', () => {
+    orderApiService.orders = [{
+      ...order('Accepted', 'branch-long-8f7a', 'order-1'),
+      estimatedPreparationMinutes: 20,
+      estimatedReadyAt: '2026-05-23T12:20:00Z'
+    }];
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Listo para recoger aproximadamente');
   });
 });
 

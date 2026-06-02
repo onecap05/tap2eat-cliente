@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { IMeResponse } from '../../../../models/IMeResponse';
 import { AuthService } from '../../../../services/auth.service';
+import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
 
 const CUSTOMER_PROFILE_TEXT = {
   loading: 'Cargando perfil...',
@@ -18,7 +19,7 @@ const CUSTOMER_PROFILE_TEXT = {
 @Component({
   selector: 'app-customer-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, CustomerNotificationBellComponent],
   templateUrl: './customer-profile.component.html',
   styleUrl: './customer-profile.component.css'
 })

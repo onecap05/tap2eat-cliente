@@ -161,6 +161,10 @@
       Este pedido fue cancelado.
     </p>
 
+    <p *ngIf="getEstimatedReadyLabel(detailOrder)" class="estimated-ready-note">
+      {{ getEstimatedReadyLabel(detailOrder) }}
+    </p>
+
     <section class="detail-products">
       <h4>Productos</h4>
 
@@ -198,6 +202,27 @@
         <span>Total</span>
         <strong>{{ formatCurrency(detailOrder.total) }}</strong>
       </div>
+    </section>
+
+    <section class="preparation-time-panel" *ngIf="detailOrder.status === 'Created'">
+      <label>
+        Tiempo estimado
+        <select [(ngModel)]="selectedPreparationTimeOption">
+          <option *ngFor="let option of preparationTimeOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+
+      <label *ngIf="selectedPreparationTimeOption === 'custom'">
+        Minutos
+        <input
+          type="number"
+          min="1"
+          max="240"
+          [(ngModel)]="customPreparationMinutes"
+        />
+      </label>
     </section>
 
     <section class="detail-actions" *ngIf="getActions(detailOrder).length > 0">

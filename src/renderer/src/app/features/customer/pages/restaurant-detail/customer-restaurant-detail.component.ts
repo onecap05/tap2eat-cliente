@@ -6,6 +6,7 @@ import { catchError, forkJoin, of, Subscription, switchMap } from 'rxjs';
 
 import { IModifierGroupResponse } from '../../../catalog/models/commons/IModifierGroupResponse';
 import { IModifierOptionResponse } from '../../../catalog/models/commons/IModifierOptionResponse';
+import { CustomerNotificationBellComponent } from '../../components/customer-notification-bell/customer-notification-bell.component';
 import { ICartItem, ICartState, IProductModifierSelection } from '../../models/cart.models';
 import {
   CustomerBranchResponse,
@@ -53,7 +54,7 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
 @Component({
   selector: 'app-customer-restaurant-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CustomerNotificationBellComponent],
   templateUrl: './customer-restaurant-detail.component.html',
   styleUrls: [
     './customer-restaurant-detail.component.css',

@@ -22,6 +22,7 @@ export interface CreateOrderItemRequest {
 
 export interface UpdateOrderStatusRequest {
   status: OrderStatus | string;
+  estimatedPreparationMinutes?: number | null;
 }
 
 export interface SelectedModifierResponse {
@@ -51,6 +52,8 @@ export interface OrderResponse {
   subtotal: number;
   total: number;
   status: OrderStatus | string;
+  estimatedPreparationMinutes?: number | null;
+  estimatedReadyAt?: string | null;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -80,6 +83,8 @@ export interface PublicOrderTrackingResponse {
   publicTrackingCode: string;
   shortOrderId: string;
   status: OrderStatus | string;
+  estimatedPreparationMinutes?: number | null;
+  estimatedReadyAt?: string | null;
   restaurantNameSnapshot?: string | null;
   branchNameSnapshot?: string | null;
   items: PublicOrderTrackingItemResponse[];

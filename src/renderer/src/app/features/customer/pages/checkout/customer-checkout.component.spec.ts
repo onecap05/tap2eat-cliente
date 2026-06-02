@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { AuthService } from '../../../../services/auth.service';
 import { CustomerProductResponse } from '../../models/customer-catalog.models';
 import { CartService } from '../../services/cart.service';
+import { CustomerNotificationService } from '../../services/customer-notification.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
 import { CustomerCheckoutComponent } from './customer-checkout.component';
@@ -93,6 +94,17 @@ class FakeAuthService {
   }
 }
 
+class FakeCustomerNotificationService {
+  public notifications$ = of([]);
+  public unreadCount$ = of(0);
+  public toast$ = of(null);
+
+  public initializeForCurrentCustomer(): void {}
+  public markAsRead(): void {}
+  public markAllAsRead(): void {}
+  public clearToast(): void {}
+}
+
 describe('CustomerCheckoutComponent', () => {
   let fixture: ComponentFixture<CustomerCheckoutComponent>;
   let component: CustomerCheckoutComponent;
@@ -111,7 +123,8 @@ describe('CustomerCheckoutComponent', () => {
         CartService,
         { provide: OrderApiService, useClass: FakeOrderApiService },
         { provide: PaymentApiService, useClass: FakePaymentApiService },
-        { provide: AuthService, useClass: FakeAuthService }
+        { provide: AuthService, useClass: FakeAuthService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService }
       ]
     }).compileComponents();
 

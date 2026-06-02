@@ -1,5 +1,6 @@
 .checkout-page{min-height:100vh;background:#f6f8fb;color:#172033;font-family:Arial,sans-serif}
-.checkout-nav{height:72px;max-width:1180px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;background:#fff}
+.checkout-nav{height:72px;max-width:1180px;margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:18px;background:#fff}
+.checkout-nav app-customer-notification-bell{margin-left:auto}
 .brand{display:flex;align-items:center;gap:10px;color:#267f53;font-size:24px;font-weight:900;text-decoration:none}
 .brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#267f53;color:#fff;font-size:17px}
 .checkout-shell{max-width:1180px;margin:0 auto;padding:34px 28px 52px}

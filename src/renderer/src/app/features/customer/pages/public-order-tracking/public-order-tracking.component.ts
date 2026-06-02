@@ -99,4 +99,17 @@ export class PublicOrderTrackingComponent implements OnInit {
       timeStyle: 'short'
     }).format(new Date(value));
   }
+
+  public getEstimatedReadyLabel(): string {
+    if (!this.order?.estimatedReadyAt) {
+      return '';
+    }
+
+    const readyTime = new Intl.DateTimeFormat('es-MX', {
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(this.order.estimatedReadyAt));
+
+    return `Listo para recoger aproximadamente a las ${readyTime}.`;
+  }
 }

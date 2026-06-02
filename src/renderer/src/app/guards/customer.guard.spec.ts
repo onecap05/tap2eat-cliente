@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { vi } from 'vitest';
 
+import { CustomerNotificationService } from '../features/customer/services/customer-notification.service';
 import { AuthService } from '../services/auth.service';
 import { customerGuard } from './customer.guard';
 
@@ -23,8 +24,17 @@ class FakeAuthService {
   }
 }
 
+class FakeCustomerNotificationService {
+  public initializeCalls = 0;
+
+  public initializeForCurrentCustomer(): void {
+    this.initializeCalls++;
+  }
+}
+
 describe('customerGuard', () => {
   let authService: FakeAuthService;
+  let customerNotificationService: FakeCustomerNotificationService;
   let router: { createUrlTree: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
@@ -35,17 +45,20 @@ describe('customerGuard', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useClass: FakeAuthService },
+        { provide: CustomerNotificationService, useClass: FakeCustomerNotificationService },
         { provide: Router, useValue: router }
       ]
     });
 
     authService = TestBed.inject(AuthService) as unknown as FakeAuthService;
+    customerNotificationService = TestBed.inject(CustomerNotificationService) as unknown as FakeCustomerNotificationService;
   });
 
-  it('should allow access when user is authenticated and is not a restaurant owner', () => {
+  it('should allow access and initialize customer realtime notifications', () => {
     const result = TestBed.runInInjectionContext(() => customerGuard({} as never, {} as never));
 
     expect(result).toBe(true);
+    expect(customerNotificationService.initializeCalls).toBe(1);
     expect(router.createUrlTree).not.toHaveBeenCalled();
   });
 
@@ -55,6 +68,7 @@ describe('customerGuard', () => {
     const result = TestBed.runInInjectionContext(() => customerGuard({} as never, {} as never));
 
     expect(authService.logoutCalls).toBe(1);
+    expect(customerNotificationService.initializeCalls).toBe(0);
     expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
     expect(result).toBe('TREE:/login');
   });
@@ -65,6 +79,7 @@ describe('customerGuard', () => {
     const result = TestBed.runInInjectionContext(() => customerGuard({} as never, {} as never));
 
     expect(authService.logoutCalls).toBe(0);
+    expect(customerNotificationService.initializeCalls).toBe(0);
     expect(router.createUrlTree).toHaveBeenCalledWith(['/owner/dashboard']);
     expect(result).toBe('TREE:/owner/dashboard');
   });

@@ -10,23 +10,33 @@ import {
 
 class FakeStompClient {
   public connected = false;
+  public active = false;
   public activateCalls = 0;
   public deactivateCalls = 0;
+  public subscribeCalls = 0;
   public subscribedDestination = '';
   public onConnect?: () => void;
+  public shouldThrowOnSubscribe = false;
   private messageCallback?: (message: { body: string }) => void;
 
   public activate(): void {
+    this.active = true;
     this.activateCalls++;
   }
 
   public deactivate(): Promise<void> {
     this.deactivateCalls++;
     this.connected = false;
+    this.active = false;
     return Promise.resolve();
   }
 
   public subscribe(destination: string, callback: (message: any) => void) {
+    this.subscribeCalls++;
+    if (this.shouldThrowOnSubscribe) {
+      throw new Error('subscribe failed');
+    }
+
     this.subscribedDestination = destination;
     this.messageCallback = callback;
 
@@ -38,6 +48,7 @@ class FakeStompClient {
 
   public connect(): void {
     this.connected = true;
+    this.active = true;
     this.onConnect?.();
   }
 
@@ -106,8 +117,11 @@ describe('RealtimeNotificationService', () => {
     const subscription = service.listenToCustomerOrders('customer-1').subscribe();
     await flushPromises();
 
+    expect(client.activateCalls).toBe(1);
+
     client.connect();
 
+    expect(client.subscribeCalls).toBe(1);
     expect(client.subscribedDestination).toBe('/topic/customers/customer-1/orders');
 
     subscription.unsubscribe();
@@ -120,6 +134,42 @@ describe('RealtimeNotificationService', () => {
     client.connect();
 
     expect(client.subscribedDestination).toBe('/topic/customers/customer-1/payments');
+
+    subscription.unsubscribe();
+  });
+
+  it('should keep one active stomp connection for multiple pending subscriptions', async () => {
+    const ordersSubscription = service.listenToCustomerOrders('customer-1').subscribe();
+    const paymentsSubscription = service.listenToCustomerPayments('customer-1').subscribe();
+    await flushPromises();
+
+    expect(client.activateCalls).toBe(1);
+
+    client.connect();
+
+    expect(client.subscribedDestination).toBe('/topic/customers/customer-1/payments');
+
+    ordersSubscription.unsubscribe();
+    paymentsSubscription.unsubscribe();
+  });
+
+  it('should warn and complete when stomp subscribe fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const completeSpy = vi.fn();
+    client.shouldThrowOnSubscribe = true;
+
+    const subscription = service.listenToCustomerOrders('customer-1').subscribe({
+      complete: completeSpy
+    });
+    await flushPromises();
+
+    client.connect();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Realtime notification subscription failed for /topic/customers/customer-1/orders:',
+      expect.any(Error)
+    );
+    expect(completeSpy).toHaveBeenCalled();
 
     subscription.unsubscribe();
   });
