@@ -88,6 +88,7 @@ class FakeCustomerCatalogApiService {
   ];
   public categories: CustomerCategoryResponse[] = [];
   public products: CustomerProductResponse[] = [];
+  public requestedProductIds: string[] = [];
 
   public getRestaurant() {
     return of(this.restaurant);
@@ -106,6 +107,8 @@ class FakeCustomerCatalogApiService {
   }
 
   public getProduct(productId: string) {
+    this.requestedProductIds.push(productId);
+
     return of(this.products.find(product => product.id === productId) ?? product(productId));
   }
 }
@@ -371,6 +374,95 @@ describe('CustomerRestaurantDetailComponent', () => {
 
     expect(component.featuredProduct?.productId).toBe('product-1');
     expect(fixture.nativeElement.textContent).toContain('Producto destacado');
+  });
+
+  it('opens featured product with the same product flow as menu items', () => {
+    catalogService.products = [product('product-1')];
+    favoritesService.featuredProduct = {
+      productId: 'product-1',
+      productName: 'Taco favorito',
+      restaurantId: 'restaurant-1',
+      price: 50,
+      favoriteCount: 2
+    };
+
+    fixture.detectChanges();
+
+    const openProductSpy = vi.spyOn(component, 'openProduct');
+    const orderButton = fixture.nativeElement.querySelector('.featured-product-card .add-product-button') as HTMLButtonElement;
+    orderButton.click();
+
+    expect(openProductSpy).toHaveBeenCalledWith(catalogService.products[0]);
+    expect(catalogService.requestedProductIds).toContain('product-1');
+    expect(component.selectedProduct?.id).toBe('product-1');
+  });
+
+  it('opens modifier selection when featured product is customizable', () => {
+    catalogService.products = [
+      {
+        ...product('product-1'),
+        productType: 'CUSTOMIZABLE',
+        modifierGroups: [
+          {
+            id: 'group-1',
+            name: 'Salsas',
+            active: true,
+            selectionType: 'SINGLE',
+            required: true,
+            minSelections: 1,
+            maxSelections: 1,
+            displayOrder: 1,
+            options: [
+              {
+                id: 'option-1',
+                name: 'Verde',
+                additionalPrice: 0,
+                active: true,
+                displayOrder: 1
+              }
+            ]
+          } as never
+        ]
+      } as CustomerProductResponse
+    ];
+    favoritesService.featuredProduct = {
+      productId: 'product-1',
+      productName: 'Taco favorito',
+      restaurantId: 'restaurant-1',
+      price: 50,
+      favoriteCount: 2
+    };
+
+    fixture.detectChanges();
+
+    component.openFeaturedProduct(new MouseEvent('click'));
+
+    expect(component.selectedProduct?.id).toBe('product-1');
+    expect(component.selectedProduct?.productType).toBe('CUSTOMIZABLE');
+    expect(component.getActiveModifierGroups(component.selectedProduct!).length).toBe(1);
+  });
+
+  it('does not open unavailable featured product', () => {
+    catalogService.products = [
+      {
+        ...product('product-1'),
+        available: false
+      }
+    ];
+    favoritesService.featuredProduct = {
+      productId: 'product-1',
+      productName: 'Taco favorito',
+      restaurantId: 'restaurant-1',
+      price: 50,
+      favoriteCount: 2
+    };
+
+    fixture.detectChanges();
+
+    component.openFeaturedProduct(new MouseEvent('click'));
+
+    expect(component.selectedProduct).toBeNull();
+    expect(component.availabilityMessage).toBe(component.text.unavailableProduct);
   });
 
   it('does not show featured product when api returns not found', () => {

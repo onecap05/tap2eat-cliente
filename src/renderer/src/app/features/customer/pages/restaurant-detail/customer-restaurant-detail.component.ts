@@ -64,6 +64,7 @@ const CUSTOMER_RESTAURANT_DETAIL_TEXT = {
   templateUrl: './customer-restaurant-detail.component.html',
   styleUrls: [
     './customer-restaurant-detail.component.css',
+    './customer-restaurant-detail.products.css',
     './customer-restaurant-detail.modal.css'
   ]
 })
@@ -394,6 +395,18 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  public openFeaturedProduct(event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    if (!this.featuredProduct) {
+      return;
+    }
+
+    const menuProduct = this.products.find(product => product.id === this.featuredProduct?.productId);
+    this.openProduct(menuProduct ?? this.toCustomerProduct(this.featuredProduct));
+  }
+
   public toggleProductFavorite(event: Event, product: CustomerProductResponse): void {
     event.preventDefault();
     event.stopPropagation();
@@ -608,6 +621,34 @@ export class CustomerRestaurantDetailComponent implements OnInit, OnDestroy {
       score: 1,
       warning: null
     };
+  }
+
+  private toCustomerProduct(featuredProduct: FeaturedProductResponse): CustomerProductResponse {
+    return {
+      id: featuredProduct.productId,
+      restaurantId: featuredProduct.restaurantId,
+      categoryId: '',
+      name: featuredProduct.productName,
+      description: 'Favorito de los clientes',
+      productType: 'SIMPLE',
+      price: featuredProduct.price,
+      image: featuredProduct.imageUrl
+        ? {
+          url: featuredProduct.imageUrl,
+          objectKey: '',
+          provider: ''
+        }
+        : null,
+      displayOrder: 0,
+      featured: true,
+      availability: null,
+      active: true,
+      available: true,
+      tags: [],
+      dietaryFlags: [],
+      allergens: [],
+      modifierGroups: []
+    } as CustomerProductResponse;
   }
 
   private getDefaultBranchId(branches: CustomerBranchResponse[]): string | null {
