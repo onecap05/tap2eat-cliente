@@ -19,6 +19,7 @@ import { IForgotPasswordResponse } from '../models/IForgotPasswordResponse';
 import { IResetPasswordRequest } from '../models/IResetPasswordRequest';
 import { IResetPasswordResponse } from '../models/IResetPasswordResponse';
 import { TokenStorageService } from './token-storage.service';
+import { IUpdateProfileRequest } from '../models/IUpdateProfileRequest';
 
 @Injectable({
   providedIn: 'root'
@@ -207,5 +208,9 @@ export class AuthService {
     const role = roleValue.authority ?? roleValue.role ?? roleValue.name;
 
     return typeof role === 'string' ? role : null;
+  }
+
+    public updateCurrentProfile(request: IUpdateProfileRequest): Observable<IMeResponse> {
+    return this.http.patch<IMeResponse>(`${this.API_URL}/me`, request);
   }
 }
