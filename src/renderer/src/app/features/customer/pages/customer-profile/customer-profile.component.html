@@ -34,6 +34,10 @@
       {{ errorMessage }}
     </p>
 
+    <p class="state-message success" *ngIf="!isLoading && successMessage">
+      {{ successMessage }}
+    </p>
+
     <article class="profile-card" *ngIf="!isLoading && !errorMessage && account">
       <div class="profile-avatar">
         {{ (account.firstName || account.email || 'T')[0].toUpperCase() }}
@@ -53,7 +57,96 @@
         </div>
       </div>
 
-      <dl class="profile-details">
+      <div class="profile-actions">
+        <button
+          *ngIf="!isEditing"
+          type="button"
+          class="edit-profile-button"
+          (click)="startEditing()"
+        >
+          Editar perfil
+        </button>
+      </div>
+
+      <form
+        *ngIf="isEditing"
+        class="profile-details profile-edit-form"
+        (ngSubmit)="saveProfile()"
+      >
+        <div>
+          <dt>Nombre</dt>
+          <dd>
+            <input
+              type="text"
+              name="firstName"
+              [(ngModel)]="form.firstName"
+              maxlength="100"
+              required
+            />
+          </dd>
+        </div>
+
+        <div>
+          <dt>Apellido</dt>
+          <dd>
+            <input
+              type="text"
+              name="lastName"
+              [(ngModel)]="form.lastName"
+              maxlength="100"
+              required
+            />
+          </dd>
+        </div>
+
+        <div>
+          <dt>Email</dt>
+          <dd>{{ account.email }}</dd>
+        </div>
+
+        <div>
+          <dt>Telefono</dt>
+          <dd>
+            <input
+              type="text"
+              name="phone"
+              [(ngModel)]="form.phone"
+              maxlength="30"
+            />
+          </dd>
+        </div>
+
+        <div>
+          <dt>Rol</dt>
+          <dd>{{ account.role }}</dd>
+        </div>
+
+        <div>
+          <dt>Correo verificado</dt>
+          <dd>{{ emailVerifiedLabel }}</dd>
+        </div>
+
+        <div class="profile-form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancelEditing()"
+            [disabled]="isSubmitting"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isSubmitting"
+          >
+            {{ isSubmitting ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+
+      <dl class="profile-details" *ngIf="!isEditing">
         <div>
           <dt>Nombre completo</dt>
           <dd>{{ fullName }}</dd>
