@@ -198,6 +198,7 @@ export class OwnerDashboardComponent implements OnInit {
     const request: ICreateRestaurantRequest = {
       ownerAccountId,
       name: formValue.name,
+      rfc: formValue.rfc,
       description: formValue.description || null,
       logo: this.buildRestaurantLogoRequest(formValue)
     };
@@ -235,6 +236,7 @@ export class OwnerDashboardComponent implements OnInit {
 
     const request: IUpdateRestaurantRequest = {
       name: formValue.name,
+      rfc: formValue.rfc,
       description: formValue.description || null,
       logo: this.buildRestaurantLogoRequest(formValue)
     };

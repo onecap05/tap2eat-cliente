@@ -16,6 +16,7 @@ import { ImageUploadApiService } from '../../../services/ImageUploadApiService';
 
 export interface RestaurantFormValue {
   name: string;
+  rfc: string;
   description: string;
   logoUrl: string;
   logoObjectKey: string;
@@ -30,9 +31,12 @@ interface RestaurantLogoMetadata {
 
 const MAX_LOGO_SIZE_IN_MB = 5;
 const BYTES_PER_MB = 1024 * 1024;
+const RFC_PATTERN = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
 
 const RESTAURANT_FORM_MESSAGES = {
   requiredName: 'Escribe el nombre del restaurante.',
+  requiredRfc: 'Escribe el RFC del restaurante.',
+  invalidRfc: 'El RFC debe tener un formato válido.',
   invalidLogoFile: 'Selecciona un archivo de imagen válido.',
   invalidLogoSize: `El logo no debe superar ${MAX_LOGO_SIZE_IN_MB} MB.`,
   uploadLogoFailed: 'No se pudo subir el logo del restaurante.'
@@ -40,6 +44,7 @@ const RESTAURANT_FORM_MESSAGES = {
 
 const RESTAURANT_FORM_LABELS = {
   name: 'Nombre del restaurante',
+  rfc: 'RFC del restaurante',
   description: 'Descripción',
   logo: 'Logo del restaurante',
   selectLogo: 'Seleccionar imagen',
@@ -108,11 +113,26 @@ export class RestaurantFormComponent implements OnChanges, OnDestroy {
       return;
     }
 
+    const normalizedRfc = this.normalizeRfc(this.form.rfc);
+
+    if (!normalizedRfc) {
+      this.errorMessage = RESTAURANT_FORM_MESSAGES.requiredRfc;
+      return;
+    }
+
+    if (!RFC_PATTERN.test(normalizedRfc)) {
+      this.errorMessage = RESTAURANT_FORM_MESSAGES.invalidRfc;
+      return;
+    }
+
+    this.form.rfc = normalizedRfc;
+
     try {
       const logo = await this.resolveLogoForSubmit();
 
       const formValue: RestaurantFormValue = {
         name: this.form.name.trim(),
+        rfc: normalizedRfc,
         description: this.form.description.trim(),
         logoUrl: logo?.url ?? '',
         logoObjectKey: logo?.objectKey ?? '',
@@ -215,6 +235,7 @@ export class RestaurantFormComponent implements OnChanges, OnDestroy {
 
     this.form = {
       name: this.restaurantToEdit.name ?? '',
+      rfc: this.restaurantToEdit.rfc ?? '',
       description: this.restaurantToEdit.description ?? '',
       logoUrl: this.restaurantToEdit.logo?.url ?? '',
       logoObjectKey: this.restaurantToEdit.logo?.objectKey ?? '',
@@ -227,11 +248,16 @@ export class RestaurantFormComponent implements OnChanges, OnDestroy {
   private createEmptyForm(): RestaurantFormValue {
     return {
       name: '',
+      rfc: '',
       description: '',
       logoUrl: '',
       logoObjectKey: '',
       logoProvider: 'CLOUDINARY'
     };
+  }
+
+  private normalizeRfc(rfc: string): string {
+    return rfc.trim().toUpperCase();
   }
 
   private clearLogoPreviewObjectUrl(): void {

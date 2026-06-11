@@ -37,6 +37,18 @@
       </label>
 
       <label>
+        RFC del restaurante
+        <input
+          type="text"
+          name="rfc"
+          [(ngModel)]="restaurantForm.rfc"
+          placeholder="Ej. ABC010101ABC"
+          maxlength="13"
+          required
+        />
+      </label>
+
+      <label>
         Descripción
         <textarea
           name="description"
