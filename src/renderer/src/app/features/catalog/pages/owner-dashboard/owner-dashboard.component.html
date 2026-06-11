@@ -81,6 +81,13 @@
           [branches]="branches"
           [categories]="categories"
           [products]="products"
+          (openReports)="setSection('reports')"
+        />
+
+        <app-owner-reports
+          *ngIf="activeSection === 'reports'"
+          [restaurant]="restaurant"
+          [branches]="branches"
         />
 
         <app-orders-preview

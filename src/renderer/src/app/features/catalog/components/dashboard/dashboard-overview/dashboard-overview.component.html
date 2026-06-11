@@ -1,28 +1,38 @@
 <section class="dashboard-header">
   <div>
+    <span class="section-kicker">Vista rápida</span>
     <h2>Dashboard</h2>
     <p>Bienvenido, {{ restaurant.name }}</p>
     <small>{{ getSelectedRangeLabel() }}</small>
   </div>
 
   <div class="dashboard-actions">
-    <label>
-      Fecha inicio
-      <input
-        type="date"
-        name="reportFromDate"
-        [(ngModel)]="reportFilters.from"
-      />
-    </label>
+    <button
+      type="button"
+      class="secondary-button"
+      [disabled]="loadingReport"
+      (click)="setQuickRange('today')"
+    >
+      Hoy
+    </button>
 
-    <label>
-      Fecha fin
-      <input
-        type="date"
-        name="reportToDate"
-        [(ngModel)]="reportFilters.to"
-      />
-    </label>
+    <button
+      type="button"
+      class="secondary-button"
+      [disabled]="loadingReport"
+      (click)="setQuickRange('week')"
+    >
+      Esta semana
+    </button>
+
+    <button
+      type="button"
+      class="secondary-button"
+      [disabled]="loadingReport"
+      (click)="setQuickRange('month')"
+    >
+      Este mes
+    </button>
 
     <button
       type="button"
@@ -30,31 +40,18 @@
       [disabled]="loadingReport"
       (click)="loadDashboardReport()"
     >
-      {{ loadingReport ? 'Cargando...' : 'Filtrar' }}
+      {{ loadingReport ? 'Cargando...' : 'Actualizar' }}
     </button>
 
-    <button
-      type="button"
-      class="secondary-button"
-      [disabled]="loadingReport || exportingReport"
-      (click)="resetToToday()"
-    >
-      Hoy
-    </button>
-
-    <button
-      type="button"
-      class="export-button"
-      [disabled]="loadingReport || exportingReport || !report"
-      (click)="exportDashboardReport()"
-    >
-      {{ exportingReport ? 'Exportando...' : 'Exportar Excel' }}
+    <button type="button" class="reports-button" (click)="openReports.emit()">
+      <span aria-hidden="true">📈</span>
+      Ver reportes completos
     </button>
   </div>
 </section>
 
 <section *ngIf="loadingReport" class="report-message loading">
-  Cargando métricas reales del restaurante...
+  Cargando métricas del restaurante...
 </section>
 
 <section *ngIf="reportError" class="report-message error">
@@ -63,21 +60,21 @@
 
 <section class="stats-grid">
   <article class="stat-card">
-    <div class="icon green">🛍</div>
-    <p>Órdenes totales</p>
-    <strong>{{ report ? getTotalOrders() : '—' }}</strong>
-  </article>
-
-  <article class="stat-card">
-    <div class="icon blue">💵</div>
-    <p>Ventas totales</p>
+    <span class="stat-icon green" aria-hidden="true">💵</span>
+    <p>Ventas del periodo</p>
     <strong>
       {{ report ? (getTotalSales() | currency:'MXN':'symbol':'1.2-2') : '—' }}
     </strong>
   </article>
 
   <article class="stat-card">
-    <div class="icon purple">🎟</div>
+    <span class="stat-icon blue" aria-hidden="true">🧾</span>
+    <p>Órdenes del periodo</p>
+    <strong>{{ report ? getTotalOrders() : '—' }}</strong>
+  </article>
+
+  <article class="stat-card">
+    <span class="stat-icon orange" aria-hidden="true">🎟️</span>
     <p>Ticket promedio</p>
     <strong>
       {{ report ? (getAverageTicket() | currency:'MXN':'symbol':'1.2-2') : '—' }}
@@ -85,116 +82,20 @@
   </article>
 
   <article class="stat-card">
-    <div class="icon orange">📍</div>
-    <p>Sucursales</p>
-    <strong>{{ branches.length }}</strong>
+    <span class="stat-icon yellow" aria-hidden="true">⏱️</span>
+    <p>Pendientes / en proceso</p>
+    <strong>{{ report ? getPendingOrders() : '—' }}</strong>
   </article>
 
   <article class="stat-card">
-    <div class="icon yellow">🍽</div>
-    <p>Productos</p>
-    <strong>{{ products.length }}</strong>
-  </article>
-
-  <article class="stat-card">
-    <div class="icon teal">📂</div>
-    <p>Categorías</p>
-    <strong>{{ getTotalCategories() }}</strong>
-  </article>
-
-  <article class="stat-card">
-    <div class="icon green">✅</div>
+    <span class="stat-icon teal" aria-hidden="true">✅</span>
     <p>Productos disponibles</p>
     <strong>{{ report ? getAvailableProducts() : '—' }}</strong>
   </article>
 
   <article class="stat-card">
-    <div class="icon red">⏸</div>
+    <span class="stat-icon purple" aria-hidden="true">⏸️</span>
     <p>Productos pausados</p>
     <strong>{{ report ? getPausedProducts() : '—' }}</strong>
-  </article>
-</section>
-
-<section class="charts-grid">
-  <article class="chart-card">
-    <h3>Órdenes por estado</h3>
-
-    <div *ngIf="getOrderStatusMetrics().length > 0; else noOrderMetrics" class="metric-list">
-      <div *ngFor="let metric of getOrderStatusMetrics()" class="metric-row">
-        <div class="metric-row-header">
-          <span>{{ getStatusLabel(metric.status) }}</span>
-          <strong>{{ metric.total }}</strong>
-        </div>
-
-        <div class="metric-bar">
-          <span [style.width.%]="getOrderStatusPercent(metric.total)"></span>
-        </div>
-      </div>
-    </div>
-
-    <ng-template #noOrderMetrics>
-      <p class="empty-state">Aún no hay órdenes registradas para este restaurante.</p>
-    </ng-template>
-  </article>
-
-  <article class="chart-card">
-    <h3>Estado del catálogo</h3>
-
-    <div *ngIf="getProductStatusMetrics().length > 0; else noProductMetrics" class="metric-list">
-      <div *ngFor="let metric of getProductStatusMetrics()" class="metric-row">
-        <div class="metric-row-header">
-          <span>{{ getStatusLabel(metric.status) }}</span>
-          <strong>{{ metric.total }}</strong>
-        </div>
-
-        <div class="metric-bar">
-          <span [style.width.%]="getProductStatusPercent(metric.total)"></span>
-        </div>
-      </div>
-    </div>
-
-    <ng-template #noProductMetrics>
-      <p class="empty-state">No hay métricas de productos disponibles.</p>
-    </ng-template>
-  </article>
-</section>
-
-<section class="summary-grid" *ngIf="report">
-  <article class="summary-card">
-    <h3>Resumen de órdenes</h3>
-
-    <div class="summary-item">
-      <span>Entregadas</span>
-      <strong>{{ getDeliveredOrders() }}</strong>
-    </div>
-
-    <div class="summary-item">
-      <span>Canceladas</span>
-      <strong>{{ getCancelledOrders() }}</strong>
-    </div>
-
-    <div class="summary-item">
-      <span>Órdenes consideradas en ventas</span>
-      <strong>{{ report.orders.salesOrderCount }}</strong>
-    </div>
-  </article>
-
-  <article class="summary-card">
-    <h3>Resumen de productos</h3>
-
-    <div class="summary-item">
-      <span>Simples</span>
-      <strong>{{ report.catalog.simpleProducts }}</strong>
-    </div>
-
-    <div class="summary-item">
-      <span>Personalizables</span>
-      <strong>{{ report.catalog.customizableProducts }}</strong>
-    </div>
-
-    <div class="summary-item">
-      <span>Destacados</span>
-      <strong>{{ report.catalog.featuredProducts }}</strong>
-    </div>
   </article>
 </section>

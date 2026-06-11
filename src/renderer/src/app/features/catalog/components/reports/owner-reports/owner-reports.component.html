@@ -1,0 +1,197 @@
+<section class="reports-header">
+  <div>
+    <span class="section-kicker">An&aacute;lisis</span>
+    <h2>Reportes</h2>
+    <p>Analiza ventas, &oacute;rdenes, productos y comportamiento del restaurante.</p>
+  </div>
+</section>
+
+<section class="filters-panel">
+  <label>
+    Fecha inicio
+    <input type="date" [(ngModel)]="filters.from" />
+  </label>
+
+  <label>
+    Fecha fin
+    <input type="date" [(ngModel)]="filters.to" />
+  </label>
+
+  <label>
+    Sucursal
+    <select [(ngModel)]="selectedBranchId" (change)="onBranchChange()">
+      <option value="all">Todas las sucursales</option>
+      <option *ngFor="let branch of branches" [value]="branch.id">{{ branch.name }}</option>
+    </select>
+  </label>
+
+  <button type="button" class="secondary-button" [disabled]="loading" (click)="setQuickRange('today')">
+    Hoy
+  </button>
+  <button type="button" class="secondary-button" [disabled]="loading" (click)="setQuickRange('week')">
+    Esta semana
+  </button>
+  <button type="button" class="secondary-button" [disabled]="loading" (click)="setQuickRange('month')">
+    Este mes
+  </button>
+  <button type="button" class="primary-button" [disabled]="loading" (click)="loadReport()">
+    {{ loading ? 'Cargando...' : 'Aplicar filtros' }}
+  </button>
+  <button type="button" class="export-button" [disabled]="loading || exporting || !report" (click)="exportReport()">
+    <span aria-hidden="true">&#128196;</span>
+    {{ exporting ? 'Exportando...' : 'Exportar reporte detallado' }}
+  </button>
+</section>
+
+<section *ngIf="loading" class="state-message">Cargando reportes...</section>
+<section *ngIf="errorMessage" class="state-message error">{{ errorMessage }}</section>
+
+<ng-container *ngIf="report && !loading">
+  <section class="summary-grid">
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#128181;</span>
+      <span>Ventas totales</span>
+      <strong>{{ report.summary.totalSales | currency:'MXN':'symbol':'1.2-2' }}</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#129534;</span>
+      <span>&Oacute;rdenes totales</span>
+      <strong>{{ report.summary.totalOrders }}</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#127915;</span>
+      <span>Ticket promedio</span>
+      <strong>{{ report.summary.averageTicket | currency:'MXN':'symbol':'1.2-2' }}</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#9989;</span>
+      <span>Entregadas</span>
+      <strong>{{ report.summary.deliveredOrders }}</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#9940;</span>
+      <span>Canceladas</span>
+      <strong>{{ report.summary.cancelledOrders }}</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">%</span>
+      <span>Cancelaci&oacute;n</span>
+      <strong>{{ report.summary.cancellationRate | number:'1.0-2' }}%</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#128230;</span>
+      <span>Productos vendidos</span>
+      <strong>{{ report.summary.totalProductsSold || 0 }}</strong>
+    </article>
+    <article>
+      <span class="summary-icon" aria-hidden="true">&#128200;</span>
+      <span>Ventas entregadas</span>
+      <strong>{{ report.summary.deliveredSales | currency:'MXN':'symbol':'1.2-2' }}</strong>
+    </article>
+  </section>
+
+  <section class="reports-grid">
+    <article class="report-card">
+      <header>
+        <span aria-hidden="true">&#128197;</span>
+        <h3>Ventas por d&iacute;a</h3>
+      </header>
+      <div *ngIf="report.salesByDay.length > 0; else noSales" class="metric-list">
+        <div *ngFor="let day of report.salesByDay" class="metric-row">
+          <div>
+            <span>{{ day.date }}</span>
+            <strong>
+              {{ day.totalSales | currency:'MXN':'symbol':'1.2-2' }} &middot; {{ day.totalOrders }} &oacute;rdenes
+            </strong>
+          </div>
+          <b [style.width.%]="getSalesByDayPercent(day.totalSales)"></b>
+        </div>
+      </div>
+      <ng-template #noSales><p class="empty-state">No hay ventas para este rango.</p></ng-template>
+    </article>
+
+    <article class="report-card">
+      <header>
+        <span aria-hidden="true">&#127942;</span>
+        <h3>Top productos vendidos</h3>
+      </header>
+      <div *ngIf="report.topProducts.length > 0; else noProducts" class="plain-list">
+        <div *ngFor="let product of report.topProducts">
+          <span>{{ product.product }}</span>
+          <strong>
+            {{ product.quantitySold }} &middot; {{ product.estimatedSales | currency:'MXN':'symbol':'1.2-2' }}
+          </strong>
+        </div>
+      </div>
+      <ng-template #noProducts>
+        <p class="empty-state">No hay informaci&oacute;n suficiente para calcular productos vendidos.</p>
+      </ng-template>
+    </article>
+
+    <article class="report-card">
+      <header>
+        <span aria-hidden="true">&#9201;</span>
+        <h3>Horas pico</h3>
+      </header>
+      <div *ngIf="report.ordersByHour.length > 0; else noHours" class="metric-list">
+        <div *ngFor="let hour of report.ordersByHour" class="metric-row">
+          <div>
+            <span>{{ hour.hour }}</span>
+            <strong>
+              {{ hour.totalOrders }} pedidos &middot; {{ (hour.totalSales || 0) | currency:'MXN':'symbol':'1.2-2' }}
+            </strong>
+          </div>
+          <b [style.width.%]="getOrdersByHourPercent(hour.totalOrders)"></b>
+        </div>
+      </div>
+      <ng-template #noHours><p class="empty-state">No hay pedidos con hora registrada.</p></ng-template>
+    </article>
+
+    <article class="report-card">
+      <header>
+        <span aria-hidden="true">&#128204;</span>
+        <h3>&Oacute;rdenes por estado</h3>
+      </header>
+      <div class="metric-list">
+        <div *ngFor="let status of report.ordersByStatus" class="metric-row">
+          <div><span>{{ getStatusLabel(status.status) }}</span><strong>{{ status.total }}</strong></div>
+          <b [style.width.%]="getStatusPercent(status)"></b>
+        </div>
+      </div>
+    </article>
+
+    <article class="report-card">
+      <header>
+        <span aria-hidden="true">&#128179;</span>
+        <h3>Pagos</h3>
+      </header>
+      <p *ngIf="!hasPaymentData()" class="empty-state">
+        {{ report.paymentSummary.message || 'No hay pagos registrados para este rango.' }}
+      </p>
+      <div *ngIf="hasPaymentData()" class="plain-list">
+        <div><span>Total aprobado</span><strong>{{ report.paymentSummary.totalApproved | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Efectivo</span><strong>{{ report.paymentSummary.cash | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Online</span><strong>{{ report.paymentSummary.online | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Pagos aprobados</span><strong>{{ report.paymentSummary.approvedPayments }}</strong></div>
+        <div><span>Pagos pendientes</span><strong>{{ report.paymentSummary.pendingPayments }}</strong></div>
+        <div><span>Rechazados/cancelados</span><strong>{{ report.paymentSummary.rejectedOrCancelled }}</strong></div>
+        <div><span>Recibido en efectivo</span><strong>{{ report.paymentSummary.cashAmountReceived | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Cambio entregado</span><strong>{{ report.paymentSummary.cashChangeAmount | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+      </div>
+    </article>
+
+    <article class="report-card">
+      <header>
+        <span aria-hidden="true">&#128218;</span>
+        <h3>Cat&aacute;logo</h3>
+      </header>
+      <div class="plain-list">
+        <div><span>Productos disponibles</span><strong>{{ report.catalog.availableProducts }}</strong></div>
+        <div><span>Productos pausados</span><strong>{{ report.catalog.pausedProducts }}</strong></div>
+        <div><span>Simples</span><strong>{{ report.catalog.simpleProducts }}</strong></div>
+        <div><span>Personalizables</span><strong>{{ report.catalog.customizableProducts }}</strong></div>
+        <div><span>Categor&iacute;as activas</span><strong>{{ report.catalog.activeCategories }}</strong></div>
+      </div>
+    </article>
+  </section>
+</ng-container>
