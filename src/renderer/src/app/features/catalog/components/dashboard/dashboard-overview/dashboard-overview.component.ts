@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { IRestaurantResponse } from '../../../models/restaurant/IRestaurantResponse';
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
@@ -8,6 +9,7 @@ import { IProductResponse } from '../../../models/product/IProductResponse';
 
 import {
   OwnerDashboardReport,
+  OwnerDashboardReportFilters,
   ReportService,
   StatusMetric
 } from '../../../../../services/report.service';
@@ -15,7 +17,7 @@ import {
 @Component({
   selector: 'app-dashboard-overview',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './dashboard-overview.component.html',
   styleUrl: './dashboard-overview.component.css'
 })
@@ -27,7 +29,13 @@ export class DashboardOverviewComponent implements OnChanges {
 
   public report?: OwnerDashboardReport;
   public loadingReport = false;
+  public exportingReport = false;
   public reportError = '';
+
+  public reportFilters = {
+    from: this.getTodayDateValue(),
+    to: this.getTodayDateValue()
+  };
 
   private loadedRestaurantId = '';
 
@@ -51,11 +59,17 @@ export class DashboardOverviewComponent implements OnChanges {
       return;
     }
 
+    const filters = this.getValidatedReportFilters();
+
+    if (!filters) {
+      return;
+    }
+
     this.loadedRestaurantId = restaurantId;
     this.loadingReport = true;
     this.reportError = '';
 
-    this.reportService.getOwnerDashboard(restaurantId).subscribe({
+    this.reportService.getOwnerDashboard(restaurantId, filters).subscribe({
       next: (report: OwnerDashboardReport) => {
         this.report = report;
         this.loadingReport = false;
@@ -66,6 +80,59 @@ export class DashboardOverviewComponent implements OnChanges {
         this.loadingReport = false;
       }
     });
+  }
+
+  public resetToToday(): void {
+    const today = this.getTodayDateValue();
+
+    this.reportFilters = {
+      from: today,
+      to: today
+    };
+
+    this.loadDashboardReport();
+  }
+
+  public exportDashboardReport(): void {
+    const restaurantId = this.getRestaurantId();
+
+    if (!restaurantId) {
+      this.reportError = 'No se encontró el ID del restaurante.';
+      return;
+    }
+
+    if (this.exportingReport) {
+      return;
+    }
+
+    const filters = this.getValidatedReportFilters();
+
+    if (!filters) {
+      return;
+    }
+
+    this.exportingReport = true;
+    this.reportError = '';
+
+    this.reportService.exportOwnerDashboard(restaurantId, filters).subscribe({
+      next: (file) => {
+        this.downloadExcelFile(file, restaurantId, filters);
+        this.exportingReport = false;
+      },
+      error: (error) => {
+        console.error('Error exporting dashboard report:', error);
+        this.reportError = 'No se pudo exportar el reporte a Excel.';
+        this.exportingReport = false;
+      }
+    });
+  }
+
+  public getSelectedRangeLabel(): string {
+    if (this.reportFilters.from === this.reportFilters.to) {
+      return `Reporte del día ${this.reportFilters.from}`;
+    }
+
+    return `Reporte del ${this.reportFilters.from} al ${this.reportFilters.to}`;
   }
 
   public getTotalOrders(): number {
@@ -153,6 +220,47 @@ export class DashboardOverviewComponent implements OnChanges {
     }
 
     return Math.max((total / maxTotal) * 100, 8);
+  }
+
+  private getValidatedReportFilters(): OwnerDashboardReportFilters | null {
+    const from = this.reportFilters.from;
+    const to = this.reportFilters.to;
+
+    if (!from || !to) {
+      this.reportError = 'Selecciona una fecha de inicio y una fecha de fin.';
+      return null;
+    }
+
+    if (from > to) {
+      this.reportError = 'La fecha de inicio no puede ser mayor que la fecha de fin.';
+      return null;
+    }
+
+    return { from, to };
+  }
+
+  private downloadExcelFile(
+    file: Blob,
+    restaurantId: string,
+    filters: OwnerDashboardReportFilters
+  ): void {
+    const fileUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+
+    link.href = fileUrl;
+    link.download = `tap2eat-report-${restaurantId}-${filters.from}-${filters.to}.xlsx`;
+    link.click();
+
+    URL.revokeObjectURL(fileUrl);
+  }
+
+  private getTodayDateValue(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   private getRestaurantId(): string | null {

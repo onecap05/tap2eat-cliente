@@ -2,11 +2,55 @@
   <div>
     <h2>Dashboard</h2>
     <p>Bienvenido, {{ restaurant.name }}</p>
+    <small>{{ getSelectedRangeLabel() }}</small>
   </div>
 
-  <button type="button" class="refresh-button" (click)="loadDashboardReport()">
-    Actualizar reportes
-  </button>
+  <div class="dashboard-actions">
+    <label>
+      Fecha inicio
+      <input
+        type="date"
+        name="reportFromDate"
+        [(ngModel)]="reportFilters.from"
+      />
+    </label>
+
+    <label>
+      Fecha fin
+      <input
+        type="date"
+        name="reportToDate"
+        [(ngModel)]="reportFilters.to"
+      />
+    </label>
+
+    <button
+      type="button"
+      class="refresh-button"
+      [disabled]="loadingReport"
+      (click)="loadDashboardReport()"
+    >
+      {{ loadingReport ? 'Cargando...' : 'Filtrar' }}
+    </button>
+
+    <button
+      type="button"
+      class="secondary-button"
+      [disabled]="loadingReport || exportingReport"
+      (click)="resetToToday()"
+    >
+      Hoy
+    </button>
+
+    <button
+      type="button"
+      class="export-button"
+      [disabled]="loadingReport || exportingReport || !report"
+      (click)="exportDashboardReport()"
+    >
+      {{ exportingReport ? 'Exportando...' : 'Exportar Excel' }}
+    </button>
+  </div>
 </section>
 
 <section *ngIf="loadingReport" class="report-message loading">

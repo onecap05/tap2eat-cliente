@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -49,6 +49,11 @@ export interface OwnerDashboardReport {
   catalog: CatalogReport;
 }
 
+export interface OwnerDashboardReportFilters {
+  from?: string;
+  to?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -57,19 +62,55 @@ export class ReportService {
 
   constructor(private readonly http: HttpClient) {}
 
-  public getOwnerDashboard(restaurantId: string): Observable<OwnerDashboardReport> {
+  public getOwnerDashboard(
+    restaurantId: string,
+    filters?: OwnerDashboardReportFilters
+  ): Observable<OwnerDashboardReport> {
+    return this.http.get<OwnerDashboardReport>(
+      `${this.reportsApiUrl}/dashboard/owner/${restaurantId}`,
+      {
+        headers: this.buildAuthHeaders(),
+        params: this.buildDateParams(filters)
+      }
+    );
+  }
+
+  public exportOwnerDashboard(
+    restaurantId: string,
+    filters?: OwnerDashboardReportFilters
+  ): Observable<Blob> {
+    return this.http.get(
+      `${this.reportsApiUrl}/dashboard/owner/${restaurantId}/export`,
+      {
+        headers: this.buildAuthHeaders(),
+        params: this.buildDateParams(filters),
+        responseType: 'blob'
+      }
+    );
+  }
+
+  private buildAuthHeaders(): HttpHeaders | undefined {
     const accessToken = localStorage.getItem('accessToken');
     const tokenType = localStorage.getItem('tokenType') || 'Bearer';
 
-    const headers = accessToken
+    return accessToken
       ? new HttpHeaders({
           Authorization: `${tokenType} ${accessToken}`
         })
       : undefined;
+  }
 
-    return this.http.get<OwnerDashboardReport>(
-      `${this.reportsApiUrl}/dashboard/owner/${restaurantId}`,
-      { headers }
-    );
+  private buildDateParams(filters?: OwnerDashboardReportFilters): HttpParams {
+    let params = new HttpParams();
+
+    if (filters?.from) {
+      params = params.set('from', filters.from);
+    }
+
+    if (filters?.to) {
+      params = params.set('to', filters.to);
+    }
+
+    return params;
   }
 }
