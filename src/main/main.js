@@ -1,24 +1,39 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
+
+const isDevelopment = !app.isPackaged;
+
+const DEVELOPMENT_URL = 'http://localhost:4200';
+const PRODUCTION_URL = 'https://tap2eat.me';
 
 function createMainWindow() {
     const mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
+        minWidth: 1000,
+        minHeight: 700,
         webPreferences: {
-            // Security best practices
             preload: path.join(__dirname, '../preload/preload.js'),
             nodeIntegration: false,
             contextIsolation: true
         }
     });
 
-    // In development mode, we point Electron to the Angular local server
-    // so we can have Live Reloading when we change UI code.
-    mainWindow.loadURL('http://localhost:4200');
-    
-    // Uncomment this line if you want the DevTools console to open automatically
-    mainWindow.webContents.openDevTools();
+    if (isDevelopment) {
+        mainWindow.loadURL(DEVELOPMENT_URL);
+        mainWindow.webContents.openDevTools();
+    } else {
+        mainWindow.loadURL(PRODUCTION_URL);
+    }
+
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url.startsWith(PRODUCTION_URL) || url.startsWith(DEVELOPMENT_URL)) {
+            return { action: 'allow' };
+        }
+
+        shell.openExternal(url);
+        return { action: 'deny' };
+    });
 }
 
 app.whenReady().then(() => {
@@ -32,7 +47,6 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-    // Keep application running on macOS even if all windows are closed
     if (process.platform !== 'darwin') {
         app.quit();
     }

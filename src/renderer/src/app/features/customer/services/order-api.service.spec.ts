@@ -31,6 +31,10 @@ describe('OrderApiService', () => {
       customerAccountId: 'customer-1',
       restaurantId: 'restaurant-1',
       branchId: 'branch-1',
+      paymentMethod: 'Cash',
+      cashPaymentType: 'UnknownAmount',
+      cashAmountProvided: null,
+      estimatedChange: null,
       items: [{ productId: 'product-1', quantity: 1, selectedModifierOptionIds: [] }]
     };
 

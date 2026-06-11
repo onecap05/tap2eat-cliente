@@ -177,6 +177,19 @@ export class CustomerOrderDetailComponent implements OnInit, OnDestroy {
     return `Listo para recoger aproximadamente a las ${readyTime}.`;
   }
 
+  public isKnownCashPayment(order: OrderResponse): boolean {
+    return order.paymentMethod === 'Cash'
+      && order.cashPaymentType === 'KnownAmount'
+      && order.cashAmountProvided !== null
+      && order.cashAmountProvided !== undefined
+      && order.estimatedChange !== null
+      && order.estimatedChange !== undefined;
+  }
+
+  public isUnknownCashPayment(order: OrderResponse): boolean {
+    return order.paymentMethod === 'Cash' && order.cashPaymentType === 'UnknownAmount';
+  }
+
   private async generatePickupQr(order: OrderResponse): Promise<void> {
     try {
       this.pickupQrDataUrl = await this.pickupQrService.generatePickupQrDataUrl(order);

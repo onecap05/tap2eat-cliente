@@ -25,7 +25,7 @@
 .quantity-controls button{border:0;background:#f8fafc;font-size:18px;font-weight:900;cursor:pointer}
 .quantity-controls span{display:grid;place-items:center;border-inline:1px solid #cbd5e1;font-weight:900}
 .remove-button{border:0;background:transparent;color:#b91c1c;font-weight:900;cursor:pointer}
-textarea{width:100%;resize:vertical;border:1px solid #cbd5e1;border-radius:14px;padding:14px;color:#172033;font:inherit;box-sizing:border-box}
+textarea,.cash-amount-field input{width:100%;resize:vertical;border:1px solid #cbd5e1;border-radius:14px;padding:14px;color:#172033;font:inherit;box-sizing:border-box}
 .summary-panel{position:sticky;top:22px;padding:22px;display:grid;gap:18px}
 .summary-line,.summary-total{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .summary-line span{color:#64748b}
@@ -36,6 +36,7 @@ textarea{width:100%;resize:vertical;border:1px solid #cbd5e1;border-radius:14px;
 .payment-methods label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:14px;border:1px solid #e2e8f0;border-radius:14px;cursor:pointer}
 .payment-methods label.selected{border-color:#267f53;background:#ecfdf5}
 .payment-methods input{grid-row:1/3}
+.cash-amount-field{display:grid;gap:8px}
 .submit-button,.empty-state a{border:0;border-radius:14px;padding:15px;background:#ff7733;color:#fff;font-weight:900;text-align:center;text-decoration:none;cursor:pointer}
 .submit-button:disabled{opacity:.65;cursor:not-allowed}
 .error-message{margin:0;padding:12px;border-radius:12px;background:#fef2f2;color:#991b1b;font-weight:800}

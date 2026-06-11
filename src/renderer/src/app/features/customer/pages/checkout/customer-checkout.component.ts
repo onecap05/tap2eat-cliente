@@ -15,6 +15,7 @@ import { OrderApiService } from '../../services/order-api.service';
 import { PaymentApiService } from '../../services/payment-api.service';
 
 type PaymentMethod = 'online' | 'cash';
+type CashPaymentSelection = 'known' | 'unknown';
 
 const CHECKOUT_TEXT = {
   title: 'Checkout',
@@ -26,6 +27,12 @@ const CHECKOUT_TEXT = {
   online: 'Pago online',
   paypalReady: 'Orden creada. Completa el pago con PayPal Sandbox para confirmar tu pedido.',
   cash: 'Pago en efectivo',
+  cashKnownAmount: 'Pagare con una cantidad especifica',
+  cashUnknownAmount: 'No se con cuanto voy a pagar',
+  cashAmountLabel: 'Monto con el que pagaras',
+  estimatedChange: 'Cambio estimado',
+  missingCashAmount: 'Ingresa el monto con el que pagaras.',
+  invalidCashAmount: 'El monto en efectivo debe ser mayor o igual al total del pedido.',
   notesPlaceholder: 'Ej. Sin mayonesa, entregar todo junto...',
   service: 'Servicio',
   total: 'Total',
@@ -54,6 +61,8 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
   public readonly text = CHECKOUT_TEXT;
   public cartState: ICartState;
   public paymentMethod: PaymentMethod = 'online';
+  public cashPaymentType: CashPaymentSelection = 'known';
+  public cashAmountProvided: number | null = null;
   public notes = '';
   public isSubmitting = false;
   public errorMessage = '';
@@ -88,6 +97,48 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
 
   public get total(): number {
     return this.cartState.subtotal + this.serviceFee;
+  }
+
+  public get estimatedChange(): number | null {
+    const cashAmount = this.getCashAmountProvided();
+
+    if (this.paymentMethod !== 'cash' || this.cashPaymentType !== 'known' || cashAmount === null) {
+      return null;
+    }
+
+    return this.roundCurrency(cashAmount - this.total);
+  }
+
+  public get cashAmountError(): string {
+    if (this.paymentMethod !== 'cash' || this.cashPaymentType !== 'known') {
+      return '';
+    }
+
+    const cashAmount = this.getCashAmountProvided();
+
+    if (cashAmount === null) {
+      return '';
+    }
+
+    return cashAmount < this.total ? this.text.invalidCashAmount : '';
+  }
+
+  public get canSubmitCheckout(): boolean {
+    if (this.isSubmitting) {
+      return false;
+    }
+
+    return this.paymentMethod !== 'cash'
+      || this.cashPaymentType !== 'known'
+      || this.isKnownCashAmountValid();
+  }
+
+  public get submitLabel(): string {
+    if (this.isSubmitting) {
+      return this.text.processing;
+    }
+
+    return this.paymentMethod === 'cash' ? 'Crear pedido' : this.text.submit;
   }
 
   public increaseItem(item: ICartItem): void {
@@ -228,17 +279,92 @@ export class CustomerCheckoutComponent implements OnInit, OnDestroy {
       return null;
     }
 
+    const paymentPayload = this.buildPaymentPayload();
+
+    if (!paymentPayload) {
+      return null;
+    }
+
     return {
       customerAccountId,
       restaurantId: this.cartState.restaurantId,
       branchId: this.cartState.branchId,
       notes: this.notes.trim() || undefined,
+      ...paymentPayload,
       items: this.cartState.items.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         selectedModifierOptionIds: item.selectedModifiers.map(modifier => modifier.optionId)
       }))
     };
+  }
+
+  private buildPaymentPayload(): Pick<
+    CreateOrderRequest,
+    'paymentMethod' | 'cashPaymentType' | 'cashAmountProvided' | 'estimatedChange'
+  > | null {
+    if (this.paymentMethod === 'online') {
+      return {
+        paymentMethod: 'Online',
+        cashPaymentType: null,
+        cashAmountProvided: null,
+        estimatedChange: null
+      };
+    }
+
+    if (this.cashPaymentType === 'unknown') {
+      return {
+        paymentMethod: 'Cash',
+        cashPaymentType: 'UnknownAmount',
+        cashAmountProvided: null,
+        estimatedChange: null
+      };
+    }
+
+    const cashAmount = this.getCashAmountProvided();
+
+    if (cashAmount === null) {
+      this.errorMessage = this.text.missingCashAmount;
+      return null;
+    }
+
+    if (cashAmount < this.total) {
+      this.errorMessage = this.text.invalidCashAmount;
+      return null;
+    }
+
+    return {
+      paymentMethod: 'Cash',
+      cashPaymentType: 'KnownAmount',
+      cashAmountProvided: cashAmount,
+      estimatedChange: this.roundCurrency(cashAmount - this.total)
+    };
+  }
+
+  private getCashAmountProvided(): number | null {
+    const rawValue = this.cashAmountProvided as number | string | null | undefined;
+
+    if (rawValue === null || rawValue === undefined || rawValue === '') {
+      return null;
+    }
+
+    const value = Number(rawValue);
+
+    if (!Number.isFinite(value) || value < 0) {
+      return null;
+    }
+
+    return this.roundCurrency(value);
+  }
+
+  private isKnownCashAmountValid(): boolean {
+    const cashAmount = this.getCashAmountProvided();
+
+    return cashAmount !== null && cashAmount >= this.total;
+  }
+
+  private roundCurrency(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 
   private hasInvalidModifierOptionIds(item: ICartItem): boolean {

@@ -80,6 +80,28 @@
         <strong>{{ formatCurrency(currentOrder.total) }}</strong>
       </div>
 
+      <div class="payment-card" *ngIf="currentOrder.paymentMethod === 'Cash'">
+        <h3>Pago en efectivo</h3>
+
+        <ng-container *ngIf="isKnownCashPayment(currentOrder); else unknownCashAmount">
+          <div class="payment-row">
+            <span>Pagara con</span>
+            <strong>{{ formatCurrency(currentOrder.cashAmountProvided!) }}</strong>
+          </div>
+
+          <div class="payment-row">
+            <span>Cambio estimado</span>
+            <strong>{{ formatCurrency(currentOrder.estimatedChange!) }}</strong>
+          </div>
+        </ng-container>
+
+        <ng-template #unknownCashAmount>
+          <p class="cash-note" *ngIf="isUnknownCashPayment(currentOrder)">
+            El cliente no especifico con cuanto pagara.
+          </p>
+        </ng-template>
+      </div>
+
       <div class="payment-card" *ngIf="payment">
         <h3>Pago</h3>
 

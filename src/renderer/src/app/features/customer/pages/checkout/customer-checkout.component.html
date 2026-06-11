@@ -102,6 +102,37 @@
           </label>
         </div>
 
+        <section class="payment-methods cash-payment-panel" *ngIf="paymentMethod === 'cash'">
+          <label [class.selected]="cashPaymentType === 'known'">
+            <input type="radio" name="cashPaymentType" value="known" [(ngModel)]="cashPaymentType" />
+            <strong>{{ text.cashKnownAmount }}</strong>
+          </label>
+
+          <label [class.selected]="cashPaymentType === 'unknown'">
+            <input type="radio" name="cashPaymentType" value="unknown" [(ngModel)]="cashPaymentType" />
+            <strong>{{ text.cashUnknownAmount }}</strong>
+          </label>
+
+          <div class="cash-amount-field" *ngIf="cashPaymentType === 'known'">
+            <label for="cashAmountProvided">{{ text.cashAmountLabel }}</label>
+            <input
+              id="cashAmountProvided"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="cashAmountProvided"
+              [class.invalid]="cashAmountError"
+            />
+
+            <p class="error-message" *ngIf="cashAmountError">{{ cashAmountError }}</p>
+
+            <div class="summary-line change-line" *ngIf="estimatedChange !== null && estimatedChange >= 0">
+              <span>{{ text.estimatedChange }}</span>
+              <strong>{{ formatCurrency(estimatedChange) }}</strong>
+            </div>
+          </div>
+        </section>
+
         <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
 
         <section class="paypal-checkout" *ngIf="pendingPaymentId && pendingOrderId && paymentMethod === 'online'">
@@ -118,10 +149,10 @@
           *ngIf="!pendingPaymentId"
           class="submit-button"
           type="button"
-          [disabled]="isSubmitting"
+          [disabled]="!canSubmitCheckout"
           (click)="submitCheckout()"
         >
-          {{ isSubmitting ? text.processing : text.submit }}
+          {{ submitLabel }}
         </button>
       </aside>
     </section>

@@ -160,6 +160,14 @@ export class OrderConfirmationComponent implements OnInit {
   }
 
   public getPaymentMethodLabel(): string {
+    if (this.order?.paymentMethod === 'Cash') {
+      return 'Pago en efectivo';
+    }
+
+    if (this.order?.paymentMethod === 'Online') {
+      return 'Pago en linea';
+    }
+
     if (!this.payment) {
       return 'No disponible';
     }
@@ -169,6 +177,19 @@ export class OrderConfirmationComponent implements OnInit {
     }
 
     return 'Pago en efectivo';
+  }
+
+  public isKnownCashPayment(order: OrderResponse): boolean {
+    return order.paymentMethod === 'Cash'
+      && order.cashPaymentType === 'KnownAmount'
+      && order.cashAmountProvided !== null
+      && order.cashAmountProvided !== undefined
+      && order.estimatedChange !== null
+      && order.estimatedChange !== undefined;
+  }
+
+  public isUnknownCashPayment(order: OrderResponse): boolean {
+    return order.paymentMethod === 'Cash' && order.cashPaymentType === 'UnknownAmount';
   }
 
   public formatCurrency(value: number): string {
