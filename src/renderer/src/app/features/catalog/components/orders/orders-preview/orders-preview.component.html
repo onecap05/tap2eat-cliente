@@ -204,6 +204,160 @@
       </div>
     </section>
 
+    <section class="ticket-flow-panel" *ngIf="detailOrder.status === 'Ready' && !hasGeneratedTicket(detailOrder)">
+      <button
+        type="button"
+        class="ticket-button"
+        [disabled]="ticketGeneratingOrderId === detailOrder.id"
+        (click)="beginTicketFlow(detailOrder)">
+        {{ ticketGeneratingOrderId === detailOrder.id ? 'Generando...' : 'Generar ticket' }}
+      </button>
+
+      <section class="cash-confirmation-panel" *ngIf="cashTicketOrderId === detailOrder.id">
+        <ng-container *ngIf="shouldAskCashSuggestion(detailOrder); else unknownCashAmount">
+          <p>
+            El cliente indicó que pagará con:
+            <strong>{{ formatCurrency(detailOrder.cashAmountProvided!) }}</strong>.
+          </p>
+
+          <p>
+            Cambio estimado:
+            <strong>{{ formatCurrency(detailOrder.estimatedChange || 0) }}</strong>
+          </p>
+
+          <span>¿El cliente pagó con esa cantidad?</span>
+
+          <label>
+            <input
+              type="radio"
+              name="cashPaidWithSuggested"
+              [checked]="cashPaidWithSuggested"
+              (change)="cashPaidWithSuggested = true"
+            />
+            Sí
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="cashPaidWithSuggested"
+              [checked]="!cashPaidWithSuggested"
+              (change)="cashPaidWithSuggested = false"
+            />
+            No
+          </label>
+        </ng-container>
+
+        <ng-template #unknownCashAmount>
+          <p>El cliente no especificó con cuánto pagará.</p>
+        </ng-template>
+
+        <label *ngIf="shouldShowCashAmountInput(detailOrder)">
+          Cantidad recibida
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="cashAmountReceived"
+          />
+        </label>
+
+        <p *ngIf="getCashChangeForTicket(detailOrder) !== null" class="cash-change-preview">
+          Cambio real: {{ formatCurrency(getCashChangeForTicket(detailOrder)!) }}
+        </p>
+
+        <button
+          type="button"
+          class="ticket-button"
+          [disabled]="ticketGeneratingOrderId === detailOrder.id"
+          (click)="confirmCashTicket(detailOrder)">
+          Registrar pago y generar ticket
+        </button>
+      </section>
+    </section>
+
+    <section
+      *ngIf="generatedTicket && generatedTicket.order.id === detailOrder.id"
+      class="ticket-print-area">
+      <article class="thermal-ticket">
+        <header>
+          <h4>{{ getRestaurantName() }}</h4>
+          <p>RFC: {{ restaurantRfc || 'No disponible' }}</p>
+          <p>{{ getBranchName(detailOrder.branchId) }}</p>
+          <p>{{ getBranchAddress(detailOrder.branchId) }}</p>
+          <p *ngIf="getBranchPhone(detailOrder.branchId)">Tel. {{ getBranchPhone(detailOrder.branchId) }}</p>
+        </header>
+
+        <div class="ticket-separator"></div>
+
+        <dl>
+          <div>
+            <dt>Folio</dt>
+            <dd>{{ getTicketFolio(detailOrder) }}</dd>
+          </div>
+          <div>
+            <dt>Fecha</dt>
+            <dd>{{ formatDate(generatedTicket.generatedAt) }}</dd>
+          </div>
+          <div>
+            <dt>Cliente</dt>
+            <dd>{{ getCustomerName(detailOrder.customerAccountId) }}</dd>
+          </div>
+        </dl>
+
+        <div class="ticket-separator"></div>
+
+        <div class="ticket-item" *ngFor="let item of detailOrder.items">
+          <div>
+            <strong>{{ item.quantity }} x {{ item.productNameSnapshot }}</strong>
+            <span>{{ formatCurrency(item.unitPriceSnapshot) }} c/u</span>
+            <small *ngFor="let modifier of item.selectedModifiers">
+              {{ modifier.modifierGroupName }}: {{ modifier.modifierOptionName }}
+              <ng-container *ngIf="modifier.priceAdjustment">
+                +{{ formatCurrency(modifier.priceAdjustment) }}
+              </ng-container>
+            </small>
+          </div>
+          <b>{{ formatCurrency(item.subtotal) }}</b>
+        </div>
+
+        <div class="ticket-separator"></div>
+
+        <dl>
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{{ formatCurrency(detailOrder.subtotal) }}</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd>{{ formatCurrency(detailOrder.total) }}</dd>
+          </div>
+          <div>
+            <dt>Método de pago</dt>
+            <dd>{{ generatedTicket.paymentMethodLabel }}</dd>
+          </div>
+          <div>
+            <dt>Estado de pago</dt>
+            <dd>{{ generatedTicket.paymentStatusLabel }}</dd>
+          </div>
+          <div>
+            <dt>Cantidad recibida</dt>
+            <dd>{{ formatCurrency(generatedTicket.amountReceived) }}</dd>
+          </div>
+          <div>
+            <dt>Cambio</dt>
+            <dd>{{ formatCurrency(generatedTicket.changeAmount) }}</dd>
+          </div>
+        </dl>
+
+        <p class="ticket-disclaimer">Este ticket no sustituye un CFDI.</p>
+      </article>
+
+      <button type="button" class="ticket-button secondary ticket-actions no-print" (click)="printTicket()">
+        Imprimir ticket
+      </button>
+    </section>
+
     <section class="preparation-time-panel" *ngIf="detailOrder.status === 'Created'">
       <label>
         Tiempo estimado
@@ -225,6 +379,16 @@
       </label>
     </section>
 
+    <section class="detail-actions" *ngIf="detailOrder.status === 'Ready' && hasGeneratedTicket(detailOrder)">
+      <button
+        type="button"
+        class="neutral"
+        [disabled]="updatingOrderId === detailOrder.id"
+        (click)="updateOrderStatus(detailOrder, 'Delivered')">
+        {{ updatingOrderId === detailOrder.id ? 'Actualizando...' : 'Entregar' }}
+      </button>
+    </section>
+
     <section class="detail-actions" *ngIf="getActions(detailOrder).length > 0">
       <button
         *ngFor="let action of getActions(detailOrder)"
@@ -236,7 +400,7 @@
       </button>
     </section>
 
-    <p *ngIf="getActions(detailOrder).length === 0" class="no-actions">
+    <p *ngIf="getActions(detailOrder).length === 0 && detailOrder.status !== 'Ready'" class="no-actions">
       Sin acciones disponibles
     </p>
   </article>

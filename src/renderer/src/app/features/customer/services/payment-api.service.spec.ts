@@ -69,6 +69,29 @@ describe('PaymentApiService', () => {
     httpRequest.flush({ id: 'payment-1', status: 'Rejected' });
   });
 
+  it('should confirm cash payment with PATCH /payments/{id}/cash/confirm without simulation token', () => {
+    const request = { amountReceived: 200 };
+
+    service.confirmCashPayment('payment-1', request).subscribe(response => {
+      expect(response.status).toBe('Approved');
+      expect(response.amountReceived).toBe(200);
+      expect(response.changeAmount).toBe(50);
+    });
+
+    const httpRequest = httpTestingController.expectOne(`${environment.apiBaseUrl}/payments/payment-1/cash/confirm`);
+
+    expect(httpRequest.request.method).toBe('PATCH');
+    expect(httpRequest.request.body).toEqual(request);
+    expect(httpRequest.request.headers.has('X-Simulated-Payment-Token')).toBe(false);
+    httpRequest.flush({
+      id: 'payment-1',
+      status: 'Approved',
+      provider: 'CASH',
+      amountReceived: 200,
+      changeAmount: 50
+    });
+  });
+
   it('should cancel payment with PATCH /payments/{id}/cancel and simulation token header', () => {
     service.cancelPayment('payment-1').subscribe(response => {
       expect(response.status).toBe('Cancelled');

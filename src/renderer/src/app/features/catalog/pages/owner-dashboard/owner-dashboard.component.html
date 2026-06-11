@@ -87,6 +87,7 @@
           *ngIf="activeSection === 'orders' && restaurant"
           [restaurantId]="restaurant.id"
           [restaurantName]="restaurant.name"
+          [restaurantRfc]="restaurant.rfc || ''"
           [branches]="branches"
         />
 

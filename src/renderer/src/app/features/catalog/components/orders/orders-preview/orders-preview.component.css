@@ -122,7 +122,6 @@
   border: 1px solid #dce5ef;
   border-radius: 16px;
   padding: 22px;
-  box-shadow: 0 10px 26px rgba(7, 26, 54, 0.05);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -254,7 +253,6 @@
   background: #ffffff;
   border-radius: 24px;
   padding: 28px;
-  box-shadow: 0 24px 70px rgba(7, 26, 54, 0.28);
 }
 
 .detail-panel-header {
@@ -330,7 +328,6 @@
   text-align: center;
   color: #9aa9bc;
   font-weight: 800;
-  transition: all 0.2s ease;
 }
 
 .detail-progress-step span {
@@ -339,74 +336,6 @@
   border-radius: 999px;
   background: #dfe7f0;
   margin-bottom: 10px;
-  transition: all 0.2s ease;
-}
-
-.detail-progress-step p {
-  margin: 0;
-  font-size: 13px;
-}
-
-/* Paso 1 - Recibido */
-.detail-progress-step:nth-child(1).active {
-  color: #1f8f5f;
-}
-
-.detail-progress-step:nth-child(1).active span {
-  background: #1f8f5f;
-}
-
-/* Paso 2 - Aceptado */
-.detail-progress-step:nth-child(2).active {
-  color: #2d6cdf;
-}
-
-.detail-progress-step:nth-child(2).active span {
-  background: #2d6cdf;
-}
-
-/* Paso 3 - Preparando */
-.detail-progress-step:nth-child(3).active {
-  color: #f28c28;
-}
-
-.detail-progress-step:nth-child(3).active span {
-  background: #f28c28;
-}
-
-/* Paso 4 - Listo */
-.detail-progress-step:nth-child(4).active {
-  color: #8b5cf6;
-}
-
-.detail-progress-step:nth-child(4).active span {
-  background: #8b5cf6;
-}
-
-/* Paso 5 - Entregado */
-.detail-progress-step:nth-child(5).active {
-  color: #14b8a6;
-}
-
-.detail-progress-step:nth-child(5).active span {
-  background: #14b8a6;
-}
-
-/* Si el pedido está cancelado */
-.detail-progress.cancelled .detail-progress-step {
-  color: #9aa9bc;
-}
-
-.detail-progress.cancelled .detail-progress-step span {
-  background: #dfe7f0;
-}
-
-.detail-progress.cancelled .detail-progress-step:nth-child(1).active {
-  color: #c9360a;
-}
-
-.detail-progress.cancelled .detail-progress-step:nth-child(1).active span {
-  background: #c9360a;
 }
 
 .detail-progress-step.active {
@@ -510,6 +439,111 @@
   font-weight: 900;
 }
 
+.ticket-flow-panel,
+.ticket-print-area {
+  margin-top: 18px;
+  border: 1px solid #dce5ef;
+  border-radius: 16px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.ticket-button {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 18px;
+  background: #278451;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ticket-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cash-confirmation-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.cash-confirmation-panel label {
+  display: grid;
+  gap: 8px;
+  color: #53667f;
+  font-weight: 850;
+}
+
+.cash-confirmation-panel input[type="number"] {
+  width: 100%;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  padding: 12px;
+  color: #071a36;
+  font: inherit;
+}
+
+.cash-change-preview {
+  color: #197547;
+  font-weight: 900;
+}
+
+.thermal-ticket {
+  width: min(320px, 100%);
+  margin: 0 auto;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px dashed #9aa9bc;
+  color: #111827;
+  font-family: "Courier New", monospace;
+}
+
+.thermal-ticket header {
+  text-align: center;
+}
+
+.thermal-ticket h4,
+.thermal-ticket p {
+  margin: 4px 0;
+}
+
+.thermal-ticket dl div,
+.ticket-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.thermal-ticket dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+.ticket-separator {
+  margin: 12px 0;
+  border-top: 1px dashed #9aa9bc;
+}
+
+.ticket-item div {
+  display: grid;
+}
+
+.ticket-item b {
+  white-space: nowrap;
+}
+
+.ticket-disclaimer {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .preparation-time-panel {
   display: grid;
   grid-template-columns: 1fr 140px;
@@ -588,4 +622,31 @@
   .preparation-time-panel {
     grid-template-columns: 1fr;
   }
+}
+
+@media print {
+  @page { size: 80mm auto; margin: 4mm; }
+
+  :host * { visibility: hidden !important; }
+
+  .ticket-print-area,
+  .ticket-print-area * { visibility: visible !important; }
+
+  .ticket-print-area {
+    position: fixed !important;
+    inset: 0 auto auto 0 !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    border: 0 !important;
+    background: #fff !important;
+  }
+
+  .thermal-ticket {
+    width: 100% !important;
+    border: 0 !important;
+  }
+
+  .no-print,
+  button { display: none !important; }
 }

@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   ApprovePaymentRequest,
+  ConfirmCashPaymentRequest,
   PaymentResponse,
   RejectPaymentRequest
 } from '../models/payment.models';
@@ -41,6 +42,16 @@ export class PaymentApiService {
       `${this.baseUrl}/${paymentId}/reject`,
       request,
       this.getSimulationHeaders()
+    );
+  }
+
+  public confirmCashPayment(
+    paymentId: string,
+    request: ConfirmCashPaymentRequest
+  ): Observable<PaymentResponse> {
+    return this.http.patch<PaymentResponse>(
+      `${this.baseUrl}/${paymentId}/cash/confirm`,
+      request
     );
   }
 
