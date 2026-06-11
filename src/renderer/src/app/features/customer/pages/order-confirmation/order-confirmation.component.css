@@ -310,6 +310,12 @@
   color: #5b6f8d;
 }
 
+.cash-note {
+  margin: 0;
+  color: #53667f;
+  font-weight: 800;
+}
+
 .payment-approved {
   color: #187245;
 }

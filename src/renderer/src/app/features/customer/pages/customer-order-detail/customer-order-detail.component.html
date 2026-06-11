@@ -98,6 +98,23 @@
             <dd>{{ formatCurrency(order.total) }}</dd>
           </div>
 
+          <ng-container *ngIf="isKnownCashPayment(order)">
+            <div>
+              <dt>Pagara con</dt>
+              <dd>{{ formatCurrency(order.cashAmountProvided!) }}</dd>
+            </div>
+
+            <div>
+              <dt>Cambio estimado</dt>
+              <dd>{{ formatCurrency(order.estimatedChange!) }}</dd>
+            </div>
+          </ng-container>
+
+          <div *ngIf="isUnknownCashPayment(order)">
+            <dt>Pago en efectivo</dt>
+            <dd>El cliente no especifico con cuanto pagara.</dd>
+          </div>
+
           <div>
             <dt>Restaurante</dt>
             <dd>{{ formatRestaurantLabel(order.restaurantId) }}</dd>

@@ -250,6 +250,7 @@ describe('CustomerCheckoutComponent', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     component.paymentMethod = 'cash';
+    component.cashPaymentType = 'unknown';
     seedCart();
     fixture.detectChanges();
 
@@ -257,6 +258,10 @@ describe('CustomerCheckoutComponent', () => {
     await fixture.whenStable();
 
     expect(orderApiService.createOrderCalls).toBe(1);
+    expect((orderApiService.lastRequest as any).paymentMethod).toBe('Cash');
+    expect((orderApiService.lastRequest as any).cashPaymentType).toBe('UnknownAmount');
+    expect((orderApiService.lastRequest as any).cashAmountProvided).toBeNull();
+    expect((orderApiService.lastRequest as any).estimatedChange).toBeNull();
     expect((orderApiService.lastRequest as any).items[0].selectedModifierOptionIds).toEqual([]);
     expect(paymentApiService.getPaymentByOrderIdCalls).toBe(0);
     expect(paymentApiService.approvePaymentCalls).toBe(0);
@@ -266,10 +271,56 @@ describe('CustomerCheckoutComponent', () => {
     );
   });
 
+  it('should create cash order with known amount and estimated change', async () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    component.paymentMethod = 'cash';
+    component.cashPaymentType = 'known';
+    component.cashAmountProvided = 150;
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+    await fixture.whenStable();
+
+    expect(orderApiService.createOrderCalls).toBe(1);
+    expect((orderApiService.lastRequest as any).paymentMethod).toBe('Cash');
+    expect((orderApiService.lastRequest as any).cashPaymentType).toBe('KnownAmount');
+    expect((orderApiService.lastRequest as any).cashAmountProvided).toBe(150);
+    expect((orderApiService.lastRequest as any).estimatedChange).toBe(30);
+  });
+
+  it('should show estimated change when known cash amount is enough', () => {
+    component.paymentMethod = 'cash';
+    component.cashPaymentType = 'known';
+    component.cashAmountProvided = 150;
+    seedCart();
+    fixture.detectChanges();
+
+    expect(component.estimatedChange).toBe(30);
+    expect(fixture.nativeElement.textContent).toContain('Cambio estimado');
+    expect(fixture.nativeElement.textContent).toContain('$30.00');
+  });
+
+  it('should block checkout when known cash amount is less than total', () => {
+    component.paymentMethod = 'cash';
+    component.cashPaymentType = 'known';
+    component.cashAmountProvided = 50;
+    seedCart();
+    fixture.detectChanges();
+
+    component.submitCheckout();
+
+    expect(orderApiService.createOrderCalls).toBe(0);
+    expect(component.errorMessage).toContain('mayor o igual');
+    expect(component.canSubmitCheckout).toBe(false);
+  });
+
   it('should send real modifier option ids in order request', async () => {
     const router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     component.paymentMethod = 'cash';
+    component.cashPaymentType = 'unknown';
     seedCartWithModifier();
     fixture.detectChanges();
 

@@ -6,11 +6,19 @@ export type OrderStatus =
   | 'Delivered'
   | 'Cancelled';
 
+export type PaymentMethod = 'Online' | 'Cash';
+
+export type CashPaymentType = 'KnownAmount' | 'UnknownAmount';
+
 export interface CreateOrderRequest {
   customerAccountId: string;
   restaurantId: string;
   branchId: string;
   notes?: string;
+  paymentMethod: PaymentMethod;
+  cashPaymentType?: CashPaymentType | null;
+  cashAmountProvided?: number | null;
+  estimatedChange?: number | null;
   items: CreateOrderItemRequest[];
 }
 
@@ -52,6 +60,10 @@ export interface OrderResponse {
   subtotal: number;
   total: number;
   status: OrderStatus | string;
+  paymentMethod?: PaymentMethod | string;
+  cashPaymentType?: CashPaymentType | string | null;
+  cashAmountProvided?: number | null;
+  estimatedChange?: number | null;
   estimatedPreparationMinutes?: number | null;
   estimatedReadyAt?: string | null;
   notes?: string;
