@@ -9,6 +9,8 @@ export interface PaymentResponse {
   status: string;
   provider?: string | null;
   providerReference?: string | null;
+  amountReceived?: number | null;
+  changeAmount?: number | null;
   rejectionReason?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +21,10 @@ export interface PaymentResponse {
 
 export interface ApprovePaymentRequest {
   providerReference?: string | null;
+}
+
+export interface ConfirmCashPaymentRequest {
+  amountReceived: number;
 }
 
 export interface RejectPaymentRequest {

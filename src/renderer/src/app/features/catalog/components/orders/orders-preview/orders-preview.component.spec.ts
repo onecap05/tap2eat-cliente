@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { OrderResponse, OrderStatus } from '../../../../customer/models/order.models';
 import { OrderApiService } from '../../../../customer/services/order-api.service';
+import { PaymentApiService } from '../../../../customer/services/payment-api.service';
 import {
   RealtimeOrderEventMessage,
   RealtimePaymentEventMessage
@@ -19,6 +20,7 @@ class FakeOrderApiService {
   public getRestaurantOrdersCalls = 0;
   public orders: OrderResponse[] = [
     order('order-1', 'Created', 'branch-long-8f7a'),
+    order('order-ready', 'Ready', 'branch-long-8f7a'),
     order('order-2', 'Delivered', 'branch-2')
   ];
   public updateShouldFail = false;
@@ -45,6 +47,52 @@ class FakeOrderApiService {
     };
 
     return of(updatedOrder);
+  }
+}
+
+class FakePaymentApiService {
+  public getPaymentByOrderIdCalls = 0;
+  public confirmCashPaymentCalls = 0;
+  public lastConfirmRequest: { paymentId: string; request: { amountReceived: number } } | null = null;
+  public paymentStatus = 'Approved';
+
+  public getPaymentByOrderId(orderId: string) {
+    this.getPaymentByOrderIdCalls++;
+
+    return of({
+      id: `payment-${orderId}`,
+      orderId,
+      customerAccountId: 'customer-long-e95b7',
+      restaurantId: 'restaurant-long-1384d0',
+      branchId: 'branch-long-8f7a',
+      amount: 100,
+      currency: 'MXN',
+      status: this.paymentStatus,
+      provider: 'PAYPAL',
+      createdAt: '2026-05-23T12:00:00Z',
+      updatedAt: '2026-05-23T12:00:00Z'
+    });
+  }
+
+  public confirmCashPayment(paymentId: string, request: { amountReceived: number }) {
+    this.confirmCashPaymentCalls++;
+    this.lastConfirmRequest = { paymentId, request };
+
+    return of({
+      id: paymentId,
+      orderId: 'order-ready',
+      customerAccountId: 'customer-long-e95b7',
+      restaurantId: 'restaurant-long-1384d0',
+      branchId: 'branch-long-8f7a',
+      amount: 100,
+      currency: 'MXN',
+      status: 'Approved',
+      provider: 'CASH',
+      amountReceived: request.amountReceived,
+      changeAmount: request.amountReceived - 100,
+      createdAt: '2026-05-23T12:00:00Z',
+      updatedAt: '2026-05-23T12:00:00Z'
+    });
   }
 }
 
@@ -100,6 +148,7 @@ describe('OrdersPreviewComponent', () => {
   let fixture: ComponentFixture<OrdersPreviewComponent>;
   let component: OrdersPreviewComponent;
   let orderApiService: FakeOrderApiService;
+  let paymentApiService: FakePaymentApiService;
   let realtimeNotificationService: FakeRealtimeNotificationService;
 
   beforeEach(async () => {
@@ -107,11 +156,13 @@ describe('OrdersPreviewComponent', () => {
       imports: [OrdersPreviewComponent],
       providers: [
         { provide: OrderApiService, useClass: FakeOrderApiService },
+        { provide: PaymentApiService, useClass: FakePaymentApiService },
         { provide: RealtimeNotificationService, useClass: FakeRealtimeNotificationService }
       ]
     }).compileComponents();
 
     orderApiService = TestBed.inject(OrderApiService) as unknown as FakeOrderApiService;
+    paymentApiService = TestBed.inject(PaymentApiService) as unknown as FakePaymentApiService;
     realtimeNotificationService = TestBed.inject(RealtimeNotificationService) as unknown as FakeRealtimeNotificationService;
     fixture = TestBed.createComponent(OrdersPreviewComponent);
     component = fixture.componentInstance;
@@ -128,7 +179,7 @@ describe('OrdersPreviewComponent', () => {
     fixture.detectChanges();
 
     expect(orderApiService.lastRestaurantId).toBe('restaurant-long-1384d0');
-    expect(component.orders.length).toBe(2);
+    expect(component.orders.length).toBe(3);
   });
 
   it('should subscribe to realtime orders for restaurant id', () => {
@@ -304,7 +355,7 @@ describe('OrdersPreviewComponent', () => {
     fixture.detectChanges();
     const confirmSpy = vi.spyOn(window, 'confirm');
 
-    (['Accepted', 'Preparing', 'Ready', 'Delivered'] as OrderStatus[]).forEach(status => {
+    (['Accepted', 'Preparing', 'Ready'] as OrderStatus[]).forEach(status => {
       component.updateOrderStatus(component.orders[0], status);
       expect(orderApiService.lastUpdate).toEqual({
         orderId: 'order-1',
@@ -379,7 +430,126 @@ describe('OrdersPreviewComponent', () => {
   it('should not show actions for Delivered orders', () => {
     fixture.detectChanges();
 
-    expect(component.getActions(component.orders[1])).toEqual([]);
+    expect(component.getActions(component.orders[2])).toEqual([]);
+  });
+
+  it('should show Generate ticket for Ready orders and hide Deliver before ticket', () => {
+    fixture.detectChanges();
+    component.openOrderDetail(component.orders[1]);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Generar ticket');
+    expect(text).not.toContain('Entregar');
+  });
+
+  it('should block delivering Ready order before ticket is generated', () => {
+    fixture.detectChanges();
+
+    component.updateOrderStatus(component.orders[1], 'Delivered');
+
+    expect(orderApiService.lastUpdate).toBeNull();
+    expect(component.actionErrorMessage).toContain('Primero genera');
+  });
+
+  it('should generate online ticket without asking for cash amount', () => {
+    fixture.detectChanges();
+    const readyOrder = component.orders[1];
+
+    component.beginTicketFlow(readyOrder);
+    fixture.detectChanges();
+
+    expect(paymentApiService.getPaymentByOrderIdCalls).toBe(1);
+    expect(component.generatedTicket?.paymentMethodLabel).toBe('Online');
+    expect(component.generatedTicket?.changeAmount).toBe(0);
+    expect(fixture.nativeElement.textContent).not.toContain('Cantidad recibida');
+  });
+
+  it('should print only the generated ticket with a safe document title', () => {
+    vi.useFakeTimers();
+    fixture.detectChanges();
+    const readyOrder = component.orders[1];
+    const writtenDocuments: string[] = [];
+    const printWindow = {
+      document: {
+        open: vi.fn(),
+        write: vi.fn((html: string) => writtenDocuments.push(html)),
+        close: vi.fn()
+      },
+      focus: vi.fn(),
+      print: vi.fn(),
+      close: vi.fn()
+    } as unknown as Window;
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(printWindow);
+    const originalTitle = document.title;
+
+    component.openOrderDetail(readyOrder);
+    component.beginTicketFlow(readyOrder);
+    fixture.detectChanges();
+
+    component.printTicket();
+    vi.runAllTimers();
+
+    expect(openSpy).toHaveBeenCalled();
+    expect(writtenDocuments[0]).toContain('ticket-print-area');
+    expect(writtenDocuments[0]).toContain('<title>ticket-ER-READY-tacos-owner-tap2eat-');
+    expect(writtenDocuments[0]).not.toContain('Pedidos del restaurante');
+    expect(printWindow.print).toHaveBeenCalled();
+    expect(document.title).toBe(originalTitle);
+
+    vi.useRealTimers();
+  });
+
+  it('should calculate change for cash order with suggested amount', () => {
+    fixture.detectChanges();
+    const readyOrder = {
+      ...component.orders[1],
+      paymentMethod: 'Cash',
+      cashPaymentType: 'KnownAmount',
+      cashAmountProvided: 150,
+      estimatedChange: 50
+    };
+
+    component.beginTicketFlow(readyOrder);
+    component.confirmCashTicket(readyOrder);
+
+    expect(paymentApiService.lastConfirmRequest?.request.amountReceived).toBe(150);
+    expect(component.generatedTicket?.changeAmount).toBe(50);
+  });
+
+  it('should ask amount received for cash order without suggested amount', () => {
+    fixture.detectChanges();
+    const readyOrder = {
+      ...component.orders[1],
+      paymentMethod: 'Cash',
+      cashPaymentType: 'UnknownAmount',
+      cashAmountProvided: null,
+      estimatedChange: null
+    };
+
+    component.openOrderDetail(readyOrder);
+    component.beginTicketFlow(readyOrder);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('El cliente no especificó');
+    expect(fixture.nativeElement.textContent).toContain('Cantidad recibida');
+  });
+
+  it('should reject cash ticket when amount received is lower than total', () => {
+    fixture.detectChanges();
+    const readyOrder = {
+      ...component.orders[1],
+      paymentMethod: 'Cash',
+      cashPaymentType: 'UnknownAmount'
+    };
+    component.beginTicketFlow(readyOrder);
+    component.cashAmountReceived = 50;
+
+    component.confirmCashTicket(readyOrder);
+
+    expect(paymentApiService.confirmCashPaymentCalls).toBe(0);
+    expect(component.actionErrorMessage).toContain('mayor o igual');
   });
 
   it('should show friendly error when update fails', () => {
@@ -435,6 +605,7 @@ function order(id: string, status: OrderStatus, branchId: string): OrderResponse
     subtotal: 100,
     total: 100,
     status,
+    paymentMethod: 'Online',
     createdAt: '2026-05-23T12:00:00Z',
     updatedAt: '2026-05-23T12:00:00Z'
   };
