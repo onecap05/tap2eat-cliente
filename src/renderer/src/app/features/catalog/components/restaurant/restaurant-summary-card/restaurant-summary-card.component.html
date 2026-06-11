@@ -15,6 +15,10 @@
   <div class="restaurant-info">
     <span class="eyebrow">{{ labels.restaurant }}</span>
     <h1>{{ restaurant.name }}</h1>
+    <p>
+      <strong>{{ labels.rfc }}:</strong>
+      {{ restaurant.rfc || labels.noRfc }}
+    </p>
     <p>{{ restaurant.description || labels.noDescription }}</p>
   </div>
 

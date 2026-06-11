@@ -21,6 +21,8 @@ import { IBranchResponse } from '../models/branch/IBranchResponse';
 import { ICategoryResponse } from '../models/category/ICategoryResponse';
 import { IProductResponse } from '../models/product/IProductResponse';
 
+const RFC_PATTERN = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+
 @Component({
   selector: 'app-owner-catalog-dashboard',
   standalone: true,
@@ -41,6 +43,7 @@ export class OwnerCatalogDashboardComponent implements OnInit {
 
   restaurantForm = {
     name: '',
+    rfc: '',
     description: '',
     logoUrl: '',
     logoObjectKey: '',
@@ -111,6 +114,20 @@ export class OwnerCatalogDashboardComponent implements OnInit {
       return;
     }
 
+    const normalizedRfc = this.restaurantForm.rfc.trim().toUpperCase();
+
+    if (!normalizedRfc) {
+      this.errorMessage = 'El RFC del restaurante es obligatorio.';
+      return;
+    }
+
+    if (!RFC_PATTERN.test(normalizedRfc)) {
+      this.errorMessage = 'El RFC debe tener un formato válido.';
+      return;
+    }
+
+this.restaurantForm.rfc = normalizedRfc;
+
     const ownerAccountId = this.getOwnerAccountId();
 
     if (!ownerAccountId) {
@@ -123,6 +140,7 @@ export class OwnerCatalogDashboardComponent implements OnInit {
     const request: ICreateRestaurantRequest = {
       ownerAccountId,
       name: this.restaurantForm.name.trim(),
+      rfc: normalizedRfc,
       description: this.restaurantForm.description.trim() || null,
       logo: this.buildLogoRequest()
     };

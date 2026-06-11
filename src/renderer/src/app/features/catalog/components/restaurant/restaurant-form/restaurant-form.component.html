@@ -16,6 +16,18 @@
     </label>
 
     <label>
+      {{ labels.rfc }}
+      <input
+        type="text"
+        name="restaurantRfc"
+        [(ngModel)]="form.rfc"
+        placeholder="Ej. ABC010101ABC"
+        maxlength="13"
+        required
+      />
+    </label>
+
+    <label>
       {{ labels.description }}
       <textarea
         name="restaurantDescription"

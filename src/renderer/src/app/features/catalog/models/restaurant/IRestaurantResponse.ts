@@ -4,6 +4,7 @@ export interface IRestaurantResponse {
   id: string;
   ownerAccountId: string;
   name: string;
+  rfc?: string | null;
   description?: string | null;
   logo?: IImageMetadataResponse | null;
   active: boolean;

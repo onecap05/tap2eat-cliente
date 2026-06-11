@@ -5,6 +5,8 @@ import { IRestaurantResponse } from '../../../models/restaurant/IRestaurantRespo
 
 const RESTAURANT_SUMMARY_CARD_LABELS = {
   restaurant: 'Restaurante',
+  rfc: 'RFC',
+  noRfc: 'No registrado',
   active: 'Activo',
   deleted: 'Eliminado',
   noDescription: 'Sin descripción registrada.',
