@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { IRestaurantResponse } from '../../../models/restaurant/IRestaurantResponse';
@@ -26,6 +26,7 @@ export class DashboardOverviewComponent implements OnChanges {
   @Input() branches: IBranchResponse[] = [];
   @Input() categories: ICategoryResponse[] = [];
   @Input() products: IProductResponse[] = [];
+  @Output() openReports = new EventEmitter<void>();
 
   public report?: OwnerDashboardReport;
   public loadingReport = false;
@@ -83,10 +84,24 @@ export class DashboardOverviewComponent implements OnChanges {
   }
 
   public resetToToday(): void {
+    this.setQuickRange('today');
+  }
+
+  public setQuickRange(range: 'today' | 'week' | 'month'): void {
     const today = this.getTodayDateValue();
+    let from = today;
+
+    if (range === 'week') {
+      from = this.getDateValueFromOffset(-6);
+    }
+
+    if (range === 'month') {
+      const currentDate = new Date();
+      from = this.formatDateValue(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+    }
 
     this.reportFilters = {
-      from: today,
+      from,
       to: today
     };
 
@@ -153,6 +168,13 @@ export class DashboardOverviewComponent implements OnChanges {
 
   public getCancelledOrders(): number {
     return this.report?.orders.cancelledOrders ?? 0;
+  }
+
+  public getPendingOrders(): number {
+    return (this.report?.orders.createdOrders ?? 0)
+      + (this.report?.orders.acceptedOrders ?? 0)
+      + (this.report?.orders.preparingOrders ?? 0)
+      + (this.report?.orders.readyOrders ?? 0);
   }
 
   public getTotalCategories(): number {
@@ -255,10 +277,20 @@ export class DashboardOverviewComponent implements OnChanges {
   }
 
   private getTodayDateValue(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
+    return this.formatDateValue(new Date());
+  }
+
+  private getDateValueFromOffset(days: number): string {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+
+    return this.formatDateValue(date);
+  }
+
+  private formatDateValue(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
   }

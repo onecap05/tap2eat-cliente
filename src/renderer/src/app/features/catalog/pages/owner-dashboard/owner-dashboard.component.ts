@@ -37,6 +37,7 @@ import {
   RestaurantFormValue
 } from '../../components/restaurant/restaurant-form/restaurant-form.component';
 import { DashboardOverviewComponent } from '../../components/dashboard/dashboard-overview/dashboard-overview.component';
+import { OwnerReportsComponent } from '../../components/reports/owner-reports/owner-reports.component';
 import { MenuManagementComponent } from '../../components/menu/menu-management/menu-management.component';
 import { BranchManagementComponent } from '../../components/branches/branch-management/branch-management.component';
 import { OrdersPreviewComponent } from '../../components/orders/orders-preview/orders-preview.component';
@@ -109,6 +110,7 @@ const OWNER_DASHBOARD_LOGS = {
   RestaurantSummaryCardComponent,
   RestaurantFormComponent,
   DashboardOverviewComponent,
+  OwnerReportsComponent,
   MenuManagementComponent,
   BranchManagementComponent,
   OrdersPreviewComponent,

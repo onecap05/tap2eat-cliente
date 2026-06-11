@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-export type OwnerPanelSection = 'dashboard' | 'orders' | 'menu' | 'branches';
+export type OwnerPanelSection = 'dashboard' | 'reports' | 'orders' | 'menu' | 'branches';
 
 @Component({
   selector: 'app-owner-sidebar',
@@ -15,9 +15,10 @@ export class OwnerSidebarComponent {
   @Output() sectionChange = new EventEmitter<OwnerPanelSection>();
 
   items: Array<{ label: string; value: OwnerPanelSection; icon: string }> = [
-    { label: 'Dashboard', value: 'dashboard', icon: '▦' },
-    { label: 'Pedidos', value: 'orders', icon: '🛍' },
-    { label: 'Menú', value: 'menu', icon: '🍽' },
+    { label: 'Dashboard', value: 'dashboard', icon: '📊' },
+    { label: 'Reportes', value: 'reports', icon: '📈' },
+    { label: 'Pedidos', value: 'orders', icon: '🧾' },
+    { label: 'Menú', value: 'menu', icon: '🍽️' },
     { label: 'Sucursales', value: 'branches', icon: '📍' }
   ];
 
