@@ -204,7 +204,19 @@
       </div>
     </section>
 
-    <section class="ticket-flow-panel" *ngIf="detailOrder.status === 'Ready' && !hasGeneratedTicket(detailOrder)">
+    <section class="ticket-flow-panel" *ngIf="paymentLookupOrderId === detailOrder.id">
+      Consultando pago...
+    </section>
+
+    <section class="ticket-flow-panel" *ngIf="paymentDetailErrorMessage">
+      {{ paymentDetailErrorMessage }}
+    </section>
+
+    <section class="ticket-flow-panel" *ngIf="paymentDetailMessage && !generatedTicket">
+      {{ paymentDetailMessage }}
+    </section>
+
+    <section class="ticket-flow-panel" *ngIf="shouldShowTicketFlow(detailOrder)">
       <button
         type="button"
         class="ticket-button"
@@ -279,6 +291,8 @@
     <section
       *ngIf="generatedTicket && generatedTicket.order.id === detailOrder.id"
       class="ticket-print-area">
+      <h4 class="no-print">Ticket</h4>
+
       <article class="thermal-ticket">
         <header>
           <h4>{{ getRestaurantName() }}</h4>
@@ -354,7 +368,7 @@
       </article>
 
       <button type="button" class="ticket-button secondary ticket-actions no-print" (click)="printTicket()">
-        Imprimir ticket
+        Reimprimir ticket
       </button>
     </section>
 

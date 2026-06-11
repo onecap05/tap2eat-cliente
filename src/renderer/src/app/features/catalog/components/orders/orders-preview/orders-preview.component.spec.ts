@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import { IBranchResponse } from '../../../models/branch/IBranchResponse';
 import { OrderResponse, OrderStatus } from '../../../../customer/models/order.models';
+import { PaymentResponse } from '../../../../customer/models/payment.models';
 import { OrderApiService } from '../../../../customer/services/order-api.service';
 import { PaymentApiService } from '../../../../customer/services/payment-api.service';
 import {
@@ -55,9 +56,15 @@ class FakePaymentApiService {
   public confirmCashPaymentCalls = 0;
   public lastConfirmRequest: { paymentId: string; request: { amountReceived: number } } | null = null;
   public paymentStatus = 'Approved';
+  public paymentsByOrderId = new Map<string, Partial<PaymentResponse>>();
+  public missingOrderIds = new Set<string>();
 
   public getPaymentByOrderId(orderId: string) {
     this.getPaymentByOrderIdCalls++;
+
+    if (this.missingOrderIds.has(orderId)) {
+      return throwError(() => new Error('payment not found'));
+    }
 
     return of({
       id: `payment-${orderId}`,
@@ -70,7 +77,8 @@ class FakePaymentApiService {
       status: this.paymentStatus,
       provider: 'PAYPAL',
       createdAt: '2026-05-23T12:00:00Z',
-      updatedAt: '2026-05-23T12:00:00Z'
+      updatedAt: '2026-05-23T12:00:00Z',
+      ...this.paymentsByOrderId.get(orderId)
     });
   }
 
@@ -434,6 +442,7 @@ describe('OrdersPreviewComponent', () => {
   });
 
   it('should show Generate ticket for Ready orders and hide Deliver before ticket', () => {
+    paymentApiService.paymentsByOrderId.set('order-ready', { status: 'Pending' });
     fixture.detectChanges();
     component.openOrderDetail(component.orders[1]);
     fixture.detectChanges();
@@ -441,7 +450,22 @@ describe('OrdersPreviewComponent', () => {
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Generar ticket');
+    expect(text).toContain('Estado de pago pendiente');
     expect(text).not.toContain('Entregar');
+  });
+
+  it('should show Reprint ticket when Ready order payment is approved', () => {
+    fixture.detectChanges();
+
+    component.openOrderDetail(component.orders[1]);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(component.generatedTicket?.paymentMethodLabel).toBe('Online');
+    expect(text).toContain('Ticket');
+    expect(text).toContain('Reimprimir ticket');
+    expect(text).not.toContain('Generar ticket');
   });
 
   it('should block delivering Ready order before ticket is generated', () => {
@@ -451,6 +475,31 @@ describe('OrdersPreviewComponent', () => {
 
     expect(orderApiService.lastUpdate).toBeNull();
     expect(component.actionErrorMessage).toContain('Primero genera');
+  });
+
+  it('should show ticket for Delivered order when payment is approved', () => {
+    fixture.detectChanges();
+
+    component.openOrderDetail(component.orders[2]);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(component.generatedTicket?.order.id).toBe('order-2');
+    expect(text).toContain('Ticket');
+    expect(text).toContain('Reimprimir ticket');
+    expect(text).not.toContain('Registrar pago');
+  });
+
+  it('should show friendly message when payment is missing', () => {
+    paymentApiService.missingOrderIds.add('order-ready');
+    fixture.detectChanges();
+
+    component.openOrderDetail(component.orders[1]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No se encontró el registro de pago de este pedido.');
+    expect(component.generatedTicket).toBeNull();
   });
 
   it('should generate online ticket without asking for cash amount', () => {
@@ -519,6 +568,7 @@ describe('OrdersPreviewComponent', () => {
   });
 
   it('should ask amount received for cash order without suggested amount', () => {
+    paymentApiService.paymentsByOrderId.set('order-ready', { status: 'Pending' });
     fixture.detectChanges();
     const readyOrder = {
       ...component.orders[1],

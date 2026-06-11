@@ -145,6 +145,10 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
   public cashPaidWithSuggested = true;
   public cashAmountReceived: number | null = null;
   public generatedTicket: TicketData | null = null;
+  public selectedPayment: PaymentResponse | null = null;
+  public paymentLookupOrderId: string | null = null;
+  public paymentDetailMessage = '';
+  public paymentDetailErrorMessage = '';
 
   private realtimeOrdersSubscription?: Subscription;
   private realtimePaymentsSubscription?: Subscription;
@@ -190,6 +194,7 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
     this.selectedOrder = order;
     this.actionErrorMessage = '';
     this.resetTicketForm();
+    this.loadPaymentForOrder(order);
   }
 
   public closeOrderDetail(): void {
@@ -328,6 +333,14 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
     return this.ticketGeneratedOrderIds.has(order.id);
   }
 
+  public shouldShowTicketFlow(order: OrderResponse): boolean {
+    return order.status === 'Ready'
+      && !this.hasGeneratedTicket(order)
+      && this.paymentLookupOrderId !== order.id
+      && !this.paymentDetailErrorMessage
+      && (!this.selectedPayment || this.selectedPayment.status === 'Pending');
+  }
+
   public beginTicketFlow(order: OrderResponse): void {
     this.actionErrorMessage = '';
     this.generatedTicket = null;
@@ -407,6 +420,18 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
 
   public shouldShowCashAmountInput(order: OrderResponse): boolean {
     return !this.shouldAskCashSuggestion(order) || !this.cashPaidWithSuggested;
+  }
+
+  public getPaymentStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      Pending: 'Pendiente',
+      Approved: 'Pagado',
+      Rejected: 'Rechazado',
+      Cancelled: 'Cancelado',
+      Refunded: 'Reembolsado'
+    };
+
+    return labels[status] ?? status;
   }
 
   public printTicket(): void {
@@ -529,19 +554,100 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
     paymentMethodLabel: string,
     paymentStatusLabel: string,
     amountReceived: number,
-    changeAmount: number
+    changeAmount: number,
+    generatedAt = new Date().toISOString()
   ): void {
     this.ticketGeneratedOrderIds.add(order.id);
     this.cashTicketOrderId = '';
+    this.selectedPayment = payment;
+    this.paymentDetailMessage = '';
+    this.paymentDetailErrorMessage = '';
     this.generatedTicket = {
       order,
       payment,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
       paymentMethodLabel,
       paymentStatusLabel,
       amountReceived: this.roundCurrency(amountReceived),
       changeAmount: this.roundCurrency(changeAmount)
     };
+  }
+
+  private loadPaymentForOrder(order: OrderResponse): void {
+    this.paymentLookupOrderId = order.id;
+    this.selectedPayment = null;
+    this.paymentDetailMessage = '';
+    this.paymentDetailErrorMessage = '';
+
+    this.paymentApiService.getPaymentByOrderId(order.id)
+      .pipe(
+        finalize(() => {
+          if (this.paymentLookupOrderId === order.id) {
+            this.paymentLookupOrderId = null;
+          }
+        })
+      )
+      .subscribe({
+        next: payment => {
+          if (this.selectedOrder?.id !== order.id) {
+            return;
+          }
+
+          this.selectedPayment = payment;
+
+          if (this.tryBuildTicketFromPayment(order, payment)) {
+            return;
+          }
+
+          this.paymentDetailMessage = payment.status === 'Pending'
+            ? 'Estado de pago pendiente.'
+            : `Estado de pago: ${this.getPaymentStatusLabel(payment.status)}.`;
+        },
+        error: error => {
+          console.error('Payment lookup failed:', error);
+
+          if (this.selectedOrder?.id === order.id) {
+            this.paymentDetailErrorMessage = 'No se encontró el registro de pago de este pedido.';
+          }
+        }
+      });
+  }
+
+  private tryBuildTicketFromPayment(order: OrderResponse, payment: PaymentResponse): boolean {
+    if (payment.status !== 'Approved') {
+      return false;
+    }
+
+    if (this.isCashPayment(order, payment)) {
+      if (payment.amountReceived === null
+        || payment.amountReceived === undefined
+        || payment.changeAmount === null
+        || payment.changeAmount === undefined) {
+        return false;
+      }
+
+      this.setGeneratedTicket(
+        order,
+        payment,
+        'Efectivo',
+        'Pagado',
+        payment.amountReceived,
+        payment.changeAmount,
+        payment.approvedAt ?? payment.updatedAt ?? payment.createdAt
+      );
+      return true;
+    }
+
+    this.setGeneratedTicket(
+      order,
+      payment,
+      'Online',
+      'Pagado',
+      payment.amount,
+      0,
+      payment.approvedAt ?? payment.updatedAt ?? payment.createdAt
+    );
+    return true;
   }
 
   private getCashAmountForTicket(order: OrderResponse): number | null {
@@ -563,10 +669,18 @@ export class OrdersPreviewComponent implements OnChanges, OnDestroy {
     this.cashPaidWithSuggested = true;
     this.cashAmountReceived = null;
     this.generatedTicket = null;
+    this.selectedPayment = null;
+    this.paymentLookupOrderId = null;
+    this.paymentDetailMessage = '';
+    this.paymentDetailErrorMessage = '';
   }
 
   private isCashOrder(order: OrderResponse): boolean {
     return order.paymentMethod === 'Cash';
+  }
+
+  private isCashPayment(order: OrderResponse, payment: PaymentResponse): boolean {
+    return this.isCashOrder(order) || payment.provider === 'CASH';
   }
 
   private roundCurrency(value: number): number {
